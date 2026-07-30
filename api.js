@@ -1,35 +1,46 @@
 /* ============================================================
    DAFFODIL INTERNATIONAL COLLEGE (DIC) ALUMNI PLATFORM
-   Frontend PostgreSQL API Client Module
+   Frontend PostgreSQL API Client Module with Fast Fallback
    ============================================================ */
 
-const API_BASE_URL = window.location.origin.includes('localhost') 
-  ? window.location.origin 
-  : 'http://localhost:8000';
+const API_BASE_URL = window.location.origin;
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 1500) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (err) {
+    clearTimeout(timeoutId);
+    throw err;
+  }
+}
 
 const API = {
   async health() {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/health`);
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/health`);
       return await res.json();
     } catch (e) {
-      return { status: 'offline', database: 'PostgreSQL (Local Fallback)' };
+      return { status: 'offline', database: 'IndexedDB & Local State' };
     }
   },
 
   async getAlumni(search = '') {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/alumni?search=${encodeURIComponent(search)}`);
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/alumni?search=${encodeURIComponent(search)}`);
       if (!res.ok) throw new Error('API Error');
       return await res.json();
     } catch (e) {
-      return null; // Fallback to local DB
+      return null; // Fallback to local data
     }
   },
 
   async getAlumniProfile(id) {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/alumni/${id}`);
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/alumni/${id}`);
       if (!res.ok) throw new Error('API Error');
       return await res.json();
     } catch (e) {
@@ -39,7 +50,7 @@ const API = {
 
   async getChapters() {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/chapters`);
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/chapters`);
       if (!res.ok) throw new Error('API Error');
       return await res.json();
     } catch (e) {
@@ -49,7 +60,7 @@ const API = {
 
   async submitChapter(data) {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/chapters`, {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/chapters`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -62,7 +73,7 @@ const API = {
 
   async joinChapter(chapterId, userId) {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/chapters/${chapterId}/join`, {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/chapters/${chapterId}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId })
@@ -75,7 +86,7 @@ const API = {
 
   async getChapterMembers(chapterId) {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/chapters/${chapterId}/members`);
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/chapters/${chapterId}/members`);
       if (!res.ok) throw new Error('API Error');
       return await res.json();
     } catch (e) {
@@ -85,7 +96,7 @@ const API = {
 
   async getStories() {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/stories`);
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/stories`);
       if (!res.ok) throw new Error('API Error');
       return await res.json();
     } catch (e) {
@@ -95,7 +106,7 @@ const API = {
 
   async submitStory(data) {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/stories`, {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/stories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -108,7 +119,7 @@ const API = {
 
   async getModerationQueue() {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/moderation`);
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/moderation`);
       if (!res.ok) throw new Error('API Error');
       return await res.json();
     } catch (e) {
@@ -118,7 +129,7 @@ const API = {
 
   async moderateChapter(id, action) {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/moderation/chapter/${id}/${action}`, {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/moderation/chapter/${id}/${action}`, {
         method: 'POST'
       });
       return await res.json();
@@ -129,7 +140,7 @@ const API = {
 
   async moderateStory(id, action) {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/moderation/story/${id}/${action}`, {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/moderation/story/${id}/${action}`, {
         method: 'POST'
       });
       return await res.json();
@@ -140,7 +151,7 @@ const API = {
 
   async getNotifications() {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/notifications`);
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/notifications`);
       if (!res.ok) throw new Error('API Error');
       return await res.json();
     } catch (e) {
@@ -150,7 +161,7 @@ const API = {
 
   async postBulkImport(data) {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/bulk-import`, {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/bulk-import`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
