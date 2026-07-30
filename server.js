@@ -380,8 +380,12 @@ app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// Start Express Server
-app.listen(PORT, () => {
-  console.log(`🚀 DIC Alumni Platform API Server running on http://localhost:${PORT}`);
-  console.log(`🐘 Connected to PostgreSQL Database "dic_alumni_db"`);
-});
+// Start Express Server locally or export for Vercel Serverless
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`🚀 DIC Alumni Platform API Server running on http://localhost:${PORT}`);
+    console.log(`🐘 Connected to PostgreSQL Database "dic_alumni_db"`);
+  });
+}
+
+module.exports = app;
