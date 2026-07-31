@@ -37,11 +37,11 @@
           <form onsubmit="handleLoginSubmit(event)">
             <div class="input-group">
               <label class="input-label">DIC Email Address</label>
-              <input type="email" id="login-email" class="form-input" inputmode="email" autocomplete="email" placeholder="alumni@dic.edu.bd" value="admin@dic.edu.bd" required />
+              <input type="email" id="login-email" class="form-input" inputmode="email" autocomplete="email" placeholder="alumni@dic.edu.bd" required />
             </div>
             <div class="input-group">
               <label class="input-label">Password</label>
-              <input type="password" id="login-password" class="form-input" placeholder="••••••••" value="12345678" required />
+              <input type="password" id="login-password" class="form-input" placeholder="••••••••" required />
             </div>
             <button type="submit" class="btn btn-primary btn-full">Sign In to DIC →</button>
           </form>
@@ -830,7 +830,7 @@
             <p class="page-subtitle">Bulk Import · Custom Fields · RBAC · Audit Logs · Compliance Vault</p>
           </div>
         </div>
-        <div class="admin-tabs">
+        <div class="admin-tabs" style="overflow-x:auto;white-space:nowrap;-webkit-overflow-scrolling:touch;padding-bottom:6px">
           <button class="chart-tab active" onclick="switchAdmin('bulkimport', this)">Bulk Import</button>
           <button class="chart-tab" onclick="switchAdmin('customfields', this)">Custom Fields</button>
           <button class="chart-tab" onclick="switchAdmin('moderation', this)">Moderation Queue</button>

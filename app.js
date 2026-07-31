@@ -112,9 +112,9 @@ function handleLoginSubmit(e) {
   if (e) e.preventDefault();
   const emailInput = document.getElementById('login-email').value.trim().toLowerCase();
   
-  // Find matching user or fallback to Super Admin
+  // Find matching user or fallback to Alumni
   let matchedUser = Object.values(MOCK_USERS).find(u => u.email.toLowerCase() === emailInput);
-  if (!matchedUser) matchedUser = MOCK_USERS.super_admin;
+  if (!matchedUser) matchedUser = emailInput.includes('admin') ? MOCK_USERS.super_admin : MOCK_USERS.alumni;
 
   loginAsUser(matchedUser);
 }
@@ -2823,8 +2823,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ─── INIT ON LOAD ────────────────────────────────────────────
 window.addEventListener('load', () => {
-  // Auto-enter application so all 14 pages and navigation work immediately
-  enterApp();
+  // Show clean Login Screen on load; user logs in or selects demo role
+  logout();
 });
 
 // ============================================================
