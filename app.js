@@ -221,14 +221,23 @@ function enterApp() {
 }
 
 function logout() {
-  document.getElementById('main-app').classList.add('hidden');
-  document.getElementById('login-screen').classList.remove('hidden');
-  document.getElementById('step-1').classList.remove('hidden');
-  document.getElementById('step-2').classList.add('hidden');
-  document.getElementById('step-3').classList.add('hidden');
-  document.getElementById('sis-result').style.display = 'none';
-  document.getElementById('continue-btn').classList.add('hidden');
-  document.querySelector('.sis-match-animation').style.display = 'flex';
+  const mainApp = document.getElementById('main-app');
+  const loginScreen = document.getElementById('login-screen');
+  const step1 = document.getElementById('step-1');
+  const step2 = document.getElementById('step-2');
+  const step3 = document.getElementById('step-3');
+  const sisResult = document.getElementById('sis-result');
+  const continueBtn = document.getElementById('continue-btn');
+  const sisAnim = document.querySelector('.sis-match-animation');
+
+  if (mainApp) mainApp.classList.add('hidden');
+  if (loginScreen) loginScreen.classList.remove('hidden');
+  if (step1) step1.classList.remove('hidden');
+  if (step2) step2.classList.add('hidden');
+  if (step3) step3.classList.add('hidden');
+  if (sisResult) sisResult.style.display = 'none';
+  if (continueBtn) continueBtn.classList.add('hidden');
+  if (sisAnim) sisAnim.style.display = 'none';
 }
 
 // ─── APP INITIALIZATION & ROLE-BASED DASHBOARDS ──────────────
@@ -2837,8 +2846,7 @@ function toggleProgressiveDisclosure(targetId, btn) {
 
 // ─── INIT ON LOAD ────────────────────────────────────────────
 window.addEventListener('load', () => {
-  // Show clean Login Screen on load; user logs in or selects demo role
-  logout();
+  enterApp();
 });
 
 // ============================================================
