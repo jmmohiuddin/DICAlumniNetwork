@@ -315,11 +315,11 @@ function renderAlumniDashboard(page) {
       <div class="dashboard-left">
         <div class="glass-card">
           <div class="card-header"><h3 class="card-title">🤝 Recommended DIC Alumni Connections</h3></div>
-          <div id="alumni-grid" class="alumni-grid" style="grid-template-columns:1fr 1fr;gap:10px"></div>
+          <div id="alumni-grid" class="alumni-grid"></div>
         </div>
         <div class="glass-card mt-16">
           <div class="card-header"><h3 class="card-title">📅 Upcoming DIC Events</h3></div>
-          <div id="events-grid" class="events-grid" style="grid-template-columns:1fr;gap:10px"></div>
+          <div id="events-grid" class="events-grid"></div>
         </div>
       </div>
       <div class="dashboard-right">
@@ -352,7 +352,7 @@ function renderModeratorDashboard(page) {
       <span class="card-badge teal">14 Pending Reviews</span>
     </div>
 
-    <div class="sync-overview-grid mb-16" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+    <div class="sync-overview-grid mb-16">
       <div class="sync-stat-card"><div class="sync-stat-val">14</div><div class="sync-stat-label">Pending Profiles</div></div>
       <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--amber)">3</div><div class="sync-stat-label">Reported Posts</div></div>
       <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--teal)">99.4%</div><div class="sync-stat-label">Safety Index</div></div>
@@ -403,7 +403,7 @@ function renderDeptAdminDashboard(page) {
       </select>
     </div>
 
-    <div class="sync-overview-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px">
+    <div class="sync-overview-grid">
       <div class="sync-stat-card"><div class="sync-stat-val">6,210</div><div class="sync-stat-label">CSE Alumni</div></div>
       <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--teal)">94.2%</div><div class="sync-stat-label">Employment Rate</div></div>
       <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--amber)">18</div><div class="sync-stat-label">Active Events</div></div>
@@ -1018,7 +1018,7 @@ async function viewAlumniProfile(id) {
       </div>
 
       <!-- ACTION BUTTONS -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px">
+      <div class="field-grid-2" style="margin-top:10px">
         <button class="btn btn-primary btn-full" onclick="closeModal(); connectAlumni('${profile.name}')">+ Connect</button>
         <button class="btn btn-outline btn-full" onclick="closeModal(); showMentorModal('${profile.name}')">🤝 Request Mentorship</button>
       </div>
@@ -1303,7 +1303,7 @@ function renderPlannerTabContent(tab) {
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px">
+      <div class="dashboard-split">
         <div class="glass-card">
           <div class="card-header">
             <h3 class="card-title">🚀 Proposal Charter &amp; Executive Summary</h3>
@@ -1392,7 +1392,7 @@ function renderPlannerTabContent(tab) {
           <h3 class="card-title">🤝 Sponsor CRM &amp; Deal Pipeline</h3>
           <button class="btn btn-sm btn-primary" onclick="showAddSponsorModal()">+ Add Sponsor</button>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:14px;margin-top:12px">
+        <div class="campaigns-grid" style="margin-top:12px">
           ${s.map(sp => `
             <div class="glass-card sponsor-tier-card ${sp.package_tier}-tier">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
@@ -1472,7 +1472,7 @@ function renderPlannerTabContent(tab) {
       </div>`;
   } else if (tab === 'volunteers') {
     container.innerHTML = `
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+      <div class="field-grid-2" style="gap:16px">
         <div class="glass-card">
           <div class="card-header"><h3 class="card-title">🛡 Volunteer Roster &amp; Shifts</h3></div>
           <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
@@ -2561,12 +2561,12 @@ function showCreateEventModal() {
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="input-group"><label class="input-label">Event Title</label><input type="text" class="form-input" placeholder="e.g., Alumni Career Summit 2026" /></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div class="field-grid-2">
       <div class="input-group"><label class="input-label">Date</label><input type="date" class="form-input" /></div>
       <div class="input-group"><label class="input-label">Time</label><input type="time" class="form-input" /></div>
     </div>
     <div class="input-group"><label class="input-label">Venue</label><input type="text" class="form-input" placeholder="Venue or Online (Zoom)" /></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div class="field-grid-2">
       <div class="input-group"><label class="input-label">Capacity</label><input type="number" class="form-input" placeholder="e.g., 200" /></div>
       <div class="input-group"><label class="input-label">Ticket Price (৳)</label><input type="text" class="form-input" placeholder="0 for free" /></div>
     </div>
@@ -2583,7 +2583,7 @@ function showPostJobModal() {
     <div style="background:var(--primary-glow);border:1px solid rgba(108,99,255,0.2);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--primary-light)">🔒 Alumni-only posting — only DIC verified alumni can post jobs.</div>
     <div class="input-group"><label class="input-label">Job Title</label><input type="text" class="form-input" placeholder="e.g., Senior Software Engineer" /></div>
     <div class="input-group"><label class="input-label">Company</label><input type="text" class="form-input" placeholder="Your company name" /></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div class="field-grid-2">
       <div class="input-group"><label class="input-label">Type</label><select class="form-select"><option>Full-time</option><option>Part-time</option><option>Internship</option><option>Contract</option></select></div>
       <div class="input-group"><label class="input-label">Location</label><input type="text" class="form-input" placeholder="Dhaka / Remote / etc." /></div>
     </div>
@@ -3045,7 +3045,7 @@ function renderCareerRegistry(filter = '') {
         <div class="career-registry-current">${c.current}</div>
         <div class="career-registry-history">Previously: ${c.prev}</div>
       </div>
-      <div style="text-align:right;flex-shrink:0">
+      <div class="career-registry-action" style="text-align:right;flex-shrink:0">
         <div class="career-update-badge ${c.updateType}">${c.updateType === 'ai' ? '🤖 AI Updated' : c.updateType === 'self' ? '✎ Self-Reported' : '⏳ Pending'}</div>
         <div style="font-size:10px;color:var(--text-muted);margin-top:4px">${c.lastUpdated}</div>
         <button class="btn btn-sm btn-outline" style="margin-top:6px;font-size:10px" onclick="showToast('✎ Edit form for ${c.name} loading…')">Edit</button>
@@ -3103,7 +3103,7 @@ function showSelfReportPrompt() {
     </div>
     <div class="input-group"><label class="input-label">Current Employer</label><input type="text" class="form-input" value="TechBD Solutions" /></div>
     <div class="input-group"><label class="input-label">Job Title</label><input type="text" class="form-input" value="Senior Full-Stack Engineer" /></div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div class="field-grid-2">
       <div class="input-group"><label class="input-label">Start Month</label><input type="month" class="form-input" value="2023-03" /></div>
       <div class="input-group"><label class="input-label">End (leave blank = current)</label><input type="month" class="form-input" /></div>
     </div>
@@ -3887,7 +3887,7 @@ function renderWizardStepContent() {
         <div class="dropzone-sub">Supports up to 50,000 records per file · Auto-validates 43 comprehensive fields</div>
       </div>
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
+      <div class="field-grid-2" style="margin-top:16px">
         <div class="input-group">
           <label class="input-label">Automatic Password Generation Policy</label>
           <select class="form-select" id="password-strategy-select" onchange="currentImportState.strategy = this.value">
@@ -4136,7 +4136,7 @@ function renderCustomFieldManager() {
       </div>
       <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px">Define custom user profile fields without changing source code. Newly created fields instantly render across user profiles and edit forms.</p>
 
-      <form onsubmit="handleCreateCustomField(event)" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:20px;padding:14px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
+      <form onsubmit="handleCreateCustomField(event)" class="custom-field-form" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:20px;padding:14px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
         <div class="input-group" style="margin:0">
           <label class="input-label">Field Name / Label</label>
           <input type="text" id="cf-name" class="form-input" placeholder="e.g. High School Name, Kaggle Rank" required />

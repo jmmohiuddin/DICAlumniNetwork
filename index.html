@@ -456,7 +456,7 @@
             <h1 class="page-title">Event Management Planner &amp; Workspace</h1>
             <p class="page-subtitle">Full Event Lifecycle Operating System · Budgeting · Sponsor CRM · Kanban · Procurement · Volunteers · EventAI</p>
           </div>
-          <div style="display:flex;gap:8px">
+          <div class="page-header-actions">
             <button class="btn btn-outline" onclick="showCreateProposalModal()">➕ Proposal Form</button>
             <button class="btn btn-primary" onclick="showCreateEventModal()">+ Create Event</button>
           </div>
@@ -589,7 +589,7 @@
             <div class="card-header"><h3 class="card-title">Mentorship Health Scorecard</h3><span class="card-badge teal">1,203 Active Pairs</span></div>
             <div id="mentorship-health-grid"></div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="analytics-grid analytics-split-2">
             <div class="glass-card"><div class="card-header"><h3 class="card-title">Session Frequency</h3></div><canvas id="session-freq-chart" height="180"></canvas></div>
             <div class="glass-card"><div class="card-header"><h3 class="card-title">Outcome Distribution</h3></div><div id="outcome-distribution"></div></div>
           </div>
@@ -600,7 +600,7 @@
             <div class="card-header"><h3 class="card-title">Event ROI Analysis</h3><span class="card-badge indigo">FY 2026</span></div>
             <div id="event-roi-table"></div>
           </div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+          <div class="analytics-grid analytics-split-2">
             <div class="glass-card"><div class="card-header"><h3 class="card-title">Revenue vs Cost</h3></div><canvas id="roi-chart" height="200"></canvas></div>
             <div class="glass-card"><div class="card-header"><h3 class="card-title">ROI Summary</h3></div><div id="roi-summary"></div></div>
           </div>
@@ -923,7 +923,7 @@
             <div class="glass-card">
               <div class="card-header">
                 <h3 class="card-title">Alumni Employment Registry</h3>
-                <div style="display:flex;gap:8px">
+                <div class="page-header-actions" style="flex-shrink:0">
                   <select class="form-select sm" onchange="filterCareerRegistry(this.value)">
                     <option value="">All Domains</option>
                     <option value="tech">Technology</option>

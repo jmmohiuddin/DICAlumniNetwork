@@ -1069,6 +1069,7 @@ body::before {
 /* ─── ANALYTICS ─── */
 .analytics-tabs { margin-bottom: 20px; }
 .analytics-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 16px; }
+.analytics-split-2 { grid-template-columns: 1fr 1fr; }
 #analytics-metrics { display: flex; flex-direction: column; gap: 12px; }
 .analytics-metric-item { display: flex; flex-direction: column; gap: 2px; padding: 10px 0; border-bottom: 1px solid var(--border-glass); }
 .analytics-metric-item:last-child { border-bottom: none; }
@@ -1537,16 +1538,39 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 }
 .modal-close:hover { background: rgba(255,255,255,0.15); color: #fff; }
 
-/* ─── RESPONSIVE & MOBILE-FIRST BREAKPOINTS ─── */
+/* ============================================================
+   RESPONSIVE & MOBILE-FIRST BREAKPOINTS
+   Complete screen-by-screen mobile optimization
+   Breakpoints: 1200px → 900px → 768px → 600px → 480px → 360px
+   ============================================================ */
+
+/* ─── SLIDE-UP ANIMATION FOR MOBILE MODALS ─── */
+@keyframes slideUpMobile {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+/* ─── LARGE TABLET / SMALL LAPTOP (≤1200px) ─── */
 @media (max-width: 1200px) {
   .kpi-grid { grid-template-columns: repeat(2, 1fr); }
   .dashboard-split { grid-template-columns: 1fr; }
   .analytics-grid { grid-template-columns: 1fr; }
   .analytics-grid .span-2 { grid-column: span 1; }
+  .server-health-grid { grid-template-columns: repeat(2, 1fr); }
+  .kanban-board-grid { grid-template-columns: repeat(2, 1fr); }
+  .planner-metrics-ribbon { grid-template-columns: repeat(2, 1fr); }
+  .segment-builder { grid-template-columns: 1fr 1fr; }
+  .import-wizard-steps { grid-template-columns: repeat(2, 1fr); }
+  .validation-summary-bar { grid-template-columns: repeat(2, 1fr); }
 }
 
+/* ─── TABLET / MOBILE MASTER BREAKPOINT (≤900px) ─── */
 @media (max-width: 900px) {
+
+  /* ── App Layout ── */
   .app-layout { grid-template-columns: 1fr; }
+
+  /* ── Sidebar: Off-Canvas Drawer ── */
   .sidebar {
     position: fixed;
     left: -100%;
@@ -1554,6 +1578,7 @@ textarea.form-input { resize: vertical; min-height: 100px; }
     z-index: 1500;
     width: 280px;
     height: 100vh;
+    height: 100dvh;
     background: rgba(13, 21, 38, 0.98);
     backdrop-filter: blur(24px);
     -webkit-backdrop-filter: blur(24px);
@@ -1561,8 +1586,27 @@ textarea.form-input { resize: vertical; min-height: 100px; }
     transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   }
   .sidebar.open { left: 0; box-shadow: 20px 0 60px rgba(0,0,0,0.6); }
-  .sidebar-close { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; font-size: 18px; }
-  .hamburger { display: flex; align-items: center; justify-content: center; width: 44px; height: 44px; font-size: 20px; border-radius: var(--radius-sm); }
+  .sidebar-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+
+  /* ── Hamburger ── */
+  .hamburger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    font-size: 20px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* ── Bottom Navigation Bar ── */
   .bottom-nav {
     display: flex;
     position: fixed;
@@ -1596,53 +1640,175 @@ textarea.form-input { resize: vertical; min-height: 100px; }
   .bottom-nav-item.active { color: var(--primary-light); }
   .bottom-nav-item.active .bnav-icon { color: var(--primary-light); transform: scale(1.1); }
   .bnav-icon { font-size: 18px; transition: transform 0.2s ease; }
-  .pages-container { padding: 16px; padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
-  .mentorship-layout, .jobs-layout, .chapters-layout, .news-layout, .profile-layout, .career-tracker-layout, .api-layout { grid-template-columns: 1fr; }
-  .topbar-search { max-width: 180px; }
-  .modal-overlay { align-items: flex-end; padding: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(12px); }
-  .modal-content {
-    width: 100%;
-    max-height: 88vh;
-    border-bottom-left-radius: 0;
-    border-bottom-right-radius: 0;
-    border-top-left-radius: 20px;
-    border-top-right-radius: 20px;
-    padding: 20px;
-    animation: slideUpMobile 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
-    position: relative;
-    overflow-y: auto;
-  }
-  
-  /* Mobile Drag Handle Pill for Bottom Sheets */
-  .modal-content::before {
-    content: '';
-    display: block;
-    width: 40px;
-    height: 5px;
-    background: rgba(255,255,255,0.25);
-    border-radius: 99px;
-    margin: 0 auto 16px auto;
+
+  /* ── Pages Container ── */
+  .pages-container {
+    padding: 16px;
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
   }
 
-  /* Table to Card Responsive Stack on Mobile */
-  table {
-    display: block;
+  /* ── Topbar ── */
+  .topbar {
+    padding: 0 12px;
+    gap: 8px;
+  }
+  .topbar-search { max-width: 180px; }
+  .topbar-search-input { font-size: 13px; padding: 6px 10px 6px 32px; }
+  .topbar-actions { gap: 6px; }
+  .offline-status .status-text { display: none; }
+  .offline-status { padding: 6px 8px; }
+  .topbar-btn { padding: 6px 8px; font-size: 11px; }
+  .role-switcher-select { font-size: 11px; padding: 4px 8px; }
+
+  /* ── Page Header ── */
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .page-title { font-size: 22px; }
+  .page-subtitle { font-size: 12px; }
+  .page-header-actions {
     width: 100%;
+    display: flex;
+    gap: 8px;
+  }
+  .page-header-actions .btn {
+    flex: 1;
+    justify-content: center;
+  }
+  .page-header-actions .form-select {
+    width: 100%;
+  }
+
+  /* ── KPI Grid: 2 columns on tablet ── */
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .kpi-card { padding: 14px; gap: 12px; }
+  .kpi-icon { font-size: 22px; }
+  .kpi-value { font-size: 22px; }
+  .kpi-label { font-size: 11px; }
+
+  /* ── Dashboard Split ── */
+  .dashboard-split { grid-template-columns: 1fr; gap: 16px; }
+
+  /* ── Chart Tabs: horizontal scroll ── */
+  .chart-tabs {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    flex-wrap: nowrap;
   }
+  .chart-tabs::-webkit-scrollbar { display: none; }
+  .chart-tab { flex-shrink: 0; }
 
-  /* Touch Target Minimum 44px Enforcer */
-  .btn, .form-input, .form-select, .chart-tab, .topbar-btn, .modal-close {
-    min-height: 44px;
-    touch-action: manipulation;
+  /* ── Directory / Alumni Grid ── */
+  .alumni-grid { grid-template-columns: 1fr; gap: 12px; }
+  .alumni-card { padding: 16px; }
+  .ai-search-bar { flex-wrap: wrap; }
+  .directory-stats-bar { flex-direction: column; gap: 8px; align-items: flex-start; }
+
+  /* ── Profile Layout: Stack ID card above content ── */
+  .profile-layout { grid-template-columns: 1fr; gap: 16px; }
+  .profile-hub-tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
   }
+  .profile-hub-tabs::-webkit-scrollbar { display: none; }
+  .profile-hub-tab { flex-shrink: 0; }
+  .profile-completeness-banner {
+    flex-direction: column;
+    gap: 12px;
+    padding: 14px;
+    text-align: center;
+  }
+  .pc-items { max-width: 100%; justify-content: center; }
 
+  /* ── Digital ID Card ── */
+  .id-card-body { flex-direction: column; text-align: center; }
+  .id-card-footer { flex-direction: column; text-align: center; gap: 12px; }
+
+  /* ── Field Grids: stack on mobile ── */
   .field-grid-2, .field-grid-3, .field-grid-4 {
     grid-template-columns: 1fr !important;
   }
-  /* Admin Panel Mobile-First Responsiveness */
+
+  /* ── Mentorship Layout ── */
+  .mentorship-layout { grid-template-columns: 1fr; gap: 16px; }
+  .mentorship-connection { flex-wrap: wrap; }
+  .criterion-label { width: 100px; font-size: 11px; }
+
+  /* ── Jobs Layout ── */
+  .jobs-layout { grid-template-columns: 1fr; gap: 16px; }
+  .jobs-filters { flex-wrap: wrap; }
+  .jobs-filters .form-input { max-width: 100%; width: 100%; }
+  .jobs-filters .form-select { width: 100%; }
+  .job-card { flex-direction: column; gap: 10px; }
+  .job-right { align-items: flex-start; flex-direction: row; gap: 12px; }
+
+  /* ── Chapters Layout ── */
+  .chapters-layout { grid-template-columns: 1fr; gap: 16px; }
+  .chapter-stats-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .chapter-stat { padding: 10px; }
+  .chapter-stat-val { font-size: 18px; }
+
+  /* ── News Layout ── */
+  .news-layout { grid-template-columns: 1fr; gap: 16px; }
+  .news-banner { height: 100px; }
+
+  /* ── Events Grid ── */
+  .events-grid { grid-template-columns: 1fr; gap: 12px; }
+
+  /* ── Donations / Campaigns ── */
+  .campaigns-grid { grid-template-columns: 1fr; gap: 12px; }
+  .campaign-footer { flex-wrap: wrap; }
+
+  /* ── Analytics ── */
+  .analytics-grid { grid-template-columns: 1fr !important; gap: 12px; }
+  .analytics-grid .span-2 { grid-column: span 1; }
+  .analytics-split-2 { grid-template-columns: 1fr !important; }
+  .geo-countries { grid-template-columns: 1fr; }
+
+  /* ── INLINE STYLE OVERRIDES ──
+     app.js uses inline style="display:grid;grid-template-columns:..."
+     which requires !important to override on mobile */
+  [style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+  /* Exceptions: keep 2-col for very small items */
+  .amount-grid[style*="grid-template-columns"],
+  .demo-role-grid[style*="grid-template-columns"],
+  .broadcast-read-receipts[style*="grid-template-columns"] {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  /* Keep alumni-grid 1-col (already class-based) */
+  .alumni-grid[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+  /* Force form grids to stack */
+  form[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ── Map ── */
+  .map-canvas { height: 280px; }
+  .map-stats { grid-template-columns: repeat(3, 1fr); }
+  .map-stat-item { padding: 10px; }
+  .map-stat-val { font-size: 16px; }
+  .map-legend { flex-wrap: wrap; gap: 10px; padding: 10px 12px; }
+
+  /* ── Career Tracker ── */
+  .career-tracker-layout { grid-template-columns: 1fr; gap: 16px; }
+  .career-tracker-banner { flex-direction: column; text-align: center; gap: 10px; }
+
+  /* ── API Layout ── */
+  .api-layout { grid-template-columns: 1fr; gap: 16px; }
+  .api-enterprise-badge { flex-direction: column; text-align: center; }
+
+  /* ── Admin Panel ── */
   .admin-tabs {
     display: flex;
     gap: 8px;
@@ -1651,7 +1817,9 @@ textarea.form-input { resize: vertical; min-height: 100px; }
     -webkit-overflow-scrolling: touch;
     padding-bottom: 8px;
     margin-bottom: 16px;
+    scrollbar-width: none;
   }
+  .admin-tabs::-webkit-scrollbar { display: none; }
   .admin-tabs .chart-tab {
     flex-shrink: 0;
     min-height: 40px;
@@ -1669,30 +1837,657 @@ textarea.form-input { resize: vertical; min-height: 100px; }
     -webkit-overflow-scrolling: touch;
     border-radius: var(--radius-sm);
   }
-  .rbac-table {
-    min-width: 600px;
+  .rbac-table { min-width: 600px; }
+  .compliance-grid { grid-template-columns: 1fr; }
+  .tenant-card { flex-direction: column; text-align: center; gap: 10px; }
+
+  /* ── Server Health ── */
+  .server-health-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .server-card { padding: 10px; }
+  .server-val { font-size: 16px; }
+
+  /* ── Sync Overview ── */
+  .sync-overview-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+
+  /* ── Kanban & Planner ── */
+  .kanban-board-grid { grid-template-columns: 1fr; gap: 12px; }
+  .kanban-column { min-height: 200px; }
+  .planner-metrics-ribbon { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+
+  /* ── Import Wizard ── */
+  .import-wizard-steps { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .validation-summary-bar { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .segment-builder { grid-template-columns: 1fr; }
+
+  /* ── Broadcast ── */
+  .broadcast-read-receipts { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+
+  /* ── Badges Grid ── */
+  .alumni-badges-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+  /* ── Modals: Bottom Sheet ── */
+  .modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(12px);
   }
-  .page-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
-  .page-header-actions {
+  .modal-content {
     width: 100%;
+    max-height: 88vh;
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    padding: 20px;
+    animation: slideUpMobile 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
+    position: relative;
+    overflow-y: auto;
+  }
+  /* Drag Handle Pill */
+  .modal-content::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 5px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 99px;
+    margin: 0 auto 16px auto;
+  }
+
+  /* ── Tables: horizontal scroll ── */
+  table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ── Touch Target 44px Enforcer ── */
+  .btn, .form-input, .form-select, .chart-tab, .topbar-btn, .modal-close {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  /* ── Notification Panel: Full-width overlay ── */
+  .notif-panel {
+    width: 100%;
+    right: 0;
+    top: 0;
+    height: 100vh;
+    height: 100dvh;
+    z-index: 2000;
+    padding: 16px;
+    background: rgba(7, 11, 20, 0.98);
+  }
+
+  /* ── Funnel Bars ── */
+  .funnel-label { width: 40px; font-size: 11px; }
+
+  /* ── Glass Card ── */
+  .glass-card { padding: 16px; }
+  .glass-surface { padding: 12px; }
+
+  /* ── Queue Actions ── */
+  .queue-item { flex-wrap: wrap; gap: 8px; }
+  .queue-actions { width: 100%; display: flex; gap: 6px; }
+  .queue-actions .approve-btn,
+  .queue-actions .review-btn { flex: 1; text-align: center; padding: 6px 8px; }
+
+  /* ── Payment Gateway Grid ── */
+  .gateway-grid { grid-template-columns: 1fr; }
+
+  /* ── Login Stats ── */
+  .login-stats { gap: 8px; }
+  .stat-pill { font-size: 11px; padding: 4px 12px; }
+
+  /* ── Branding Color Grid ── */
+  .branding-color-grid { grid-template-columns: 1fr; }
+
+  /* ── Events & Analytics Tabs: Horizontal Scroll ── */
+  .events-tabs, .analytics-tabs {
     display: flex;
     gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    white-space: nowrap;
+    padding-bottom: 8px;
+    flex-wrap: nowrap;
   }
-  .page-header-actions .btn {
-    flex: 1;
-    justify-content: center;
+  .events-tabs::-webkit-scrollbar,
+  .analytics-tabs::-webkit-scrollbar { display: none; }
+  .events-tabs .chart-tab,
+  .analytics-tabs .chart-tab { flex-shrink: 0; }
+
+  /* ── Alumni-Only Banner ── */
+  .alumni-only-banner {
+    font-size: 12px;
+    padding: 10px 14px;
+    text-align: center;
+    line-height: 1.4;
   }
+
+  /* ── Mini KPI Cards (Donations header) ── */
+  .kpi-grid.four { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .mini-kpi { padding: 12px; text-align: center; }
+  .mini-kpi-value { font-size: 18px; }
+  .mini-kpi-label { font-size: 10px; }
+
+  /* ── DSAR / Data Rights Section ── */
+  .dsar-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .dsar-actions .btn { flex: 1; min-width: 120px; justify-content: center; font-size: 12px; }
+  .dsar-desc { font-size: 12px; line-height: 1.5; }
+
+  /* ── Verification Badges Grid ── */
+  .verification-badges-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  .verify-pill { font-size: 11px; padding: 4px 10px; }
+
+  /* ── Socratic Prompt (ConnectAI) ── */
+  .socratic-prompt {
+    flex-direction: column;
+    text-align: center;
+    gap: 8px;
+    padding: 12px;
+  }
+  .socratic-prompt-text { font-size: 13px; }
+
+  /* ── Input Groups ── */
+  .input-group { margin-bottom: 12px; }
+  .input-label { font-size: 12px; margin-bottom: 4px; }
+  .form-input, .form-select { font-size: 16px; } /* Prevents iOS zoom */
+
+  /* ── Spotlight Cards (News sidebar) ── */
+  .spotlight-card { padding: 10px; gap: 8px; }
+  .spotlight-avatar { width: 36px; height: 36px; font-size: 12px; }
+  .spotlight-name { font-size: 12px; }
+
+  /* ── ID Wallet Buttons ── */
+  .id-wallet-btns {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 12px;
+  }
+  .wallet-btn { width: 100%; justify-content: center; text-align: center; }
+
+  /* ── Card Badge ── */
+  .card-badge { font-size: 10px; padding: 2px 8px; }
+  .badge-count { font-size: 10px; }
+
+  /* ── Planner Metric Cards ── */
+  .pmetric-card { padding: 10px; }
+  .pmetric-val { font-size: 16px; }
+  .pmetric-lab { font-size: 10px; }
+
+  /* ── SIS Integration Items ── */
+  .sis-integration-item { flex-wrap: wrap; gap: 8px; padding: 10px; }
+
+  /* ── Waitlist Items ── */
+  .waitlist-item { flex-wrap: wrap; gap: 8px; font-size: 12px; padding: 10px; }
+
+  /* ── Self-Report Prompt Items ── */
+  .self-report-prompt-item { padding: 10px; gap: 8px; }
+  .prompt-question { font-size: 12px; }
+
+  /* ── Enrichment Stats ── */
+  .enrichment-stat-val { font-size: 14px; }
+  .enrichment-stat-label { font-size: 11px; }
+
+  /* ── Broadcast History Items ── */
+  .broadcast-history-item { padding: 12px; }
+
+  /* ── Consent Items ── */
+  .consent-item { flex-wrap: wrap; gap: 8px; font-size: 11px; }
+
+  /* ── Badge Cards ── */
+  .badge-card { padding: 8px; }
+  .badge-icon { font-size: 20px; }
+  .badge-title { font-size: 10px; }
+
+  /* ── Priority Tags ── */
+  .priority-tag { font-size: 10px; padding: 2px 8px; }
+
+  /* ── Sponsor Tier Cards ── */
+  .sponsor-tier-card { padding: 10px; }
+
+  /* ── API Log Items ── */
+  .api-log-item { flex-wrap: wrap; gap: 6px; font-size: 11px; }
+  .api-method { font-size: 9px; }
+  .api-log-path { font-size: 10px; word-break: break-all; }
+
+  /* ── API Endpoint Items ── */
+  .api-endpoint-item { padding: 8px; }
+  .api-endpoint-path { font-size: 11px; word-break: break-all; }
 }
 
-/* 320px ultra-small screens */
+/* ─── TABLET PORTRAIT (≤768px) ─── */
+@media (max-width: 768px) {
+
+  /* ── Topbar: Hide text-heavy items ── */
+  .topbar-btn .btn-text,
+  .topbar-btn span:not(.notif-count) {
+    /* Allow buttons to stay icon-only on smaller tablets */
+  }
+  .topbar { height: 52px; }
+  .topbar-search { max-width: 150px; }
+
+  /* ── KPI Grid: 2 columns, more compact ── */
+  .kpi-grid { gap: 8px; }
+  .kpi-card { padding: 12px; gap: 10px; }
+
+  /* ── Map Stats ── */
+  .map-stats { grid-template-columns: repeat(2, 1fr); }
+  .map-stat-item:nth-child(odd):last-child { grid-column: span 2; }
+  .map-canvas { height: 240px; }
+
+  /* ── Chapter Stats ── */
+  .chapter-stats-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* ── Broadcast Read Receipts ── */
+  .broadcast-read-receipts { grid-template-columns: repeat(3, 1fr); }
+  .receipt-stat-val { font-size: 14px; }
+
+  /* ── Profile Section Cards ── */
+  .profile-section-card { padding: 14px; }
+  .profile-section-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+
+  /* ── Quota Display ── */
+  .quota-display { flex-direction: column; text-align: center; }
+}
+
+/* ─── PHABLET (≤600px) ─── */
+@media (max-width: 600px) {
+
+  /* ── Topbar: Minimal mode ── */
+  .topbar-search { display: none; }
+  .topbar-btn { padding: 6px; }
+  .topbar-btn span:not(.notif-count):not(.bnav-icon) {
+    display: none;
+  }
+  .role-switcher-select { max-width: 110px; font-size: 10px; padding: 4px 6px; }
+
+  /* ── Page Title ── */
+  .page-title { font-size: 20px; }
+  .page-subtitle { font-size: 11px; }
+
+  /* ── KPI Grid: still 2-col but tighter ── */
+  .kpi-grid { gap: 6px; }
+  .kpi-card { padding: 10px; gap: 8px; }
+  .kpi-icon { font-size: 20px; }
+  .kpi-value { font-size: 20px; }
+  .kpi-label { font-size: 10px; }
+  .kpi-trend { font-size: 10px; }
+
+  /* ── Alumni Card: compact ── */
+  .alumni-card { padding: 14px; }
+  .alumni-card-name { font-size: 14px; }
+  .alumni-card-actions { flex-direction: column; gap: 6px; }
+  .connect-btn, .mentor-req-btn, .referral-btn { padding: 10px; font-size: 12px; }
+
+  /* ── Events Card ── */
+  .event-card-body { padding: 12px; }
+  .event-title { font-size: 14px; }
+  .event-footer { padding: 10px 12px; }
+
+  /* ── News Card ── */
+  .news-banner { height: 80px; }
+  .news-card-body { padding: 14px; }
+  .news-title { font-size: 15px; }
+  .news-excerpt { font-size: 12px; margin-bottom: 10px; }
+
+  /* ── Campaign Card ── */
+  .campaign-card-header { padding: 14px 14px 10px; }
+  .campaign-name { font-size: 14px; }
+  .campaign-footer { padding: 10px 14px; }
+
+  /* ── Jobs Card ── */
+  .job-card { padding: 14px; }
+  .job-title { font-size: 14px; }
+  .job-meta { flex-wrap: wrap; gap: 6px; }
+  .job-tags { flex-wrap: wrap; }
+
+  /* ── Sync Overview ── */
+  .sync-overview-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* ── Map Stats ── */
+  .map-stats { grid-template-columns: repeat(2, 1fr); }
+  .map-stat-val { font-size: 14px; }
+  .map-stat-lab { font-size: 10px; }
+
+  /* ── Server Health ── */
+  .server-health-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* ── Import Wizard ── */
+  .import-wizard-steps { grid-template-columns: repeat(2, 1fr); }
+  .wizard-step-num { font-size: 14px; }
+
+  /* ── Demo Role Grid ── */
+  .demo-role-grid { grid-template-columns: 1fr 1fr; gap: 4px; }
+  .demo-role-btn { padding: 6px 8px; font-size: 10px; }
+
+  /* ── Login ── */
+  .login-container { padding: 16px; gap: 16px; }
+  .login-title { font-size: 18px; }
+  .login-card { padding: 16px; }
+  .brand-name { font-size: 20px; }
+
+  /* ── OTP Boxes ── */
+  .otp-box { width: 44px; height: 48px; font-size: 18px; }
+  .otp-inputs { gap: 6px; }
+
+  /* ── Badges Grid ── */
+  .alumni-badges-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* ── Enrichment Stat ── */
+  .enrichment-stat-val { font-size: 14px; }
+
+  /* ── Engagement Score ── */
+  .score-badge-circle { width: 60px; height: 60px; font-size: 22px; }
+  .score-points { font-size: 20px; }
+}
+
+/* ─── MOBILE (≤480px) ─── */
+@media (max-width: 480px) {
+
+  /* ── Pages Container: tighter padding ── */
+  .pages-container { padding: 12px; padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+
+  /* ── Page Header ── */
+  .page-header { margin-bottom: 14px; gap: 8px; }
+  .page-title { font-size: 18px; letter-spacing: -0.3px; }
+
+  /* ── KPI Grid: single column ── */
+  .kpi-grid { grid-template-columns: 1fr; gap: 8px; }
+  .kpi-card { padding: 12px; flex-direction: row; gap: 12px; }
+
+  /* ── Glass Card ── */
+  .glass-card { padding: 12px; border-radius: 12px; }
+  .card-header { margin-bottom: 12px; }
+  .card-title { font-size: 14px; }
+
+  /* ── Chart ── */
+  .chart-container { padding: 10px; }
+
+  /* ── Funnel ── */
+  .funnel-track { height: 22px; }
+  .funnel-fill { font-size: 10px; }
+
+  /* ── Queue Items ── */
+  .queue-avatar { width: 32px; height: 32px; font-size: 11px; }
+  .queue-name { font-size: 12px; }
+
+  /* ── Directory: full-bleed cards ── */
+  .alumni-grid { gap: 10px; }
+  .alumni-avatar { width: 42px; height: 42px; font-size: 14px; }
+  .alumni-tags { gap: 4px; }
+  .alumni-tag { font-size: 9px; padding: 1px 6px; }
+
+  /* ── Profile: compact ID card ── */
+  .id-card-header { padding: 10px 14px; }
+  .id-card-body { padding: 14px; }
+  .id-avatar { width: 56px; height: 56px; font-size: 18px; }
+  .id-name { font-size: 16px; }
+  .id-card-footer { padding: 10px 14px; }
+  #id-qr-code { width: 56px; height: 56px; }
+  #id-qr-code canvas, #id-qr-code img { width: 56px !important; height: 56px !important; }
+
+  /* ── Profile Sections ── */
+  .profile-field-row { padding: 8px 10px; }
+  .field-label { font-size: 10px; }
+  .field-val { font-size: 12px; }
+  .privacy-badge { font-size: 10px; padding: 2px 6px; }
+
+  /* ── Career Timeline ── */
+  .timeline-company { font-size: 13px; }
+  .timeline-role { font-size: 11px; }
+  .timeline-period { font-size: 10px; }
+
+  /* ── Mentorship ── */
+  .mentorship-connection { padding: 10px; gap: 8px; }
+  .health-score { font-size: 18px; }
+  .matching-criteria { gap: 8px; }
+  .criterion-label { width: 80px; font-size: 10px; }
+  .suggested-mentor-card { padding: 10px; gap: 8px; }
+
+  /* ── Jobs ── */
+  .job-company-logo { width: 40px; height: 40px; font-size: 16px; }
+  .job-salary { font-size: 13px; }
+  .resume-upload-zone { padding: 16px; }
+  .upload-icon { font-size: 22px; }
+
+  /* ── Events ── */
+  .event-card-banner { height: 60px; font-size: 24px; }
+  .event-title { font-size: 13px; }
+  .event-meta { font-size: 11px; }
+  .event-price { font-size: 13px; }
+
+  /* ── Donations / Campaigns ── */
+  .campaign-card-header { padding: 12px; }
+  .campaign-name { font-size: 13px; }
+  .campaign-desc { font-size: 11px; }
+  .campaign-progress { padding: 0 12px 12px; }
+  .gateway-pills { flex-wrap: wrap; }
+
+  /* ── Analytics ── */
+  .analytics-metric-value { font-size: 16px; }
+  .geo-country-bar-track { width: 60px; }
+
+  /* ── Chapters ── */
+  .chapter-detail-title { font-size: 16px; }
+  .chapter-detail-icon { font-size: 24px; }
+  .chapter-stats-grid { grid-template-columns: repeat(2, 1fr); gap: 6px; }
+  .chapter-stat-val { font-size: 16px; }
+
+  /* ── News ── */
+  .news-title { font-size: 14px; }
+  .news-banner { height: 70px; font-size: 36px; }
+
+  /* ── Map ── */
+  .map-canvas { height: 200px; }
+  .map-stats { grid-template-columns: repeat(2, 1fr); gap: 0; }
+  .map-stat-item { padding: 8px 6px; }
+  .map-stat-val { font-size: 14px; }
+
+  /* ── Admin ── */
+  .audit-log-item { gap: 8px; padding: 10px 0; }
+  .audit-log-icon { width: 28px; height: 28px; font-size: 12px; }
+  .audit-log-action { font-size: 12px; }
+  .compliance-card { padding: 14px; }
+  .compliance-icon { font-size: 22px; }
+  .compliance-title { font-size: 13px; }
+
+  /* ── API Page ── */
+  .api-app-card { padding: 10px; flex-wrap: wrap; }
+  .api-app-icon { width: 36px; height: 36px; font-size: 14px; }
+  .webhook-item { flex-wrap: wrap; gap: 8px; }
+  .webhook-url { font-size: 10px; }
+
+  /* ── Career Tracker ── */
+  .career-registry-item {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 0;
+  }
+  .career-registry-avatar { width: 38px; height: 38px; font-size: 13px; margin-top: 2px; }
+  .career-registry-name { font-size: 13px; line-height: 1.3; }
+  .career-registry-current { font-size: 11px; margin-top: 2px; }
+  .career-registry-history { font-size: 10px; }
+  .career-registry-action {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 6px;
+    padding-top: 6px;
+    border-top: 1px dashed var(--border-glass);
+  }
+  .career-tracker-banner {
+    padding: 14px;
+    border-radius: var(--radius-sm);
+  }
+  .career-tracker-main .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .career-tracker-main .page-header-actions {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .career-tracker-main .page-header-actions .form-select {
+    width: 100%;
+  }
+
+  /* ── Sync Panel ── */
+  .sync-stat-val { font-size: 18px; }
+  .sync-queue-item { font-size: 11px; padding: 8px; }
+
+  /* ── Broadcast ── */
+  .broadcast-history-header { flex-direction: column; gap: 6px; }
+  .broadcast-history-title { font-size: 13px; }
+  .broadcast-channels { gap: 4px; }
+  .receipt-stat { padding: 6px; }
+  .receipt-stat-val { font-size: 14px; }
+
+  /* ── Server Health ── */
+  .server-health-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+  .server-val { font-size: 16px; }
+
+  /* ── Kanban ── */
+  .kanban-column { min-height: 150px; padding: 10px; }
+  .kanban-card { padding: 10px; }
+
+  /* ── Import Wizard ── */
+  .wizard-step-item { padding: 8px; font-size: 10px; }
+  .wizard-step-num { font-size: 14px; }
+  .validation-summary-bar { grid-template-columns: 1fr 1fr; }
+  .vstat-num { font-size: 16px; }
+
+  /* ── Modals ── */
+  .modal-content { padding: 16px; }
+  .modal-title { font-size: 16px; }
+
+  /* ── Notification Panel ── */
+  .notif-panel { padding: 12px; }
+  .notif-item { padding: 10px; gap: 8px; }
+  .notif-item-title { font-size: 12px; }
+
+  /* ── Leaderboard ── */
+  .leaderboard-item { gap: 8px; padding: 8px 0; }
+  .leaderboard-name { font-size: 12px; }
+  .leaderboard-amount { font-size: 12px; }
+
+  /* ── Poll ── */
+  .poll-widget { padding: 14px; }
+  .poll-title { font-size: 14px; }
+  .poll-question-text { font-size: 13px; }
+  .poll-option-btn { padding: 10px 12px; font-size: 12px; }
+
+  /* ── NID Vault ── */
+  .nid-vault-card { padding: 12px; }
+  .cipher-box { font-size: 10px; padding: 8px 10px; }
+
+  /* ── Segment Builder ── */
+  .segment-builder { grid-template-columns: 1fr; }
+  .target-val { font-size: 20px; }
+
+  /* ── Dropzone ── */
+  .dropzone { padding: 20px; }
+  .dropzone-icon { font-size: 28px; }
+  .dropzone-title { font-size: 13px; }
+
+  /* ── Onboarding ── */
+  .onboarding-header { padding-bottom: 8px; }
+
+  /* ── Amount Grid ── */
+  .amount-grid { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .amount-option { padding: 8px; font-size: 12px; }
+
+  /* ── Wallet Buttons ── */
+  .wallet-btn { padding: 8px 12px; font-size: 12px; }
+
+  /* ── Consent Log ── */
+  .consent-item { padding: 8px 10px; font-size: 11px; gap: 8px; flex-wrap: wrap; }
+}
+
+/* ─── ULTRA-SMALL SCREENS (≤360px) ─── */
 @media (max-width: 360px) {
-  .kpi-grid { grid-template-columns: 1fr; }
+
+  /* ── Even tighter spacing ── */
+  .pages-container { padding: 8px; padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+
+  /* ── KPI: single column, minimal ── */
+  .kpi-grid { grid-template-columns: 1fr; gap: 6px; }
+  .kpi-value { font-size: 18px; }
+  .kpi-icon { font-size: 18px; }
+
+  /* ── Page Header ── */
+  .page-title { font-size: 16px; }
+
+  /* ── Topbar ── */
+  .topbar { padding: 0 8px; gap: 4px; }
+  .role-switcher-select { max-width: 90px; font-size: 9px; }
+
+  /* ── Cards ── */
+  .glass-card { padding: 10px; border-radius: 10px; }
+  .alumni-card { padding: 10px; }
+
+  /* ── Sync ── */
   .sync-overview-grid { grid-template-columns: 1fr; }
+
+  /* ── Admin Tabs ── */
   .admin-tabs .chart-tab { font-size: 11px; padding: 6px 10px; }
+
+  /* ── Map Stats ── */
+  .map-stats { grid-template-columns: 1fr; }
+
+  /* ── Chapter Stats ── */
+  .chapter-stats-grid { grid-template-columns: 1fr; }
+
+  /* ── Badges ── */
+  .alumni-badges-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* ── Import Wizard: stack ── */
+  .import-wizard-steps { grid-template-columns: 1fr; }
+  .validation-summary-bar { grid-template-columns: 1fr; }
+
+  /* ── Server Health ── */
+  .server-health-grid { grid-template-columns: 1fr; }
+
+  /* ── Demo Logins ── */
+  .demo-role-grid { grid-template-columns: 1fr; }
+  .demo-role-btn[style*="grid-column"] { grid-column: span 1 !important; }
+
+  /* ── Login ── */
+  .login-container { padding: 10px; }
+  .login-title { font-size: 16px; }
+  .brand-name { font-size: 18px; }
+  .otp-box { width: 38px; height: 42px; font-size: 16px; }
+
+  /* ── Bottom Nav ── */
+  .bottom-nav-item { font-size: 9px; }
+  .bnav-icon { font-size: 16px; }
+  .bnav-label { font-size: 9px; }
+
+  /* ── Amount Grid: 2 columns ── */
+  .amount-grid { grid-template-columns: repeat(2, 1fr); }
+
+  /* ── Planner Metrics ── */
+  .planner-metrics-ribbon { grid-template-columns: 1fr; }
 }
 
 /* ─── SSO BUTTONS (REQ-02) ─── */
@@ -2041,16 +2836,8 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 .color-swatch { width: 32px; height: 32px; border-radius: 6px; border: 1px solid var(--border-glass); cursor: pointer; }
 .color-label { font-size: 12px; color: var(--text-secondary); }
 
-/* Responsive for new pages */
-@media (max-width: 900px) {
-  .career-tracker-layout { grid-template-columns: 1fr; }
-  .api-layout { grid-template-columns: 1fr; }
-  .sync-overview-grid { grid-template-columns: repeat(2, 1fr); }
-  .broadcast-read-receipts { grid-template-columns: repeat(3, 1fr); }
-}
-@media (max-width: 600px) {
-  .sync-overview-grid { grid-template-columns: repeat(2, 1fr); }
-}
+
+
 
 /* ─── PROFILE COMPLETENESS & GAMIFICATION ─── */
 .profile-completeness-banner {
@@ -2529,10 +3316,5 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 .sponsor-tier-card.gold-tier { border-left-color: #fbbf24; }
 .sponsor-tier-card.silver-tier { border-left-color: #cbd5e1; }
 .sponsor-tier-card.bronze-tier { border-left-color: #cd7f32; }
-
-@media (max-width: 900px) {
-  .planner-metrics-ribbon { grid-template-columns: repeat(2, 1fr); }
-  .kanban-board-grid { grid-template-columns: 1fr; }
-}
 
 

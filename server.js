@@ -16,16 +16,26 @@ app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(__dirname));
 
-// ─── 1. HEALTH CHECK ───
+// ─── 1. HEALTH CHECK & CLOUD DB INITIALIZER ───
 app.get('/api/health', async (req, res) => {
   try {
     const result = await db.query('SELECT NOW() as current_time, COUNT(*) as user_count FROM users');
     res.json({
       status: 'online',
-      database: 'PostgreSQL 16',
+      database: db.isCloud ? 'Cloud PostgreSQL (SSL Active)' : 'PostgreSQL 16 (Local)',
+      is_cloud: db.isCloud,
       time: result.rows[0].current_time,
       total_users: parseInt(result.rows[0].user_count)
     });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message, is_cloud: db.isCloud });
+  }
+});
+
+app.post('/api/seed-db', async (req, res) => {
+  try {
+    const result = await db.initDbSchemaAndSeed();
+    res.json(result);
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
   }
