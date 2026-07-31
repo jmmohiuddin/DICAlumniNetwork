@@ -1171,9 +1171,530 @@ function renderEvents(filter = 'upcoming') {
 }
 
 function filterEvents(filter, btn) {
-  document.querySelectorAll('.events-tabs .chart-tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
+  document.querySelectorAll('#public-events-view .events-tabs .chart-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
   renderEvents(filter);
+}
+
+// ─── EVENT MANAGEMENT PLANNER WORKSPACE ENGINE ───
+let CURRENT_PLANNER_DATA = null;
+let ACTIVE_PLANNER_TAB = 'overview';
+
+function switchEventWorkspaceMode(mode, btn) {
+  document.querySelectorAll('.events-tabs .chart-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  const plannerView = document.getElementById('planner-workspace-view');
+  const publicView = document.getElementById('public-events-view');
+
+  if (mode === 'planner') {
+    if (plannerView) plannerView.classList.remove('hidden');
+    if (publicView) publicView.classList.add('hidden');
+    loadEventPlannerWorkspace(1);
+  } else {
+    if (plannerView) plannerView.classList.add('hidden');
+    if (publicView) publicView.classList.remove('hidden');
+    renderEvents('upcoming');
+  }
+}
+
+async function loadEventPlannerWorkspace(eventId = 1) {
+  showToast('📋 Loading Event Planner Workspace data…');
+  let data = await API.getEventPlanner(eventId);
+
+  if (!data || !data.proposal) {
+    // Local fallback state
+    data = {
+      proposal: {
+        id: 1,
+        name: 'DIC 10th Annual Reunion & Tech Gala 2026',
+        description: 'Comprehensive 10th anniversary alumni reunion featuring keynotes, networking gala, career fair, and fundraising drive.',
+        objectives: 'Foster alumni-student mentorship, raise scholarship funds, and showcase DIC computer science achievements.',
+        outcomes: '500+ attendees, ৳10L+ raised for scholarships, 50+ mentorship connections created.',
+        category: 'Alumni Gala',
+        type: 'Reunion & Gala',
+        department: 'Computer Science & Engineering',
+        organizer_name: 'DIC Alumni Relations & Executive Board',
+        expected_attendance: 2000,
+        venue: 'DIC Main Campus Auditorium & International Hall',
+        event_date: 'Aug 15, 2026',
+        duration: '8 Hours',
+        status: 'approved'
+      },
+      budgets: [
+        { id: 1, category: 'Venue & Hall Rental', estimated_cost: 150000, actual_cost: 140000, vendor_name: 'DIC Campus Operations', status: 'approved', payment_status: 'paid' },
+        { id: 2, category: 'Stage & LED Screen Setup', estimated_cost: 180000, actual_cost: 185000, vendor_name: 'Dhaka Event Tech Ltd', status: 'approved', payment_status: 'paid' },
+        { id: 3, category: 'Catering & Buffet Food (2000 pax)', estimated_cost: 350000, actual_cost: 340000, vendor_name: 'Grand Prince Catering', status: 'approved', payment_status: 'paid' },
+        { id: 4, category: 'Photography & 4K Video Crew', estimated_cost: 80000, actual_cost: 75000, vendor_name: 'Cinematic Studio BD', status: 'approved', payment_status: 'paid' },
+        { id: 5, category: 'Security & Medical First Aid Team', estimated_cost: 50000, actual_cost: 48000, vendor_name: 'Elite Security Services', status: 'approved', payment_status: 'paid' },
+        { id: 6, category: 'Merchandise & Printed Welcome Kits', estimated_cost: 120000, actual_cost: 115000, vendor_name: 'PressCraft Printers', status: 'approved', payment_status: 'paid' }
+      ],
+      sponsors: [
+        { id: 1, company: 'Brain Station 23', contact_person: 'Tanvir Ahmed', package_tier: 'title', contribution_amount: 500000, pipeline_status: 'received', deliverables: 'Main stage banner branding, keynote session slot, 10 VIP passes' },
+        { id: 2, company: 'bKash Limited', contact_person: 'Arif Hossain', package_tier: 'gold', contribution_amount: 300000, pipeline_status: 'received', deliverables: 'Ticketing partner branding, booth space in lobby' },
+        { id: 3, company: 'Pathao Tech', contact_person: 'Nusrat Rima', package_tier: 'silver', contribution_amount: 150000, pipeline_status: 'agreed', deliverables: 'Rideshare promo codes for attendees' },
+        { id: 4, company: 'SSL Wireless', contact_person: 'Farhana S', package_tier: 'bronze', contribution_amount: 100000, pipeline_status: 'proposed', deliverables: 'SMS gateway sponsorship' }
+      ],
+      committees: [
+        { id: 1, name: 'Finance & Sponsorship', leader_name: 'Super Admin (Mohiuddin)', members_count: 4, budget_allocated: 250000 },
+        { id: 2, name: 'Marketing & Media', leader_name: 'Nusrat Jahan', members_count: 6, budget_allocated: 150000 },
+        { id: 3, name: 'Logistics & Stage', leader_name: 'Rafiqul Islam', members_count: 8, budget_allocated: 300000 },
+        { id: 4, name: 'Security & Volunteers', leader_name: 'Imtiaz Ahmed', members_count: 12, budget_allocated: 100000 }
+      ],
+      tasks: [
+        { id: 1, committee_name: 'Finance & Sponsorship', title: 'Finalize Title Sponsor Agreement with Brain Station 23', priority: 'critical', status: 'completed', assigned_to: 'Super Admin', deadline: 'Aug 01, 2026' },
+        { id: 2, committee_name: 'Logistics & Stage', title: 'Book Auditorium & Confirm Sound/Lighting Quotation', priority: 'high', status: 'completed', assigned_to: 'Rafiqul Islam', deadline: 'Aug 05, 2026' },
+        { id: 3, committee_name: 'Marketing & Media', title: 'Launch Social Media Campaign & Press Release', priority: 'medium', status: 'in_progress', assigned_to: 'Nusrat Jahan', deadline: 'Aug 10, 2026' },
+        { id: 4, committee_name: 'Security & Volunteers', title: 'Assign 25 Volunteers to Check-In & VIP Security Duties', priority: 'high', status: 'todo', assigned_to: 'Imtiaz Ahmed', deadline: 'Aug 12, 2026' },
+        { id: 5, committee_name: 'Logistics & Stage', title: 'Receive 500 Printed Welcome Gift Boxes & Lanyards', priority: 'low', status: 'blocked', assigned_to: 'Rafiqul Islam', deadline: 'Aug 13, 2026' }
+      ],
+      procurement: [
+        { id: 1, item_name: 'Custom Alumni Welcome T-Shirts', category: 'Merchandise', quantity: 500, estimated_price: 100000, actual_price: 95000, vendor_name: 'PressCraft Printers', delivery_status: 'delivered' },
+        { id: 2, item_name: 'Lanyards & Anti-Spoof QR ID Badges', category: 'Branding', quantity: 600, estimated_price: 25000, actual_price: 24000, vendor_name: 'PressCraft Printers', delivery_status: 'delivered' },
+        { id: 3, item_name: 'VIP Flowers & Recognition Crests', category: 'Decorations', quantity: 20, estimated_price: 15000, actual_price: 14500, vendor_name: 'Flower Garden BD', delivery_status: 'ordered' }
+      ],
+      volunteers: [
+        { id: 1, volunteer_name: 'Tanvir Ahmed', shift_time: '8:00 AM - 1:00 PM', assigned_committee: 'Registration & Check-In', attendance_status: 'checked_in', certificate_issued: true },
+        { id: 2, volunteer_name: 'Farhana Sultana', shift_time: '12:00 PM - 5:00 PM', assigned_committee: 'Hospitality & VIP Lounge', attendance_status: 'checked_in', certificate_issued: true },
+        { id: 3, volunteer_name: 'Sabbir Rahman', shift_time: '8:00 AM - 4:00 PM', assigned_committee: 'Stage & Tech Support', attendance_status: 'assigned', certificate_issued: false }
+      ],
+      risks: [
+        { id: 1, risk_title: 'Monsoon Heavy Rainfall / Weather Disruption', category: 'Weather', severity: 'high', contingency_plan: 'Shift outdoor booths to indoor Gymnasium. Covered walkway installed.' },
+        { id: 2, risk_title: 'Main Power Grid Failure during Keynote', category: 'Technical', severity: 'high', contingency_plan: 'Auto-synchronizing 250kVA standby diesel generator with zero-downtime UPS.' }
+      ]
+    };
+  }
+
+  CURRENT_PLANNER_DATA = data;
+  renderPlannerTabContent(ACTIVE_PLANNER_TAB);
+}
+
+function switchPlannerTab(tabName, btn) {
+  ACTIVE_PLANNER_TAB = tabName;
+  document.querySelectorAll('#planner-workspace-view .analytics-tabs .chart-tab').forEach(t => t.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderPlannerTabContent(tabName);
+}
+
+function renderPlannerTabContent(tab) {
+  const container = document.getElementById('planner-tab-content');
+  if (!container || !CURRENT_PLANNER_DATA) return;
+
+  const p = CURRENT_PLANNER_DATA.proposal;
+  const b = CURRENT_PLANNER_DATA.budgets;
+  const s = CURRENT_PLANNER_DATA.sponsors;
+  const t = CURRENT_PLANNER_DATA.tasks;
+  const c = CURRENT_PLANNER_DATA.committees;
+
+  // Calculate Metrics
+  const totalEstBudget = b.reduce((acc, curr) => acc + Number(curr.estimated_cost), 0);
+  const totalActBudget = b.reduce((acc, curr) => acc + Number(curr.actual_cost), 0);
+  const totalSponsorRev = s.reduce((acc, curr) => acc + Number(curr.contribution_amount), 0);
+  const completedTasks = t.filter(x => x.status === 'completed').length;
+
+  if (tab === 'overview') {
+    container.innerHTML = `
+      <div class="planner-metrics-ribbon">
+        <div class="pmetric-card">
+          <div class="pmetric-val">৳${(totalEstBudget/100000).toFixed(2)}L</div>
+          <div class="pmetric-lab">Estimated Budget</div>
+        </div>
+        <div class="pmetric-card">
+          <div class="pmetric-val" style="color:var(--teal)">৳${(totalSponsorRev/100000).toFixed(2)}L</div>
+          <div class="pmetric-lab">Sponsor Revenue</div>
+        </div>
+        <div class="pmetric-card">
+          <div class="pmetric-val" style="color:var(--amber)">${completedTasks}/${t.length}</div>
+          <div class="pmetric-lab">Tasks Completed</div>
+        </div>
+        <div class="pmetric-card">
+          <div class="pmetric-val">${p.expected_attendance}</div>
+          <div class="pmetric-lab">Expected Pax</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px">
+        <div class="glass-card">
+          <div class="card-header">
+            <h3 class="card-title">🚀 Proposal Charter &amp; Executive Summary</h3>
+            <span class="card-badge teal">APPROVED</span>
+          </div>
+          <div style="font-size:14px;font-weight:700;margin-bottom:8px">${p.name}</div>
+          <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:14px">${p.description}</p>
+          <div class="field-grid-2">
+            <div><div class="field-label">Target Audience</div><div class="field-val">${p.target_audience}</div></div>
+            <div><div class="field-label">Venue &amp; Date</div><div class="field-val">📍 ${p.venue} · 📅 ${p.event_date}</div></div>
+            <div><div class="field-label">Event Organizer</div><div class="field-val">${p.organizer_name}</div></div>
+            <div><div class="field-label">Department</div><div class="field-val">${p.department}</div></div>
+          </div>
+        </div>
+
+        <div class="glass-card">
+          <div class="card-header"><h3 class="card-title">👥 Event Committees</h3></div>
+          <div style="display:flex;flex-direction:column;gap:10px">
+            ${c.map(comm => `
+              <div style="padding:10px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
+                <div style="font-weight:700;font-size:13px;color:var(--teal)">${comm.name}</div>
+                <div style="font-size:12px;color:var(--text-secondary)">Lead: ${comm.leader_name} · ${comm.members_count} Members</div>
+                <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Budget Limit: ৳${(comm.budget_allocated/1000).toFixed(0)}k</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>`;
+  } else if (tab === 'budget') {
+    container.innerHTML = `
+      <div class="glass-card mb-16">
+        <div class="card-header">
+          <h3 class="card-title">💰 Budget Planning &amp; Variance Calculator</h3>
+          <button class="btn btn-sm btn-primary" onclick="showAddBudgetModal()">+ Add Expense</button>
+        </div>
+        <div class="planner-metrics-ribbon mb-16">
+          <div class="pmetric-card">
+            <div class="pmetric-val">৳${totalEstBudget.toLocaleString()}</div>
+            <div class="pmetric-lab">Total Estimated</div>
+          </div>
+          <div class="pmetric-card">
+            <div class="pmetric-val" style="color:var(--amber)">৳${totalActBudget.toLocaleString()}</div>
+            <div class="pmetric-lab">Actual Spent</div>
+          </div>
+          <div class="pmetric-card">
+            <div class="pmetric-val" style="color:var(--teal)">৳${(totalEstBudget - totalActBudget).toLocaleString()}</div>
+            <div class="pmetric-lab">Remaining Budget</div>
+          </div>
+          <div class="pmetric-card">
+            <div class="pmetric-val" style="color:var(--teal)">🟢 HEALTHY</div>
+            <div class="pmetric-lab">Budget Variance</div>
+          </div>
+        </div>
+
+        <table style="width:100%;border-collapse:collapse;font-size:13px">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border-glass);text-align:left;color:var(--text-secondary)">
+              <th style="padding:8px">Category</th>
+              <th style="padding:8px">Vendor Name</th>
+              <th style="padding:8px">Estimated</th>
+              <th style="padding:8px">Actual Cost</th>
+              <th style="padding:8px">Variance</th>
+              <th style="padding:8px">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${b.map(item => `
+              <tr style="border-bottom:1px solid var(--border-glass)">
+                <td style="padding:8px;font-weight:600">${item.category}</td>
+                <td style="padding:8px;color:var(--text-secondary)">${item.vendor_name}</td>
+                <td style="padding:8px">৳${Number(item.estimated_cost).toLocaleString()}</td>
+                <td style="padding:8px;font-weight:700">৳${Number(item.actual_cost).toLocaleString()}</td>
+                <td style="padding:8px;color:${item.estimated_cost >= item.actual_cost ? 'var(--teal)' : 'var(--red)'}">
+                  ৳${(item.estimated_cost - item.actual_cost).toLocaleString()}
+                </td>
+                <td style="padding:8px"><span class="card-badge teal">${item.payment_status.toUpperCase()}</span></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } else if (tab === 'sponsors') {
+    container.innerHTML = `
+      <div class="glass-card">
+        <div class="card-header">
+          <h3 class="card-title">🤝 Sponsor CRM &amp; Deal Pipeline</h3>
+          <button class="btn btn-sm btn-primary" onclick="showAddSponsorModal()">+ Add Sponsor</button>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(280px, 1fr));gap:14px;margin-top:12px">
+          ${s.map(sp => `
+            <div class="glass-card sponsor-tier-card ${sp.package_tier}-tier">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                <span class="priority-tag critical" style="text-transform:uppercase;background:var(--primary-glow)">${sp.package_tier} SPONSOR</span>
+                <span class="card-badge teal">${sp.pipeline_status.toUpperCase()}</span>
+              </div>
+              <div style="font-size:16px;font-weight:800">${sp.company}</div>
+              <div style="font-size:12px;color:var(--text-secondary)">👤 ${sp.contact_person}</div>
+              <div style="font-size:18px;font-weight:800;color:var(--teal);margin:8px 0">৳${Number(sp.contribution_amount).toLocaleString()}</div>
+              <div style="font-size:11px;color:var(--text-muted)">📋 ${sp.deliverables}</div>
+            </div>
+          `).join('')}
+        </div>
+      </div>`;
+  } else if (tab === 'tasks') {
+    const todoTasks = t.filter(x => x.status === 'todo');
+    const inProgTasks = t.filter(x => x.status === 'in_progress');
+    const blockedTasks = t.filter(x => x.status === 'blocked');
+    const doneTasks = t.filter(x => x.status === 'completed');
+
+    container.innerHTML = `
+      <div class="glass-card">
+        <div class="card-header">
+          <h3 class="card-title">📋 Task Management Kanban Board</h3>
+          <button class="btn btn-sm btn-primary" onclick="showAddTaskModal()">+ New Task</button>
+        </div>
+
+        <div class="kanban-board-grid">
+          <div class="kanban-column">
+            <div class="kanban-column-header"><span>📌 TO DO</span><span class="card-badge">${todoTasks.length}</span></div>
+            ${renderKanbanCards(todoTasks)}
+          </div>
+          <div class="kanban-column">
+            <div class="kanban-column-header"><span>⚡ IN PROGRESS</span><span class="card-badge teal">${inProgTasks.length}</span></div>
+            ${renderKanbanCards(inProgTasks)}
+          </div>
+          <div class="kanban-column">
+            <div class="kanban-column-header"><span>⛔ BLOCKED</span><span class="card-badge red">${blockedTasks.length}</span></div>
+            ${renderKanbanCards(blockedTasks)}
+          </div>
+          <div class="kanban-column">
+            <div class="kanban-column-header"><span>✅ COMPLETED</span><span class="card-badge indigo">${doneTasks.length}</span></div>
+            ${renderKanbanCards(doneTasks)}
+          </div>
+        </div>
+      </div>`;
+  } else if (tab === 'procurement') {
+    container.innerHTML = `
+      <div class="glass-card">
+        <div class="card-header"><h3 class="card-title">🛒 Procurement &amp; Vendor Shopping List</h3></div>
+        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:10px">
+          <thead>
+            <tr style="border-bottom:1px solid var(--border-glass);text-align:left;color:var(--text-secondary)">
+              <th style="padding:8px">Item</th>
+              <th style="padding:8px">Category</th>
+              <th style="padding:8px">Qty</th>
+              <th style="padding:8px">Estimated Price</th>
+              <th style="padding:8px">Actual Price</th>
+              <th style="padding:8px">Vendor</th>
+              <th style="padding:8px">Delivery Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${CURRENT_PLANNER_DATA.procurement.map(item => `
+              <tr style="border-bottom:1px solid var(--border-glass)">
+                <td style="padding:8px;font-weight:700">${item.item_name}</td>
+                <td style="padding:8px">${item.category}</td>
+                <td style="padding:8px">${item.quantity}</td>
+                <td style="padding:8px">৳${Number(item.estimated_price).toLocaleString()}</td>
+                <td style="padding:8px">৳${Number(item.actual_price).toLocaleString()}</td>
+                <td style="padding:8px;color:var(--text-secondary)">${item.vendor_name}</td>
+                <td style="padding:8px"><span class="card-badge teal">${item.delivery_status.toUpperCase()}</span></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } else if (tab === 'volunteers') {
+    container.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+        <div class="glass-card">
+          <div class="card-header"><h3 class="card-title">🛡 Volunteer Roster &amp; Shifts</h3></div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+            ${CURRENT_PLANNER_DATA.volunteers.map(v => `
+              <div style="padding:10px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
+                <div style="font-weight:700;font-size:13px">${v.volunteer_name}</div>
+                <div style="font-size:12px;color:var(--text-secondary)">${v.assigned_committee} · ⏱ ${v.shift_time}</div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+                  <span class="card-badge teal">${v.attendance_status.toUpperCase()}</span>
+                  <span style="font-size:11px;color:var(--teal)">🎓 Certificate Ready</span>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+
+        <div class="glass-card">
+          <div class="card-header"><h3 class="card-title">⚠️ Security Risk Register &amp; Contingency</h3></div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
+            ${CURRENT_PLANNER_DATA.risks.map(r => `
+              <div style="padding:10px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
+                <div style="display:flex;justify-content:space-between;align-items:center">
+                  <span style="font-weight:700;font-size:13px">${r.risk_title}</span>
+                  <span class="priority-tag critical">${r.severity.toUpperCase()}</span>
+                </div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">🛡 Contingency: ${r.contingency_plan}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      </div>`;
+  } else if (tab === 'marketing') {
+    container.innerHTML = `
+      <div class="glass-card">
+        <div class="card-header"><h3 class="card-title">📢 Omnichannel Marketing &amp; Meeting Minutes</h3></div>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">Schedule broadcast announcements, review meeting minutes (MoM), and track promotional assets.</p>
+        <div class="field-grid-2">
+          <div style="padding:14px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
+            <div style="font-weight:700;font-size:14px">📱 Social Media &amp; SMS Campaign</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Broadcast event registration invites directly to 2,000+ alumni emails &amp; SMS gateways.</div>
+            <button class="btn btn-sm btn-primary mt-12" onclick="showBroadcastModal()">📢 Launch Broadcast</button>
+          </div>
+          <div style="padding:14px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
+            <div style="font-weight:700;font-size:14px">📝 Executive Meeting Minutes (MoM)</div>
+            <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Logged: Meeting #4 (Aug 01) — Title Sponsor confirmed; Main Auditorium stage lighting finalized.</div>
+            <button class="btn btn-sm btn-outline mt-12" onclick="showToast('📝 Meeting minutes updated')">+ Add MoM Entry</button>
+          </div>
+        </div>
+      </div>`;
+  } else if (tab === 'analytics') {
+    container.innerHTML = `
+      <div class="glass-card">
+        <div class="card-header">
+          <h3 class="card-title">📈 Event ROI Analytics &amp; Post-Event Audit Reports</h3>
+          <button class="btn btn-sm btn-primary" onclick="downloadEventReport('summary')">📥 Download Full Event Report (JSON)</button>
+        </div>
+        <div class="planner-metrics-ribbon mt-14 mb-16">
+          <div class="pmetric-card">
+            <div class="pmetric-val" style="color:var(--teal)">+16.6%</div>
+            <div class="pmetric-lab">Financial ROI</div>
+          </div>
+          <div class="pmetric-card">
+            <div class="pmetric-val">100%</div>
+            <div class="pmetric-lab">Task Completion</div>
+          </div>
+          <div class="pmetric-card">
+            <div class="pmetric-val">2,000</div>
+            <div class="pmetric-lab">Total Ticket Cap</div>
+          </div>
+          <div class="pmetric-card">
+            <div class="pmetric-val" style="color:var(--teal)">4.9 / 5.0</div>
+            <div class="pmetric-lab">Attendee Rating</div>
+          </div>
+        </div>
+      </div>`;
+  } else if (tab === 'ai') {
+    container.innerHTML = `
+      <div class="glass-card">
+        <div class="card-header"><h3 class="card-title">🤖 EventAI Planner Assistant &amp; Budget Predictor</h3></div>
+        <div class="field-grid-2 mb-16">
+          <div class="input-group">
+            <label class="input-label">Expected Attendee Count (Pax)</label>
+            <input type="number" id="ai-pax-input" class="form-input" value="1500" />
+          </div>
+          <div class="input-group">
+            <label class="input-label">Event Category</label>
+            <select id="ai-category-select" class="form-select">
+              <option value="Reunion & Gala">Reunion &amp; Gala</option>
+              <option value="Tech Festival">Tech Festival &amp; Hackathon</option>
+              <option value="Career Fair">Career &amp; Job Fair</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="runEventAIEstimate()">🤖 Generate AI Plan &amp; Budget</button>
+
+        <div id="ai-results-container" class="mt-16"></div>
+      </div>`;
+  }
+}
+
+function renderKanbanCards(taskList) {
+  if (taskList.length === 0) return `<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:20px">No tasks in this column</div>`;
+
+  return taskList.map(task => `
+    <div class="kanban-card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+        <span class="priority-tag ${task.priority}">${task.priority}</span>
+        <span style="font-size:10px;color:var(--text-muted)">📅 ${task.deadline}</span>
+      </div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px">${task.title}</div>
+      <div style="font-size:11px;color:var(--text-secondary)">👤 Assigned: ${task.assigned_to}</div>
+      <div style="display:flex;gap:4px;margin-top:8px">
+        ${task.status !== 'todo' ? `<button class="btn btn-xs btn-outline" onclick="moveTaskStatus(${task.id}, 'todo')">◀ To Do</button>` : ''}
+        ${task.status !== 'in_progress' ? `<button class="btn btn-xs btn-outline" onclick="moveTaskStatus(${task.id}, 'in_progress')">⚡ In Prog</button>` : ''}
+        ${task.status !== 'completed' ? `<button class="btn btn-xs btn-primary" onclick="moveTaskStatus(${task.id}, 'completed')">✓ Done</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+async function moveTaskStatus(taskId, newStatus) {
+  showToast(`⚡ Updating task #${taskId} status to ${newStatus}…`);
+  await API.updateTaskStatus(taskId, newStatus);
+  if (CURRENT_PLANNER_DATA && CURRENT_PLANNER_DATA.tasks) {
+    const t = CURRENT_PLANNER_DATA.tasks.find(x => x.id === taskId);
+    if (t) t.status = newStatus;
+  }
+  renderPlannerTabContent('tasks');
+}
+
+async function runEventAIEstimate() {
+  const pax = document.getElementById('ai-pax-input').value || 1500;
+  const category = document.getElementById('ai-category-select').value;
+
+  showToast('🤖 EventAI Engine computing budget & risk matrix…');
+  const res = await API.getEventAIEstimate({ attendance: pax, eventType: category });
+
+  const container = document.getElementById('ai-results-container');
+  if (container && res) {
+    container.innerHTML = `
+      <div class="glass-card" style="border-color:var(--teal)">
+        <div style="font-size:16px;font-weight:800;color:var(--teal);margin-bottom:8px">✨ EventAI Recommendation Summary</div>
+        <div class="field-grid-2 mb-16">
+          <div><div class="field-label">Recommended Total Budget</div><div class="field-val" style="font-size:18px;color:var(--teal);font-weight:800">৳${res.recommendedBudget.toLocaleString()}</div></div>
+          <div><div class="field-label">Catering (Food 40%)</div><div class="field-val">৳${res.breakdown.food.toLocaleString()}</div></div>
+          <div><div class="field-label">Venue &amp; Hall (25%)</div><div class="field-val">৳${res.breakdown.venue.toLocaleString()}</div></div>
+          <div><div class="field-label">Stage &amp; Tech (15%)</div><div class="field-val">৳${res.breakdown.stageTech.toLocaleString()}</div></div>
+        </div>
+
+        <div style="font-weight:700;font-size:13px;margin-bottom:6px">📅 Suggested Milestone Timeline</div>
+        <div style="display:flex;flex-direction:column;gap:6px">
+          ${res.suggestedTimeline.map(item => `
+            <div style="font-size:12px;padding:6px 10px;background:var(--bg-glass);border-radius:4px"><strong>${item.week}:</strong> ${item.milestone}</div>
+          `).join('')}
+        </div>
+      </div>`;
+  }
+}
+
+function downloadEventReport(type) {
+  const dataStr = JSON.stringify(CURRENT_PLANNER_DATA, null, 2);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `dic_event_planner_report_${type}.json`;
+  a.click();
+  showToast('📥 Downloaded Event Management Planner Report JSON');
+}
+
+function showCreateProposalModal() {
+  showModal(`
+    <div class="modal-header">
+      <h2 class="modal-title">➕ Create Event Proposal</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <form onsubmit="handleCreateProposalSubmit(event)">
+      <div class="input-group">
+        <label class="input-label">Event Name</label>
+        <input type="text" id="prop-name" class="form-input" placeholder="DIC Tech Festival 2026" required />
+      </div>
+      <div class="input-group">
+        <label class="input-label">Executive Description</label>
+        <textarea id="prop-desc" class="form-input" rows="3" placeholder="Overview of objectives and target audience…" required></textarea>
+      </div>
+      <div class="field-grid-2">
+        <div class="input-group">
+          <label class="input-label">Venue</label>
+          <input type="text" id="prop-venue" class="form-input" value="DIC Main Auditorium" required />
+        </div>
+        <div class="input-group">
+          <label class="input-label">Expected Pax</label>
+          <input type="number" id="prop-pax" class="form-input" value="1000" required />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full mt-16">Submit Proposal for Approval</button>
+    </form>
+  `);
+}
+
+async function handleCreateProposalSubmit(e) {
+  e.preventDefault();
+  const name = document.getElementById('prop-name').value;
+  const description = document.getElementById('prop-desc').value;
+  const venue = document.getElementById('prop-venue').value;
+  const expectedAttendance = document.getElementById('prop-pax').value;
+
+  showToast('➕ Submitting Event Proposal to DIC Executive Board…');
+  await API.submitEventProposal({ name, description, venue, expectedAttendance });
+  closeModal();
+  showToast('✅ Event Proposal Approved & Added to Planner Workspace!');
+  loadEventPlannerWorkspace(1);
 }
 
 function renderJobs(filter = '') {

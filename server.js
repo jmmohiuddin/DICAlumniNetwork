@@ -351,28 +351,149 @@ app.post('/api/bulk-import', async (req, res) => {
   }
 });
 
-// ─── 9. CUSTOM FIELDS ───
-app.get('/api/custom-fields', async (req, res) => {
+// ─── 10. EVENT MANAGEMENT PLANNER WORKSPACE ENDPOINTS ───
+app.get('/api/events/planner/:id', async (req, res) => {
+  const eventId = parseInt(req.params.id) || 1;
   try {
-    const result = await db.query('SELECT * FROM custom_fields ORDER BY id ASC');
-    res.json(result.rows);
+    const proposal = await db.query('SELECT * FROM event_proposals WHERE id = $1 LIMIT 1', [eventId]);
+    const budgets = await db.query('SELECT * FROM event_budgets WHERE event_id = $1 ORDER BY id ASC', [eventId]);
+    const sponsors = await db.query('SELECT * FROM event_sponsors WHERE event_id = $1 ORDER BY id ASC', [eventId]);
+    const committees = await db.query('SELECT * FROM event_committees WHERE event_id = $1 ORDER BY id ASC', [eventId]);
+    const tasks = await db.query('SELECT * FROM event_tasks WHERE event_id = $1 ORDER BY id ASC', [eventId]);
+    const procurement = await db.query('SELECT * FROM event_procurement WHERE event_id = $1 ORDER BY id ASC', [eventId]);
+    const volunteers = await db.query('SELECT * FROM event_volunteers WHERE event_id = $1 ORDER BY id ASC', [eventId]);
+    const risks = await db.query('SELECT * FROM event_risks WHERE event_id = $1 ORDER BY id ASC', [eventId]);
+
+    res.json({
+      proposal: proposal.rows[0] || null,
+      budgets: budgets.rows,
+      sponsors: sponsors.rows,
+      committees: committees.rows,
+      tasks: tasks.rows,
+      procurement: procurement.rows,
+      volunteers: volunteers.rows,
+      risks: risks.rows
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-app.post('/api/custom-fields', async (req, res) => {
-  const { id, label, section, type, required } = req.body;
+app.post('/api/events/proposals', async (req, res) => {
+  const { name, description, objectives, category, type, venue, eventDate, expectedAttendance } = req.body;
   try {
     const result = await db.query(`
-      INSERT INTO custom_fields (id, label, section, field_type, is_required)
-      VALUES ($1, $2, $3, $4, $5)
+      INSERT INTO event_proposals (name, description, objectives, category, type, venue, event_date, expected_attendance, status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'approved')
       RETURNING *
-    `, [id || `cf_${Date.now()}`, label, section, type, required || false]);
+    `, [name, description, objectives, category || 'Alumni Gala', type || 'Reunion', venue || 'DIC Auditorium', eventDate || 'Aug 15, 2026', expectedAttendance || 500]);
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+app.post('/api/events/budgets', async (req, res) => {
+  const { eventId, category, estimatedCost, actualCost, vendorName } = req.body;
+  try {
+    const result = await db.query(`
+      INSERT INTO event_budgets (event_id, category, estimated_cost, actual_cost, vendor_name)
+      VALUES ($1, $2, $3, $4, $5)
+      RETURNING *
+    `, [eventId || 1, category, estimatedCost || 0, actualCost || 0, vendorName || 'Direct Vendor']);
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/events/sponsors', async (req, res) => {
+  const { eventId, company, contactPerson, packageTier, contributionAmount, pipelineStatus } = req.body;
+  try {
+    const result = await db.query(`
+      INSERT INTO event_sponsors (event_id, company, contact_person, package_tier, contribution_amount, pipeline_status)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING *
+    `, [eventId || 1, company, contactPerson || 'Contact Lead', packageTier || 'gold', contributionAmount || 100000, pipelineStatus || 'agreed']);
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/events/tasks', async (req, res) => {
+  const { eventId, committeeName, title, description, priority, status, assignedTo, deadline } = req.body;
+  try {
+    const result = await db.query(`
+      INSERT INTO event_tasks (event_id, committee_name, title, description, priority, status, assigned_to, deadline)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *
+    `, [eventId || 1, committeeName || 'General', title, description || '', priority || 'medium', status || 'todo', assignedTo || 'Unassigned', deadline || 'Aug 10, 2026']);
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/events/tasks/:id/status', async (req, res) => {
+  const taskId = parseInt(req.params.id);
+  const { status } = req.body;
+  try {
+    const result = await db.query('UPDATE event_tasks SET status = $1 WHERE id = $2 RETURNING *', [status, taskId]);
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/events/procurement', async (req, res) => {
+  const { eventId, itemName, category, quantity, estimatedPrice, actualPrice, vendorName, deliveryStatus } = req.body;
+  try {
+    const result = await db.query(`
+      INSERT INTO event_procurement (event_id, item_name, category, quantity, estimated_price, actual_price, vendor_name, delivery_status)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *
+    `, [eventId || 1, itemName, category || 'General', quantity || 1, estimatedPrice || 0, actualPrice || 0, vendorName || 'Vendor', deliveryStatus || 'delivered']);
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/events/ai-estimate', (req, res) => {
+  const { attendance, eventType } = req.body;
+  const pax = parseInt(attendance) || 500;
+  
+  const estimatedBudget = pax * 450; // ৳450 per head
+  const venueCost = Math.round(estimatedBudget * 0.25);
+  const foodCost = Math.round(estimatedBudget * 0.40);
+  const techCost = Math.round(estimatedBudget * 0.15);
+  const merchandiseCost = Math.round(estimatedBudget * 0.10);
+  const miscCost = Math.round(estimatedBudget * 0.10);
+
+  res.json({
+    recommendedBudget: estimatedBudget,
+    breakdown: {
+      venue: venueCost,
+      food: foodCost,
+      stageTech: techCost,
+      merchandise: merchandiseCost,
+      miscellaneous: miscCost
+    },
+    suggestedTimeline: [
+      { week: 'Week 1', milestone: 'Submit Proposal & Confirm Venue Booking' },
+      { week: 'Week 2', milestone: 'Finalize Title & Gold Sponsors (Target: ৳5L+)' },
+      { week: 'Week 3', milestone: 'Launch Ticketing & Omnichannel Campaign' },
+      { week: 'Week 4', milestone: 'Procure Welcome Kits, Badges & T-Shirts' },
+      { week: 'Week 5', milestone: 'Volunteer Shift Briefing & Stage Sound Check' },
+      { week: 'Week 6', milestone: 'Event Execution Day & Live QR Registration' }
+    ],
+    riskRecommendations: [
+      'Ensure 250kVA standby diesel generator is reserved for evening keynote.',
+      'Deploy 25+ volunteers for check-in to maintain <45s queue times.',
+      'Prepare indoor gym backup location in case of monsoon rain.'
+    ]
+  });
 });
 
 // Serve frontend SPA for all remaining routes

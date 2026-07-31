@@ -442,21 +442,52 @@
       </div>
 
       <!-- ============ EVENTS PAGE ============ -->
+      <!-- ============ EVENTS & PLANNER PAGE ============ -->
       <div class="page hidden" id="page-events">
         <div class="page-header">
           <div>
-            <h1 class="page-title">Events &amp; Ticketing</h1>
-            <p class="page-subtitle">QR check-in · MFS payments · Real-time capacity · Waitlist</p>
+            <h1 class="page-title">Event Management Planner &amp; Workspace</h1>
+            <p class="page-subtitle">Full Event Lifecycle Operating System · Budgeting · Sponsor CRM · Kanban · Procurement · Volunteers · EventAI</p>
           </div>
-          <button class="btn btn-primary" onclick="showCreateEventModal()">+ Create Event</button>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline" onclick="showCreateProposalModal()">➕ Proposal Form</button>
+            <button class="btn btn-primary" onclick="showCreateEventModal()">+ Create Event</button>
+          </div>
         </div>
-        <div class="events-tabs">
-          <button class="chart-tab active" onclick="filterEvents('upcoming', this)">Upcoming</button>
-          <button class="chart-tab" onclick="filterEvents('past', this)">Past Events</button>
-          <button class="chart-tab" onclick="filterEvents('checkin', this)">Check-In Scanner</button>
-          <button class="chart-tab" onclick="filterEvents('waitlist', this)">Waitlist Manager</button>
+
+        <!-- WORKSPACE MODE SWITCHER -->
+        <div class="events-tabs mb-16">
+          <button class="chart-tab active" id="btn-mode-planner" onclick="switchEventWorkspaceMode('planner', this)">📋 Event Planner Workspace</button>
+          <button class="chart-tab" id="btn-mode-public" onclick="switchEventWorkspaceMode('public', this)">🎪 Public Event Directory &amp; Tickets</button>
         </div>
-        <div class="events-grid" id="events-grid"></div>
+
+        <!-- PLANNER WORKSPACE CONTAINER -->
+        <div id="planner-workspace-view">
+          <div class="analytics-tabs mb-16" style="overflow-x:auto;white-space:nowrap">
+            <button class="chart-tab active" onclick="switchPlannerTab('overview', this)">🚀 Proposal &amp; Overview</button>
+            <button class="chart-tab" onclick="switchPlannerTab('budget', this)">💰 Budget &amp; Revenue</button>
+            <button class="chart-tab" onclick="switchPlannerTab('sponsors', this)">🤝 Sponsor CRM</button>
+            <button class="chart-tab" onclick="switchPlannerTab('tasks', this)">📋 Task Kanban Board</button>
+            <button class="chart-tab" onclick="switchPlannerTab('procurement', this)">🛒 Procurement &amp; Vendors</button>
+            <button class="chart-tab" onclick="switchPlannerTab('volunteers', this)">🛡 Volunteers &amp; Risks</button>
+            <button class="chart-tab" onclick="switchPlannerTab('marketing', this)">📢 Marketing &amp; Meetings</button>
+            <button class="chart-tab" onclick="switchPlannerTab('analytics', this)">📈 Analytics &amp; Reports</button>
+            <button class="chart-tab" onclick="switchPlannerTab('ai', this)">🤖 EventAI Assistant</button>
+          </div>
+
+          <div id="planner-tab-content"></div>
+        </div>
+
+        <!-- PUBLIC EVENT DIRECTORY & TICKETS -->
+        <div id="public-events-view" class="hidden">
+          <div class="events-tabs">
+            <button class="chart-tab active" onclick="filterEvents('upcoming', this)">Upcoming</button>
+            <button class="chart-tab" onclick="filterEvents('past', this)">Past Events</button>
+            <button class="chart-tab" onclick="filterEvents('checkin', this)">Check-In Scanner</button>
+            <button class="chart-tab" onclick="filterEvents('waitlist', this)">Waitlist Manager</button>
+          </div>
+          <div class="events-grid" id="events-grid"></div>
+        </div>
       </div>
 
       <!-- ============ JOBS PAGE ============ -->

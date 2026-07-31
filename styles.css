@@ -2397,15 +2397,85 @@ textarea.form-input { resize: vertical; min-height: 100px; }
   padding-bottom: 12px;
   border-bottom: 1px solid var(--border-glass);
 }
-.onboarding-title { font-size: 20px; font-weight: 800; color: var(--text-primary); }
-.onboarding-sub { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+/* ─── EVENT MANAGEMENT PLANNER WORKSPACE CSS ─── */
+.planner-metrics-ribbon {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.pmetric-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  padding: 14px;
+  backdrop-filter: blur(12px);
+}
+.pmetric-val { font-size: 22px; font-weight: 800; color: var(--text-primary); }
+.pmetric-lab { font-size: 11px; color: var(--text-secondary); text-transform: uppercase; margin-top: 2px; }
+
+.kanban-board-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-top: 14px;
+  align-items: start;
+}
+.kanban-column {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.kanban-column-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-glass);
+  font-weight: 700;
+  font-size: 13px;
+}
+.kanban-card {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  cursor: grab;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.kanban-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--teal);
+}
+.priority-tag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+.priority-tag.critical { background: rgba(248,113,113,0.2); color: var(--red); }
+.priority-tag.high { background: rgba(251,191,36,0.2); color: var(--amber); }
+.priority-tag.medium { background: rgba(0,168,89,0.2); color: var(--teal); }
+.priority-tag.low { background: rgba(148,163,184,0.2); color: var(--text-secondary); }
+
+.sponsor-tier-card {
+  border-left: 4px solid var(--teal);
+}
+.sponsor-tier-card.title-tier { border-left-color: #ffd700; }
+.sponsor-tier-card.gold-tier { border-left-color: #fbbf24; }
+.sponsor-tier-card.silver-tier { border-left-color: #cbd5e1; }
+.sponsor-tier-card.bronze-tier { border-left-color: #cd7f32; }
 
 @media (max-width: 900px) {
-  .demo-role-grid { grid-template-columns: 1fr; }
-  .server-health-grid { grid-template-columns: repeat(2, 1fr); }
-  .import-wizard-steps { grid-template-columns: repeat(2, 1fr); }
-  .validation-summary-bar { grid-template-columns: repeat(2, 1fr); }
-  .field-grid-2, .field-grid-3 { grid-template-columns: 1fr; }
+  .planner-metrics-ribbon { grid-template-columns: repeat(2, 1fr); }
+  .kanban-board-grid { grid-template-columns: 1fr; }
 }
 
 

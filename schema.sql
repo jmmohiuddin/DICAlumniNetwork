@@ -230,12 +230,113 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
--- INDEXES FOR MAXIMUM QUERY PERFORMANCE
-CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
-CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
-CREATE INDEX IF NOT EXISTS idx_alumni_batch ON alumni_profiles(batch);
-CREATE INDEX IF NOT EXISTS idx_alumni_dept ON alumni_profiles(department);
-CREATE INDEX IF NOT EXISTS idx_alumni_student_id ON alumni_profiles(student_id);
-CREATE INDEX IF NOT EXISTS idx_chapters_status ON chapters(status);
-CREATE INDEX IF NOT EXISTS idx_stories_status ON stories(status);
-CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_unread);
+-- 13. EVENT MANAGEMENT PLANNER MODULE TABLES
+CREATE TABLE IF NOT EXISTS event_proposals (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    objectives TEXT,
+    outcomes TEXT,
+    category VARCHAR(100) DEFAULT 'Alumni Gala',
+    type VARCHAR(100) DEFAULT 'Reunion',
+    department VARCHAR(150) DEFAULT 'Computer Science & Engineering',
+    organizer_name VARCHAR(150) DEFAULT 'DIC Alumni Board',
+    owner_id INT REFERENCES users(id) ON DELETE SET NULL,
+    target_audience TEXT,
+    expected_attendance INT DEFAULT 500,
+    venue VARCHAR(255) DEFAULT 'DIC Main Campus Auditorium',
+    event_date VARCHAR(100) DEFAULT 'Aug 15, 2026',
+    duration VARCHAR(50) DEFAULT '6 Hours',
+    status VARCHAR(50) DEFAULT 'approved' CHECK (status IN ('draft', 'pending_approval', 'approved', 'in_planning', 'completed')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS event_budgets (
+    id SERIAL PRIMARY KEY,
+    event_id INT DEFAULT 1,
+    category VARCHAR(100) NOT NULL,
+    estimated_cost NUMERIC(12, 2) DEFAULT 0,
+    actual_cost NUMERIC(12, 2) DEFAULT 0,
+    vendor_name VARCHAR(255),
+    status VARCHAR(50) DEFAULT 'approved',
+    payment_status VARCHAR(50) DEFAULT 'paid',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS event_sponsors (
+    id SERIAL PRIMARY KEY,
+    event_id INT DEFAULT 1,
+    company VARCHAR(255) NOT NULL,
+    contact_person VARCHAR(150),
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    package_tier VARCHAR(50) DEFAULT 'gold' CHECK (package_tier IN ('title', 'gold', 'silver', 'bronze', 'partner')),
+    contribution_amount NUMERIC(12, 2) DEFAULT 0,
+    pipeline_status VARCHAR(50) DEFAULT 'agreed' CHECK (pipeline_status IN ('proposed', 'agreed', 'received', 'rejected')),
+    deliverables TEXT,
+    logo_url VARCHAR(255),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS event_committees (
+    id SERIAL PRIMARY KEY,
+    event_id INT DEFAULT 1,
+    name VARCHAR(100) NOT NULL,
+    leader_name VARCHAR(150) NOT NULL,
+    members_count INT DEFAULT 5,
+    budget_allocated NUMERIC(12, 2) DEFAULT 100000,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS event_tasks (
+    id SERIAL PRIMARY KEY,
+    event_id INT DEFAULT 1,
+    committee_name VARCHAR(100) DEFAULT 'General',
+    title VARCHAR(255) NOT NULL,
+    description TEXT,
+    priority VARCHAR(50) DEFAULT 'medium' CHECK (priority IN ('critical', 'high', 'medium', 'low')),
+    status VARCHAR(50) DEFAULT 'todo' CHECK (status IN ('todo', 'in_progress', 'blocked', 'completed')),
+    assigned_to VARCHAR(150),
+    deadline VARCHAR(50),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS event_procurement (
+    id SERIAL PRIMARY KEY,
+    event_id INT DEFAULT 1,
+    item_name VARCHAR(255) NOT NULL,
+    category VARCHAR(100) DEFAULT 'Branding',
+    quantity INT DEFAULT 1,
+    estimated_price NUMERIC(12, 2) DEFAULT 0,
+    actual_price NUMERIC(12, 2) DEFAULT 0,
+    vendor_name VARCHAR(255),
+    delivery_status VARCHAR(50) DEFAULT 'delivered' CHECK (delivery_status IN ('requested', 'ordered', 'delivered')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS event_volunteers (
+    id SERIAL PRIMARY KEY,
+    event_id INT DEFAULT 1,
+    volunteer_name VARCHAR(150) NOT NULL,
+    shift_time VARCHAR(100) DEFAULT '10:00 AM - 4:00 PM',
+    assigned_committee VARCHAR(100) DEFAULT 'Hospitality',
+    attendance_status VARCHAR(50) DEFAULT 'checked_in' CHECK (attendance_status IN ('assigned', 'checked_in', 'absent')),
+    certificate_issued BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS event_risks (
+    id SERIAL PRIMARY KEY,
+    event_id INT DEFAULT 1,
+    risk_title VARCHAR(255) NOT NULL,
+    category VARCHAR(100) DEFAULT 'Weather',
+    severity VARCHAR(50) DEFAULT 'medium' CHECK (severity IN ('high', 'medium', 'low')),
+    contingency_plan TEXT NOT NULL,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- INDEXES FOR EVENT PLANNER QUERY SPEED
+CREATE INDEX IF NOT EXISTS idx_tasks_event ON event_tasks(event_id, status);
+CREATE INDEX IF NOT EXISTS idx_budgets_event ON event_budgets(event_id);
+CREATE INDEX IF NOT EXISTS idx_sponsors_event ON event_sponsors(event_id);
+

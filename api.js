@@ -170,5 +170,107 @@ const API = {
     } catch (e) {
       return null;
     }
+  },
+
+  // ─── EVENT PLANNER API HELPERS ───
+  async getEventPlanner(id = 1) {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/events/planner/${id}`);
+      if (!res.ok) throw new Error('API Error');
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async submitEventProposal(data) {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/events/proposals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async addEventBudget(data) {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/events/budgets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async addEventSponsor(data) {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/events/sponsors`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async addEventTask(data) {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/events/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async updateTaskStatus(taskId, status) {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/events/tasks/${taskId}/status`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      });
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async addEventProcurement(data) {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/events/procurement`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async getEventAIEstimate(data) {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/events/ai-estimate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
   }
 };
