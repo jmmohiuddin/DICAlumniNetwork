@@ -2821,6 +2821,20 @@ document.addEventListener('DOMContentLoaded', () => {
   if (el) el.addEventListener('click', simulateOffline);
 });
 
+// ─── MOBILE PROGRESSIVE DISCLOSURE HELPER ───
+function toggleProgressiveDisclosure(targetId, btn) {
+  const target = document.getElementById(targetId);
+  if (!target) return;
+  const isHidden = target.classList.contains('hidden');
+  if (isHidden) {
+    target.classList.remove('hidden');
+    if (btn) btn.innerHTML = '▲ Show Less';
+  } else {
+    target.classList.add('hidden');
+    if (btn) btn.innerHTML = '▼ Show More';
+  }
+}
+
 // ─── INIT ON LOAD ────────────────────────────────────────────
 window.addEventListener('load', () => {
   // Show clean Login Screen on load; user logs in or selects demo role
