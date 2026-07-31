@@ -680,7 +680,7 @@ const CHART_DATA = {
 
 function initDashboardChart() {
   const ctx = document.getElementById('main-chart');
-  if (!ctx) return;
+  if (!ctx || typeof Chart === 'undefined') return;
 
   if (state.charts.main) state.charts.main.destroy();
 
@@ -698,32 +698,13 @@ function initDashboardChart() {
         fill: true,
         tension: 0.4,
         pointBackgroundColor: d.color,
-        pointBorderColor: '#0a0e1a',
-        pointBorderWidth: 2,
         pointRadius: 4,
-        pointHoverRadius: 6,
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: { duration: 800, easing: 'easeInOutQuart' },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: 'rgba(17, 27, 46, 0.95)',
-          borderColor: 'rgba(255,255,255,0.1)',
-          borderWidth: 1,
-          titleColor: '#F1F5FF',
-          bodyColor: '#8B9CC4',
-          padding: 12,
-          cornerRadius: 10,
-        }
-      },
-      scales: {
-        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4A5A7A', font: { size: 11, family: 'Inter' } } },
-        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4A5A7A', font: { size: 11, family: 'Inter' } } }
-      }
+      plugins: { legend: { display: false } }
     }
   });
 }
