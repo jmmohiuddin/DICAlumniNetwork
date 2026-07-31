@@ -1697,6 +1697,175 @@ async function handleCreateProposalSubmit(e) {
   loadEventPlannerWorkspace(1);
 }
 
+function showAddBudgetModal() {
+  showModal(`
+    <div class="modal-header">
+      <h2 class="modal-title">💰 Add Expense Item</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <form onsubmit="handleAddBudgetSubmit(event)">
+      <div class="input-group">
+        <label class="input-label">Category</label>
+        <input type="text" id="b-cat" class="form-input" placeholder="Stage & Audio Setup" required />
+      </div>
+      <div class="field-grid-2">
+        <div class="input-group">
+          <label class="input-label">Estimated Cost (৳)</label>
+          <input type="number" id="b-est" class="form-input" placeholder="150000" required />
+        </div>
+        <div class="input-group">
+          <label class="input-label">Actual Cost (৳)</label>
+          <input type="number" id="b-act" class="form-input" placeholder="140000" required />
+        </div>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Vendor Name</label>
+        <input type="text" id="b-vendor" class="form-input" placeholder="Dhaka Event Tech Ltd" required />
+      </div>
+      <button type="submit" class="btn btn-primary btn-full mt-16">Save Expense Item</button>
+    </form>
+  `);
+}
+
+async function handleAddBudgetSubmit(e) {
+  e.preventDefault();
+  const category = document.getElementById('b-cat').value;
+  const estimatedCost = parseFloat(document.getElementById('b-est').value) || 0;
+  const actualCost = parseFloat(document.getElementById('b-act').value) || 0;
+  const vendorName = document.getElementById('b-vendor').value;
+
+  showToast('💰 Adding expense item to event budget…');
+  const newBudget = await API.addEventBudget({ eventId: 1, category, estimatedCost, actualCost, vendorName });
+  if (CURRENT_PLANNER_DATA && CURRENT_PLANNER_DATA.budgets) {
+    CURRENT_PLANNER_DATA.budgets.push(newBudget || { id: Date.now(), category, estimated_cost: estimatedCost, actual_cost: actualCost, vendor_name: vendorName, payment_status: 'paid' });
+  }
+  closeModal();
+  showToast('✅ Expense item saved successfully!');
+  renderPlannerTabContent('budget');
+}
+
+function showAddSponsorModal() {
+  showModal(`
+    <div class="modal-header">
+      <h2 class="modal-title">🤝 Add Sponsor CRM Record</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <form onsubmit="handleAddSponsorSubmit(event)">
+      <div class="input-group">
+        <label class="input-label">Company Name</label>
+        <input type="text" id="s-company" class="form-input" placeholder="Brain Station 23" required />
+      </div>
+      <div class="field-grid-2">
+        <div class="input-group">
+          <label class="input-label">Contact Person</label>
+          <input type="text" id="s-contact" class="form-input" placeholder="Tanvir Ahmed" required />
+        </div>
+        <div class="input-group">
+          <label class="input-label">Package Tier</label>
+          <select id="s-tier" class="form-select">
+            <option value="title">Title Sponsor</option>
+            <option value="gold" selected>Gold Sponsor</option>
+            <option value="silver">Silver Sponsor</option>
+            <option value="bronze">Bronze Sponsor</option>
+          </select>
+        </div>
+      </div>
+      <div class="field-grid-2">
+        <div class="input-group">
+          <label class="input-label">Contribution Amount (৳)</label>
+          <input type="number" id="s-amount" class="form-input" placeholder="300000" required />
+        </div>
+        <div class="input-group">
+          <label class="input-label">Pipeline Status</label>
+          <select id="s-status" class="form-select">
+            <option value="proposed">Proposed</option>
+            <option value="agreed">Agreed</option>
+            <option value="received" selected>Payment Received</option>
+          </select>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full mt-16">Add Sponsor Record</button>
+    </form>
+  `);
+}
+
+async function handleAddSponsorSubmit(e) {
+  e.preventDefault();
+  const company = document.getElementById('s-company').value;
+  const contactPerson = document.getElementById('s-contact').value;
+  const packageTier = document.getElementById('s-tier').value;
+  const contributionAmount = parseFloat(document.getElementById('s-amount').value) || 0;
+  const pipelineStatus = document.getElementById('s-status').value;
+
+  showToast('🤝 Saving sponsor CRM deal…');
+  const newSponsor = await API.addEventSponsor({ eventId: 1, company, contactPerson, packageTier, contributionAmount, pipelineStatus });
+  if (CURRENT_PLANNER_DATA && CURRENT_PLANNER_DATA.sponsors) {
+    CURRENT_PLANNER_DATA.sponsors.push(newSponsor || { id: Date.now(), company, contact_person: contactPerson, package_tier: packageTier, contribution_amount: contributionAmount, pipeline_status: pipelineStatus, deliverables: 'Standard branding package' });
+  }
+  closeModal();
+  showToast('✅ Sponsor deal saved successfully!');
+  renderPlannerTabContent('sponsors');
+}
+
+function showAddTaskModal() {
+  showModal(`
+    <div class="modal-header">
+      <h2 class="modal-title">📋 Create Kanban Task</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <form onsubmit="handleAddTaskSubmit(event)">
+      <div class="input-group">
+        <label class="input-label">Task Title</label>
+        <input type="text" id="t-title" class="form-input" placeholder="Book main auditorium & stage lights" required />
+      </div>
+      <div class="field-grid-2">
+        <div class="input-group">
+          <label class="input-label">Assigned Committee</label>
+          <input type="text" id="t-comm" class="form-input" value="Logistics & Stage" required />
+        </div>
+        <div class="input-group">
+          <label class="input-label">Assigned Person</label>
+          <input type="text" id="t-assign" class="form-input" placeholder="Rafiqul Islam" required />
+        </div>
+      </div>
+      <div class="field-grid-2">
+        <div class="input-group">
+          <label class="input-label">Priority</label>
+          <select id="t-priority" class="form-select">
+            <option value="critical">Critical</option>
+            <option value="high" selected>High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Deadline</label>
+          <input type="text" id="t-deadline" class="form-input" value="Aug 10, 2026" required />
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full mt-16">Create Task</button>
+    </form>
+  `);
+}
+
+async function handleAddTaskSubmit(e) {
+  e.preventDefault();
+  const title = document.getElementById('t-title').value;
+  const committeeName = document.getElementById('t-comm').value;
+  const assignedTo = document.getElementById('t-assign').value;
+  const priority = document.getElementById('t-priority').value;
+  const deadline = document.getElementById('t-deadline').value;
+
+  showToast('📋 Creating new Kanban task…');
+  const newTask = await API.addEventTask({ eventId: 1, committeeName, title, priority, status: 'todo', assignedTo, deadline });
+  if (CURRENT_PLANNER_DATA && CURRENT_PLANNER_DATA.tasks) {
+    CURRENT_PLANNER_DATA.tasks.push(newTask || { id: Date.now(), committee_name: committeeName, title, priority, status: 'todo', assigned_to: assignedTo, deadline });
+  }
+  closeModal();
+  showToast('✅ Kanban task created!');
+  renderPlannerTabContent('tasks');
+}
+
 function renderJobs(filter = '') {
   const container = document.getElementById('jobs-list');
   if (!container) return;
