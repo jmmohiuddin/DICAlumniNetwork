@@ -2315,6 +2315,7 @@ function showModal(html) {
   const overlay = document.getElementById('modal-overlay');
   if (body) body.innerHTML = html;
   if (overlay) overlay.classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
 }
 
 function openModal(html) {
@@ -2325,6 +2326,7 @@ window.openModal = showModal;
 function closeModal(e) {
   const overlay = document.getElementById('modal-overlay');
   if (overlay) overlay.classList.add('hidden');
+  document.body.style.overflow = '';
 }
 
 function showMentorModal(mentorName = '') {

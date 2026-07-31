@@ -1599,14 +1599,48 @@ textarea.form-input { resize: vertical; min-height: 100px; }
   .pages-container { padding: 16px; padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
   .mentorship-layout, .jobs-layout, .chapters-layout, .news-layout, .profile-layout, .career-tracker-layout, .api-layout { grid-template-columns: 1fr; }
   .topbar-search { max-width: 180px; }
-  .modal-overlay { align-items: flex-end; padding: 0; }
+  .modal-overlay { align-items: flex-end; padding: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(12px); }
   .modal-content {
-    max-height: 85vh;
+    width: 100%;
+    max-height: 88vh;
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
-    border-top-left-radius: var(--radius-lg);
-    border-top-right-radius: var(--radius-lg);
+    border-top-left-radius: 20px;
+    border-top-right-radius: 20px;
+    padding: 20px;
     animation: slideUpMobile 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.8);
+    position: relative;
+    overflow-y: auto;
+  }
+  
+  /* Mobile Drag Handle Pill for Bottom Sheets */
+  .modal-content::before {
+    content: '';
+    display: block;
+    width: 40px;
+    height: 5px;
+    background: rgba(255,255,255,0.25);
+    border-radius: 99px;
+    margin: 0 auto 16px auto;
+  }
+
+  /* Table to Card Responsive Stack on Mobile */
+  table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Touch Target Minimum 44px Enforcer */
+  .btn, .form-input, .form-select, .chart-tab, .topbar-btn, .modal-close {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+
+  .field-grid-2, .field-grid-3, .field-grid-4 {
+    grid-template-columns: 1fr !important;
   }
   @keyframes slideUpMobile { from { transform: translateY(100%); } to { transform: translateY(0); } }
 }
