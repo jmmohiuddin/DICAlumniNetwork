@@ -98,7 +98,7 @@ const MOCK_CAREER_TIMELINE = [
 // ─── APP STATE ──────────────────────────────────────────────
 let state = {
   currentPage: 'dashboard',
-  currentUser: MOCK_USERS.super_admin, // Default demo account
+  currentUser: MOCK_USERS.alumni, // Default alumni account
   charts: {},
   searchTimeout: null,
   selectedGateway: null,
