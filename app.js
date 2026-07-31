@@ -2825,10 +2825,20 @@ function toggleProgressiveDisclosure(targetId, btn) {
   }
 }
 
-// ─── INIT ON LOAD ────────────────────────────────────────────
-window.addEventListener('load', () => {
+// ─── INSTANT MOBILE & DESKTOP DOM INITIALIZER ────────────────
+let __appInitialized = false;
+function initAppOnce() {
+  if (__appInitialized) return;
+  __appInitialized = true;
   enterApp();
-});
+}
+
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  setTimeout(initAppOnce, 1);
+} else {
+  document.addEventListener('DOMContentLoaded', initAppOnce);
+  window.addEventListener('load', initAppOnce);
+}
 
 // ============================================================
 // GAP-FIX ADDITIONS — REQ-01, REQ-03, REQ-05, REQ-07, REQ-08
