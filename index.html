@@ -31,11 +31,9 @@
     <div class="login-orb login-orb-2"></div>
     <div class="login-container">
       <div class="login-brand">
-        <div class="brand-logo-circle" style="background: linear-gradient(135deg, #00A859, #005691)">
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><path d="M16 2L4 8v8c0 7.5 5.1 14.5 12 16 6.9-1.5 12-8.5 12-16V8L16 2z" fill="url(#grad1)"/><defs><linearGradient id="grad1" x1="4" y1="2" x2="28" y2="30" gradientUnits="userSpaceOnUse"><stop stop-color="#00A859"/><stop offset="1" stop-color="#005691"/></linearGradient></defs></svg>
-        </div>
-        <span class="brand-name">DIC Alumni Platform</span>
-        <span class="brand-tag">Daffodil Int. College</span>
+        <img src="assets/dic-logo.png" onerror="this.onerror=null;this.src='assets/daffodil-logo.svg'"
+             alt="Daffodil International College" class="login-brand-logo" />
+        <span class="brand-tag">Alumni &amp; Career Network</span>
       </div>
       <div class="login-card glass-card">
         <div class="login-step" id="step-1">
@@ -152,7 +150,8 @@
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
-        <img src="assets/daffodil-logo.svg" alt="Daffodil International College" class="sidebar-brand-logo" />
+        <img src="assets/dic-logo.png" onerror="this.onerror=null;this.src='assets/daffodil-logo.svg'"
+             alt="Daffodil International College" class="sidebar-brand-logo" />
         <button class="sidebar-close" onclick="toggleSidebar()">✕</button>
       </div>
       <div class="tenant-pill">
@@ -197,7 +196,8 @@
     <div class="topbar">
       <button class="hamburger" onclick="toggleSidebar()">☰</button>
       <div class="topbar-brand-logo">
-        <img src="assets/daffodil-logo.svg" alt="Daffodil International College" />
+        <img src="assets/dic-logo.png" onerror="this.onerror=null;this.src='assets/daffodil-logo.svg'"
+             alt="Daffodil International College" />
       </div>
       <div class="topbar-search">
         <span class="search-icon">🔍</span>
@@ -1102,7 +1102,8 @@
       <div class="footer-container">
         <div class="footer-top">
           <div class="footer-brand">
-            <img src="assets/daffodil-logo.svg" alt="Daffodil International College" class="footer-brand-logo" />
+            <img src="assets/dic-logo.png" onerror="this.onerror=null;this.src='assets/daffodil-logo.svg'"
+             alt="Daffodil International College" class="footer-brand-logo" />
           </div>
           <div class="footer-links">
             <a href="#" onclick="showPage('dashboard')">Home</a>
@@ -1114,8 +1115,18 @@
           </div>
         </div>
         <div class="footer-bottom">
-          <div>© 2026 Daffodil International College — Alumni &amp; LMS Platform. All Rights Reserved.</div>
-          <div>PDPA 2026 Compliant · Enterprise Grade</div>
+          <div class="footer-legal">
+            <div>© 2026 Daffodil International College — Alumni &amp; Career Network. All Rights Reserved.</div>
+            <div>PDPA 2026 Compliant · Enterprise Grade</div>
+          </div>
+
+          <!-- TECHNOLOGY PARTNER CREDIT -->
+          <a class="built-by-nimikh" href="https://nimikh.com/" target="_blank" rel="noopener noreferrer"
+             aria-label="Built by Nimikh — opens nimikh.com in a new tab">
+            <span class="built-by-label">Built by</span>
+            <img src="assets/nimikh-logo.png" alt="Nimikh" class="nimikh-logo" width="360" height="88"
+                 loading="lazy" decoding="async" />
+          </a>
         </div>
       </div>
     </footer>

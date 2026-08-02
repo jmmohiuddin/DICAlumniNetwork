@@ -1229,6 +1229,17 @@ app.use('/api', (req, res) => {
   res.status(404).json({ error: `Unknown API endpoint: ${req.method} ${req.originalUrl}` });
 });
 
+// A request for a real file that does not exist must 404, not fall through to
+// the SPA shell. Returning index.html for a missing image made <img onerror>
+// fallbacks download the whole page before failing to decode it.
+const STATIC_FILE = /\.(png|jpe?g|gif|svg|webp|avif|ico|css|js|mjs|map|json|txt|csv|woff2?|ttf|otf|eot|pdf|xml)$/i;
+app.use((req, res, next) => {
+  if (STATIC_FILE.test(req.path)) {
+    return res.status(404).type('txt').send('Not found');
+  }
+  next();
+});
+
 // Serve frontend SPA for all remaining routes
 app.use((req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));

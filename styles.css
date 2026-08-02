@@ -4206,3 +4206,207 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 .auth-tab.active { background: var(--primary-glow); border-color: var(--primary); color: var(--primary-light); }
 .auth-hint { font-size: 12px; color: var(--text-muted); margin-top: 10px; text-align: center; line-height: 1.5; }
 @media (max-width: 900px) { .auth-tab { min-height: 48px; } }
+
+/* ============================================================
+   BRANDING SYSTEM
+   Daffodil International College is the primary identity; Nimikh is
+   credited as the technology partner. Both marks keep their official
+   colours by sitting on a white plate wherever the background would
+   compromise contrast.
+   ============================================================ */
+
+/* ─── DIC MARK — responsive sizing ───
+   The lockup is ~4.2:1, so height drives the layout and width follows.
+   Sizes step down at each breakpoint so the mark never dominates a phone
+   header but still reads with authority on desktop. */
+.topbar-brand-logo img,
+.topbar-brand-logo svg {
+  height: 38px;
+  width: auto;
+  max-width: 210px;
+  object-fit: contain;
+  display: block;
+}
+
+.sidebar-brand-logo {
+  height: 42px;
+  width: auto;
+  max-width: 200px;
+  object-fit: contain;
+}
+
+.login-brand-logo {
+  height: 62px;
+  width: auto;
+  max-width: 320px;
+  object-fit: contain;
+  margin-bottom: 10px;
+  /* The mark carries dark-blue type; on the dark login canvas it needs a
+     light plate to stay legible and on-brand. */
+  background: #FFFFFF;
+  border-radius: 12px;
+  padding: 10px 16px;
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+}
+
+/* Footer sits on DIC blue (#1869BD); the navy wordmark would disappear. */
+.footer-brand-logo {
+  height: 40px;
+  width: auto;
+  max-width: 240px;
+  object-fit: contain;
+  background: #FFFFFF;
+  border-radius: 10px;
+  padding: 8px 14px;
+}
+
+/* ─── BUILT BY NIMIKH ─── */
+.built-by-nimikh {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  text-decoration: none;
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  transition: var(--transition);
+  min-height: 44px;              /* comfortable touch target */
+  -webkit-tap-highlight-color: transparent;
+}
+.built-by-nimikh:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+}
+.built-by-nimikh:active { transform: translateY(0); }
+.built-by-nimikh:focus-visible {
+  outline: 2px solid #FFFFFF;
+  outline-offset: 2px;
+}
+.built-by-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  opacity: 0.9;
+  white-space: nowrap;
+}
+/* The Nimikh mark is black-on-transparent, so it needs a light plate on
+   every dark surface this app uses. */
+.nimikh-logo {
+  height: 26px;
+  width: auto;
+  max-width: 108px;
+  object-fit: contain;
+  display: block;
+  background: #FFFFFF;
+  border-radius: 6px;
+  padding: 4px 7px;
+}
+
+.footer-legal {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+/* ─── TABLET ─── */
+@media (max-width: 1024px) {
+  .topbar-brand-logo img, .topbar-brand-logo svg { height: 34px; max-width: 180px; }
+  .footer-brand-logo { height: 36px; }
+  .login-brand-logo { height: 56px; }
+}
+
+/* ─── MOBILE ─── */
+@media (max-width: 900px) {
+  /* Header space is scarce: the mark shrinks but stays sharp and legible. */
+  .topbar-brand-logo img, .topbar-brand-logo svg { height: 28px; max-width: 132px; }
+  .sidebar-brand-logo { height: 36px; max-width: 168px; }
+  .login-brand-logo { height: 48px; max-width: 250px; padding: 8px 14px; }
+  .footer-brand-logo { height: 34px; max-width: 200px; }
+
+  /* Footer stacks and centres so nothing crowds on a phone. */
+  .daffodil-footer { padding: 26px 18px calc(96px + env(safe-area-inset-bottom, 0px)) 18px; }
+  .footer-top { flex-direction: column; align-items: center; text-align: center; gap: 18px; }
+  .footer-links { justify-content: center; gap: 10px 18px; }
+  .footer-links a { min-height: 44px; display: inline-flex; align-items: center; }
+  .footer-bottom { flex-direction: column; align-items: center; text-align: center; gap: 16px; }
+  .footer-legal { align-items: center; }
+
+  .built-by-nimikh { padding: 10px 14px; min-height: 48px; }
+  .nimikh-logo { height: 28px; max-width: 118px; }
+}
+
+/* ─── SMALL PHONES ─── */
+@media (max-width: 380px) {
+  .topbar-brand-logo img, .topbar-brand-logo svg { height: 26px; max-width: 108px; }
+  .login-brand-logo { height: 42px; max-width: 210px; }
+  .footer-brand-logo { height: 30px; max-width: 176px; }
+  .built-by-nimikh { width: 100%; justify-content: center; }
+}
+
+/* ─── LIGHT THEME ───
+   On a light canvas the marks stand on their own; the plates are dropped so
+   the logos sit flush, which is how the brand guidelines intend them. */
+:root[data-theme="light"] .login-brand-logo {
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+/* Print: drop the plates and let the marks render on paper. */
+@media print {
+  .built-by-nimikh { background: none; border: none; color: #000; }
+  .nimikh-logo, .footer-brand-logo, .login-brand-logo {
+    background: none; padding: 0; box-shadow: none;
+  }
+}
+
+/* ─── DIC MARK ON DARK / COLOURED SURFACES ───
+   The lockup's "Daffodil" wordmark is navy (#0B3897). On the blue topbar and
+   the dark sidebar it dropped out entirely, leaving only "International
+   College" legible. The mark is designed for a white field, so it is given
+   one on every dark surface rather than being recoloured — recolouring a
+   supplied logo would break the brand. */
+.topbar-brand-logo {
+  background: #FFFFFF;
+  border-radius: 8px;
+  padding: 5px 10px;
+  border-right: none;                 /* the plate replaces the divider rule */
+  height: auto;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+}
+.topbar-brand-logo img,
+.topbar-brand-logo svg { height: 30px; }
+
+.sidebar-brand {
+  align-items: center;
+}
+.sidebar-brand-logo {
+  background: #FFFFFF;
+  border-radius: 8px;
+  padding: 6px 10px;
+  height: auto;
+  max-height: 52px;
+}
+
+@media (max-width: 1024px) {
+  .topbar-brand-logo img, .topbar-brand-logo svg { height: 28px; }
+}
+@media (max-width: 900px) {
+  .topbar-brand-logo { padding: 4px 8px; border-radius: 7px; }
+  .topbar-brand-logo img, .topbar-brand-logo svg { height: 24px; max-width: 116px; }
+  .sidebar-brand-logo { padding: 5px 9px; max-height: 46px; }
+}
+@media (max-width: 380px) {
+  .topbar-brand-logo { padding: 4px 7px; }
+  .topbar-brand-logo img, .topbar-brand-logo svg { height: 22px; max-width: 100px; }
+}
+
+/* In light theme the surfaces are already light, so the plate is redundant. */
+:root[data-theme="light"] .sidebar-brand-logo {
+  background: transparent;
+  padding: 0;
+}
