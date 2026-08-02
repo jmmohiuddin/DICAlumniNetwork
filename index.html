@@ -14,7 +14,19 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <!-- Inter is loaded asynchronously. As a plain <link rel="stylesheet"> it
+       blocked first paint, so whenever fonts.googleapis.com was slow or
+       throttled the app showed a blank screen until the request timed out.
+       The media="print" swap lets the page render immediately in the system
+       font stack and upgrade to Inter once it arrives. -->
+  <link rel="stylesheet" media="print" onload="this.media='all';this.onload=null"
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" />
+  <noscript>
+    <link rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" />
+  </noscript>
+  <!-- Charts and QR are progressive enhancements; the app guards both and
+       stays usable if the CDN is unreachable. -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer></script>
   <link rel="manifest" href="manifest.json" />

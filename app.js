@@ -809,6 +809,7 @@ function initDashboardChart() {
   if (state.charts.main) state.charts.main.destroy();
 
   const d = CHART_DATA.engagement;
+  if (typeof Chart === 'undefined') return;   // CDN unavailable — skip charting
   state.charts.main = new Chart(ctx, {
     type: 'line',
     data: {
@@ -855,6 +856,8 @@ function initAnalyticsChart() {
   const ctx = document.getElementById('analytics-chart');
   if (!ctx) return;
   if (state.analyticsChart) state.analyticsChart.destroy();
+
+  if (typeof Chart === 'undefined') return;   // CDN unavailable — skip charting
 
   state.analyticsChart = new Chart(ctx, {
     type: 'line',
