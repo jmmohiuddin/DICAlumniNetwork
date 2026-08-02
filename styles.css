@@ -4410,3 +4410,58 @@ textarea.form-input { resize: vertical; min-height: 100px; }
   background: transparent;
   padding: 0;
 }
+
+/* ─── DIC MARK — sizing after the viewBox crop ───
+   The source SVG declared a 420x100 box while the artwork occupied only
+   262.6x86 of it, leaving 35% dead space on the right. With the viewBox
+   cropped to the content the aspect is ~3:1, so heights are raised and the
+   plate padding tightened — the mark now fills its plate instead of floating
+   in it. */
+.topbar-brand-logo {
+  padding: 5px 9px;
+}
+.topbar-brand-logo img,
+.topbar-brand-logo svg {
+  height: 34px;
+  max-width: 118px;
+}
+
+.sidebar-brand-logo {
+  height: 46px;
+  max-width: 150px;
+  padding: 6px 10px;
+  max-height: none;
+}
+
+.footer-brand-logo {
+  height: 44px;
+  max-width: 145px;
+  padding: 7px 11px;
+}
+
+.login-brand-logo {
+  height: 58px;
+  max-width: 190px;
+  padding: 9px 13px;
+}
+
+@media (max-width: 1024px) {
+  .topbar-brand-logo img, .topbar-brand-logo svg { height: 31px; max-width: 106px; }
+  .footer-brand-logo { height: 40px; max-width: 132px; }
+  .login-brand-logo  { height: 52px; max-width: 172px; }
+}
+
+@media (max-width: 900px) {
+  .topbar-brand-logo { padding: 4px 8px; border-radius: 7px; }
+  .topbar-brand-logo img, .topbar-brand-logo svg { height: 28px; max-width: 94px; }
+  .sidebar-brand-logo { height: 40px; max-width: 132px; padding: 5px 9px; }
+  .footer-brand-logo  { height: 38px; max-width: 126px; padding: 6px 10px; }
+  .login-brand-logo   { height: 46px; max-width: 152px; padding: 8px 12px; }
+}
+
+@media (max-width: 380px) {
+  .topbar-brand-logo { padding: 3px 7px; }
+  .topbar-brand-logo img, .topbar-brand-logo svg { height: 26px; max-width: 86px; }
+  .footer-brand-logo { height: 34px; max-width: 114px; }
+  .login-brand-logo  { height: 42px; max-width: 138px; }
+}

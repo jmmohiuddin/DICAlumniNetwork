@@ -1124,8 +1124,12 @@
           <a class="built-by-nimikh" href="https://nimikh.com/" target="_blank" rel="noopener noreferrer"
              aria-label="Built by Nimikh — opens nimikh.com in a new tab">
             <span class="built-by-label">Built by</span>
+            <!-- Not lazy-loaded: the footer lives deep inside the scrollable
+                 #pages container, where the intersection observer did not fire
+                 and the mark never rendered. At 21KB on every page, deferring
+                 it buys nothing. -->
             <img src="assets/nimikh-logo.png" alt="Nimikh" class="nimikh-logo" width="360" height="88"
-                 loading="lazy" decoding="async" />
+                 decoding="async" />
           </a>
         </div>
       </div>
