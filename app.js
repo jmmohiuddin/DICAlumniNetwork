@@ -14,21 +14,6 @@ const MOCK_USERS = {
   alumni: { email: 'alumni@dic.edu.bd', name: 'Mohiuddin Rahman', initials: 'MR', role: 'alumni', roleLabel: 'Alumni', dept: 'BSc CSE (2020)', icon: '🎓' }
 };
 
-// ─── DIC ALUMNI DATASET ──────────────────────────────────────
-const MOCK_ALUMNI = [
-  { id: 1, name: 'Fatima Khanam', initials: 'FK', role: 'Senior Software Engineer', company: 'bKash Ltd', batch: 2019, dept: 'CSE', domain: 'tech', location: 'Dhaka, BD', skills: ['React', 'Node.js', 'AWS'], mentor: true, verified: true, color: '#00A859' },
-  { id: 2, name: 'Arif Hossain', initials: 'AH', role: 'Data Scientist', company: 'Pathao', batch: 2018, dept: 'SWE', domain: 'tech', location: 'Dhaka, BD', skills: ['Python', 'ML', 'TensorFlow'], mentor: true, verified: true, color: '#00D4AA' },
-  { id: 3, name: 'Nusrat Jahan', initials: 'NJ', role: 'Investment Analyst', company: 'BRAC Bank', batch: 2020, dept: 'BBA', domain: 'finance', location: 'Dhaka, BD', skills: ['Finance', 'Excel', 'Bloomberg'], mentor: false, verified: true, color: '#C084FC' },
-  { id: 4, name: 'Tanvir Ahmed', initials: 'TA', role: 'Product Manager', company: 'Brain Station 23', batch: 2017, dept: 'CSE', domain: 'tech', location: 'Dhaka, BD', skills: ['Agile', 'Product', 'Analytics'], mentor: true, verified: true, color: '#FF8C42' },
-  { id: 5, name: 'Ruma Begum', initials: 'RB', role: 'DevOps Engineer', company: 'Nagad', batch: 2019, dept: 'SWE', domain: 'tech', location: 'Dhaka, BD', skills: ['Docker', 'K8s', 'CI/CD'], mentor: false, verified: true, color: '#34D399' },
-  { id: 6, name: 'Sakib Al Hassan', initials: 'SH', role: 'Cybersecurity Lead', company: 'Dutch-Bangla Bank', batch: 2016, dept: 'CSE', domain: 'tech', location: 'Dhaka, BD', skills: ['Security', 'Pentest', 'SIEM'], mentor: true, verified: true, color: '#F87171' },
-  { id: 7, name: 'Priya Das', initials: 'PD', role: 'UX Designer', company: 'SSL Wireless', batch: 2021, dept: 'CSE', domain: 'design', location: 'Dhaka, BD', skills: ['Figma', 'UX Research', 'Design Systems'], mentor: false, verified: true, color: '#00A859' },
-  { id: 8, name: 'Khalid Mahmud', initials: 'KM', role: 'Backend Engineer', company: 'Chaldal', batch: 2020, dept: 'CSE', domain: 'tech', location: 'Dhaka, BD', skills: ['Go', 'PostgreSQL', 'Redis'], mentor: true, verified: true, color: '#00D4AA' },
-  { id: 9, name: 'Sadia Islam', initials: 'SI', role: 'Business Analyst', company: 'Unilever BD', batch: 2018, dept: 'BBA', domain: 'business', location: 'Dhaka, BD', skills: ['Strategy', 'Analytics', 'SQL'], mentor: false, verified: true, color: '#C084FC' },
-  { id: 10, name: 'Rezaul Karim', initials: 'RK', role: 'ML Research Engineer', company: 'Samsung R&D BD', batch: 2017, dept: 'CSE', domain: 'tech', location: 'Dhaka, BD', skills: ['ML', 'NLP', 'Computer Vision'], mentor: true, verified: true, color: '#FF8C42' },
-  { id: 11, name: 'Tasnim Akter', initials: 'TA', role: 'Software Engineer', company: 'Google', batch: 2015, dept: 'CSE', domain: 'tech', location: 'London, UK', skills: ['Python', 'Go', 'Distributed Systems'], mentor: true, verified: true, color: '#34D399' },
-  { id: 12, name: 'Imran Hossain', initials: 'IH', role: 'Quant Developer', company: 'Goldman Sachs', batch: 2014, dept: 'EEE', domain: 'finance', location: 'New York, USA', skills: ['C++', 'Quant Finance', 'Python'], mentor: false, verified: true, color: '#F87171' }
-];
 
 const MOCK_CAMPAIGNS = [
   { id: 1, name: 'DIC Merit Scholarship Fund 2026', desc: 'Provide full tuition scholarships to 50 meritorious DIC students from underprivileged backgrounds.', tag: 'scholarship', raised: 1840000, goal: 2500000, donors: 342, days: 18, gateways: ['bkash', 'nagad', 'card'] },
@@ -36,57 +21,19 @@ const MOCK_CAMPAIGNS = [
   { id: 3, name: 'DIC Entrepreneurship Seed Fund', desc: 'Launch a startup incubator at DIC providing seed funding and mentorship for student tech startups.', tag: 'education', raised: 920000, goal: 1500000, donors: 210, days: 45, gateways: ['bkash', 'card'] }
 ];
 
-const MOCK_EVENTS = [
-  { id: 1, emoji: '🎓', title: 'DIC 10th Annual Reunion 2026', date: 'Aug 15, 2026', time: '6:00 PM', venue: 'DIC Main Auditorium', capacity: 2000, registered: 1840, price: '৳500', status: 'upcoming', type: 'Gala' },
-  { id: 2, emoji: '💼', title: 'DIC CSE & SWE Job Fair Q3', date: 'Aug 22, 2026', time: '10:00 AM', venue: 'DIC Campus Center', capacity: 1200, registered: 890, price: 'Free', status: 'upcoming', type: 'Professional' },
-  { id: 3, emoji: '🚀', title: 'DIC AI & Cloud Tech Symposium', date: 'Aug 30, 2026', time: '9:00 AM', venue: 'DIC International Hall', capacity: 400, registered: 395, price: '৳300', status: 'upcoming', type: 'Conference' }
-];
 
-const MOCK_JOBS = [
-  { id: 1, emoji: '💻', title: 'Senior Backend Engineer', company: 'Brain Station 23', salary: '৳1.8L/mo', type: 'fulltime', location: 'Dhaka', posted_by: 'Tanvir Ahmed', batch: 2017, tags: ['Node.js', 'PostgreSQL', 'AWS'], days: 2 },
-  { id: 2, emoji: '📊', title: 'Data Scientist', company: 'Pathao', salary: '৳1.4L/mo', type: 'fulltime', location: 'Dhaka', posted_by: 'Arif Hossain', batch: 2018, tags: ['Python', 'Machine Learning'], days: 4 },
-  { id: 3, emoji: '🎨', title: 'UI/UX Design Intern', company: 'SSL Wireless', salary: '৳25K/mo', type: 'internship', location: 'Dhaka', posted_by: 'Priya Das', batch: 2021, tags: ['Figma', 'UX'], days: 1 }
-];
 
-const MOCK_NEWS = [
-  { id: 1, emoji: '🌟', category: 'DIC Spotlight', title: 'DIC Alumna Appointed AI Research Lead at Google DeepMind', excerpt: 'Liana Choudhury (CSE Batch 2018) has been appointed AI Research Lead. She credits DIC\'s hands-on lab environment and mentorship program for her research foundation.', author: 'DIC Press Office', date: '28 Jul 2026', status: 'published' },
-  { id: 2, emoji: '🏆', category: 'Achievement', title: 'DIC Ranks #1 College in Computer Science Innovation 2026', excerpt: 'Daffodil International College achieved top research output in computer science and software engineering in the national index.', author: 'DIC Academic Council', date: '24 Jul 2026', status: 'published' }
-];
 
-const MOCK_CHAPTERS = [
-  { id: 1, name: 'DIC Main Campus Chapter', type: 'regional', icon: '🏫', members: 18420, events: 14, parent: null },
-  { id: 2, name: 'DIC Dhanmondi Branch Alumni', type: 'regional', icon: '🌆', members: 12400, events: 8, parent: null },
-  { id: 3, name: 'DIC CSE Alumni Association', type: 'interest', icon: '💻', members: 6210, events: 18, parent: null },
-  { id: 4, name: 'DIC SWE Engineers Club', type: 'interest', icon: '🚀', members: 4120, events: 12, parent: null },
-  { id: 5, name: 'DIC UK & Europe Alumni', type: 'regional', icon: '🇬🇧', members: 840, events: 5, parent: null }
-];
+// Chapters loaded from PostgreSQL by renderChapters(). Was a hardcoded array.
+let chaptersCache = [];
+// The signed-in user's chapter memberships, also from PostgreSQL.
+let USER_CHAPTER_MEMBERSHIPS = new Set();
 
-const MOCK_MENTORSHIPS = [
-  { id: 1, name: 'Fatima Khanam', initials: 'FK', company: 'bKash', role: 'Senior SWE', type: 'mentor', health: 94, batch: 2019 },
-  { id: 2, name: 'Arif Hossain', initials: 'AH', company: 'Pathao', role: 'Data Scientist', type: 'mentor', health: 87, batch: 2018 }
-];
-const MOCK_PENDING_REQUESTS = [
-  { id: 1, name: 'Rafiq Islam', initials: 'RI', subject: 'Career Transition to ML', expires: '2 days' }
-];
-const MOCK_SUGGESTED_MENTORS = [
-  { name: 'Tasnim Akter', initials: 'TA', company: 'Google', role: 'SWE', score: '97%', color: '#34D399' }
-];
-const MOCK_NOTIFICATIONS = [
-  { icon: '🤝', title: 'Mentorship Accepted', sub: 'Fatima Khanam accepted your connection', time: '5 min ago', unread: true },
-  { icon: '💰', title: 'Donation Receipt', sub: 'Your ৳5,000 to DIC Merit Fund confirmed', time: '1 hr ago', unread: true }
-];
 const MOCK_VERIFICATION_QUEUE = [
   { name: 'Rafiq Hossain', initials: 'RH', details: 'CSE Batch 2021 · Unmatched ID' },
   { name: 'Sumaiya Zaman', initials: 'SZ', details: 'BBA Batch 2022 · Pending NID' }
 ];
-const MOCK_AUDIT_LOG = [
-  { icon: '👑', bg: 'rgba(0,168,89,0.15)', action: 'Role Elevated: alumni → moderator', meta: 'By: Super Admin · 2026-07-29 14:32:11 UTC', hash: '0xA4F2...9E3C' }
-];
 
-const MOCK_COMPLIANCE = [
-  { icon: '🔐', title: 'AES-256-GCM Field Encryption', desc: 'NID and BRC fields encrypted at application layer.', status: 'compliant' },
-  { icon: '📜', title: 'PDPA 2026 & CA 2023 Compliant', desc: 'DIC Privacy policy & consent logging active.', status: 'compliant' }
-];
 const MOCK_TENANTS = [
   { name: 'Daffodil International College', subdomain: 'alumni.dic.edu.bd', alumni: 38420, status: 'active', plan: 'Enterprise Platform' }
 ];
@@ -98,43 +45,164 @@ const MOCK_CAREER_TIMELINE = [
 // ─── APP STATE ──────────────────────────────────────────────
 let state = {
   currentPage: 'dashboard',
-  currentUser: MOCK_USERS.alumni, // Default alumni account
+  currentUser: null, // populated only by a successful /api/auth/login or /api/auth/me
   charts: {},
   searchTimeout: null,
   selectedGateway: null,
   selectedAmount: null,
-  displayedAlumni: 12,
   analyticsChart: null,
   connectedAlumni: {},
+  // Server-side directory query state (search/filter/sort/paging).
+  directory: { search: '', batch: '', domain: '', mentor: false, sort: 'name', limit: 12, offset: 0 },
 };
 
+
+// A few widgets appear both on their own page and on the alumni dashboard.
+// Returns every live container so both stay in sync — previously the duplicate
+// ids meant getElementById only ever found the dashboard copy.
+function renderTargets(id) {
+  return [document.getElementById(id), document.getElementById("dash-" + id)].filter(Boolean);
+}
+
+// ─── SHARED VIEW HELPERS ────────────────────────────────────
+// Every value rendered from PostgreSQL passes through escapeHtml — user-authored
+// story titles, chapter names and notification text all reach innerHTML.
+function escapeHtml(value) {
+  if (value === null || value === undefined) return '';
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function formatDate(value) {
+  if (!value) return '';
+  const d = new Date(value);
+  if (isNaN(d)) return String(value);
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function formatRelativeTime(value) {
+  if (!value) return '';
+  const d = new Date(value);
+  if (isNaN(d)) return String(value);
+  const secs = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (secs < 60) return 'just now';
+  const mins = Math.floor(secs / 60);
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hr${hrs === 1 ? '' : 's'} ago`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`;
+  return formatDate(value);
+}
+
+function renderSkeletonCards(count, variant = 'card') {
+  return Array.from({ length: count }, () => `
+    <div class="skeleton-card skeleton-${variant}" aria-hidden="true">
+      <div class="skeleton-line skeleton-line-lg"></div>
+      <div class="skeleton-line"></div>
+      <div class="skeleton-line skeleton-line-sm"></div>
+    </div>
+  `).join('');
+}
+
+function renderEmptyState(icon, title, subtitle = '') {
+  return `
+    <div class="state-panel state-empty">
+      <div class="state-icon">${icon}</div>
+      <div class="state-title">${escapeHtml(title)}</div>
+      ${subtitle ? `<div class="state-subtitle">${escapeHtml(subtitle)}</div>` : ''}
+    </div>
+  `;
+}
+
+// Surfaces backend failures instead of silently falling back to mock data.
+function renderErrorState(message, retryFn) {
+  return `
+    <div class="state-panel state-error">
+      <div class="state-icon">⚠️</div>
+      <div class="state-title">${escapeHtml(message)}</div>
+      <div class="state-subtitle">The server or database did not respond.</div>
+      ${retryFn ? `<button class="btn btn-secondary state-retry" onclick="${retryFn}">↻ Retry</button>` : ''}
+    </div>
+  `;
+}
+
 // ─── AUTHENTICATION & DEMO LOGIN HANDLERS ───────────────────
-function handleLoginSubmit(e) {
+// Every path below authenticates against PostgreSQL via /api/auth/login and
+// stores a signed session token. The client no longer invents a user object.
+
+const DEMO_PASSWORD = '12345678';
+
+function showLoginError(message) {
+  const el = document.getElementById('login-error');
+  if (!el) return;
+  el.textContent = message;
+  el.classList.toggle('hidden', !message);
+}
+
+function setLoginBusy(busy) {
+  const btn = document.getElementById('login-submit-btn');
+  if (!btn) return;
+  btn.disabled = busy;
+  btn.textContent = busy ? 'Signing in…' : 'Sign In to DIC →';
+}
+
+async function handleLoginSubmit(e) {
   if (e) e.preventDefault();
-  const emailInput = document.getElementById('login-email').value.trim().toLowerCase();
-  
-  // Find matching user or fallback to Alumni
-  let matchedUser = Object.values(MOCK_USERS).find(u => u.email.toLowerCase() === emailInput);
-  if (!matchedUser) matchedUser = emailInput.includes('admin') ? MOCK_USERS.super_admin : MOCK_USERS.alumni;
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
 
-  loginAsUser(matchedUser);
+  showLoginError('');
+  setLoginBusy(true);
+  const result = await API.login(email, password);
+  setLoginBusy(false);
+
+  if (!result || result.error) {
+    showLoginError(result?.error || 'Sign in failed. Please try again.');
+    return;
+  }
+  enterAuthenticatedApp(result.user);
 }
 
-function loginAsRole(roleKey) {
-  const user = MOCK_USERS[roleKey] || MOCK_USERS.super_admin;
-  loginAsUser(user);
+// Demo shortcuts still go through the real endpoint with real credentials.
+async function loginAsRole(roleKey) {
+  const account = MOCK_USERS[roleKey];
+  if (!account) return;
+
+  showLoginError('');
+  const result = await API.login(account.email, DEMO_PASSWORD);
+
+  if (!result || result.error) {
+    showLoginError(result?.error || `Demo login for ${roleKey} failed.`);
+    return;
+  }
+  enterAuthenticatedApp(result.user);
 }
 
-function switchCurrentRole(roleKey) {
-  const user = MOCK_USERS[roleKey] || MOCK_USERS.super_admin;
-  state.currentUser = user;
+// Switching role re-authenticates as that account so the session token, and
+// therefore every server-side permission check, actually changes.
+async function switchCurrentRole(roleKey) {
+  const account = MOCK_USERS[roleKey];
+  if (!account) return;
+
+  const result = await API.login(account.email, DEMO_PASSWORD);
+  if (!result || result.error) {
+    showToast('⚠ Could not switch role — please sign in again.');
+    return;
+  }
+
+  state.currentUser = result.user;
   updateUserUI();
-  renderSidebarNav(user.role);
-  showToast(`🔄 Switched View Role to: ${user.icon} ${user.roleLabel}`);
+  renderSidebarNav(result.user.role);
+  showToast(`🔄 Signed in as: ${result.user.roleLabel}`);
   showPage('dashboard');
 }
 
-function loginAsUser(user) {
+function enterAuthenticatedApp(user) {
   state.currentUser = user;
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('main-app').classList.remove('hidden');
@@ -144,6 +212,21 @@ function loginAsUser(user) {
   showToast(`🎉 Welcome to DIC Portal, ${user.name} (${user.roleLabel})`);
 }
 
+function showLoginScreen() {
+  const mainApp = document.getElementById('main-app');
+  const loginScreen = document.getElementById('login-screen');
+  if (mainApp) mainApp.classList.add('hidden');
+  if (loginScreen) loginScreen.classList.remove('hidden');
+}
+
+// Called by api.js when the server rejects a stored token.
+function onSessionExpired() {
+  API.logout();
+  state.currentUser = null;
+  showLoginScreen();
+  showLoginError('Your session expired. Please sign in again.');
+}
+
 function updateUserUI() {
   const u = state.currentUser;
   const topbarAvatar = document.getElementById('topbar-user-avatar');
@@ -151,12 +234,14 @@ function updateUserUI() {
   const sidebarName = document.getElementById('sidebar-user-name');
   const sidebarRole = document.getElementById('sidebar-user-role');
   const topbarSelect = document.getElementById('topbar-role-select');
+  const drawerSelect = document.getElementById('drawer-role-select');
 
   if (topbarAvatar) topbarAvatar.textContent = u.initials;
   if (sidebarAvatar) sidebarAvatar.textContent = u.initials;
   if (sidebarName) sidebarName.textContent = u.name;
   if (sidebarRole) sidebarRole.textContent = u.roleLabel;
   if (topbarSelect) topbarSelect.value = u.role;
+  if (drawerSelect) drawerSelect.value = u.role;
 }
 
 // ─── DYNAMIC SIDEBAR NAV PER ROLE ───────────────────────────
@@ -215,13 +300,13 @@ function goToStep3() {
   }, 2000);
 }
 
-function enterApp() {
-  document.getElementById('login-screen').classList.add('hidden');
-  document.getElementById('main-app').classList.remove('hidden');
-  initApp();
-}
-
 function logout() {
+  // Drop the session token first — otherwise "signing out" left a valid
+  // credential in localStorage that the next page load silently reused.
+  API.logout();
+  state.currentUser = null;
+  showLoginError('');
+
   const mainApp = document.getElementById('main-app');
   const loginScreen = document.getElementById('login-screen');
   const step1 = document.getElementById('step-1');
@@ -247,22 +332,31 @@ function toggleAppTheme() {
   document.documentElement.setAttribute('data-theme', newTheme);
   localStorage.setItem('dic_theme', newTheme);
   
-  const toggleBtn = document.getElementById('theme-toggle-btn');
-  if (toggleBtn) {
-    toggleBtn.innerHTML = newTheme === 'dark' ? '🌙' : '☀️';
-    toggleBtn.setAttribute('title', newTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode');
-  }
+  applyThemeToggleLabels(newTheme);
   showToast(newTheme === 'dark' ? '🌙 Dark Mode Activated' : '☀️ Light Mode Activated');
+}
+
+// Keeps the topbar (desktop) and drawer (mobile) theme buttons in sync.
+function applyThemeToggleLabels(theme) {
+  const title = theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+  const icon = theme === 'dark' ? '🌙' : '☀️';
+
+  const topbarBtn = document.getElementById('theme-toggle-btn');
+  if (topbarBtn) {
+    topbarBtn.innerHTML = icon;
+    topbarBtn.setAttribute('title', title);
+  }
+  const drawerBtn = document.getElementById('drawer-theme-btn');
+  if (drawerBtn) {
+    drawerBtn.innerHTML = `${icon} Theme`;
+    drawerBtn.setAttribute('title', title);
+  }
 }
 
 function initAppTheme() {
   const savedTheme = localStorage.getItem('dic_theme') || 'dark';
   document.documentElement.setAttribute('data-theme', savedTheme);
-  const toggleBtn = document.getElementById('theme-toggle-btn');
-  if (toggleBtn) {
-    toggleBtn.innerHTML = savedTheme === 'dark' ? '🌙' : '☀️';
-    toggleBtn.setAttribute('title', savedTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode');
-  }
+  applyThemeToggleLabels(savedTheme);
 }
 
 // ─── APP INITIALIZATION & ROLE-BASED DASHBOARDS ──────────────
@@ -275,10 +369,10 @@ function initApp() {
   // Initialize background data
   renderAlumniGrid();
   renderMentorships();
-  if (typeof renderCampaignsEnhanced === 'function') renderCampaignsEnhanced(); else renderCampaigns();
+  renderCampaignsEnhanced();
   if (typeof startCampaignTicker === 'function') startCampaignTicker();
   renderEvents();
-  if (typeof renderJobsEnhanced === 'function') renderJobsEnhanced(); else renderJobs();
+  renderJobsEnhanced();
   renderChapters();
   renderNewsFeed();
   renderMapClusters();
@@ -341,11 +435,11 @@ function renderAlumniDashboard(page) {
       <div class="dashboard-left">
         <div class="glass-card">
           <div class="card-header"><h3 class="card-title">🤝 Recommended DIC Alumni Connections</h3></div>
-          <div id="alumni-grid" class="alumni-grid"></div>
+          <div id="dash-alumni-grid" class="alumni-grid"></div>
         </div>
         <div class="glass-card mt-16">
           <div class="card-header"><h3 class="card-title">📅 Upcoming DIC Events</h3></div>
-          <div id="events-grid" class="events-grid"></div>
+          <div id="dash-events-grid" class="events-grid"></div>
         </div>
       </div>
       <div class="dashboard-right">
@@ -355,7 +449,7 @@ function renderAlumniDashboard(page) {
         </div>
         <div class="glass-card mt-16">
           <div class="card-header"><h3 class="card-title">🗳 DIC Live Poll</h3></div>
-          <div id="active-poll"></div>
+          <div id="dash-active-poll"></div>
         </div>
       </div>
     </div>
@@ -608,9 +702,9 @@ function showPage(page) {
   if (page === 'dashboard') renderDashboard();
   if (page === 'directory') renderAlumniGrid();
   if (page === 'mentorship') renderMentorships();
-  if (page === 'donations') { if (typeof renderCampaignsEnhanced === 'function') renderCampaignsEnhanced(); else renderCampaigns(); }
+  if (page === 'donations') renderCampaignsEnhanced();
   if (page === 'events') renderEvents('upcoming');
-  if (page === 'jobs') { if (typeof renderJobsEnhanced === 'function') renderJobsEnhanced(); else renderJobs(); }
+  if (page === 'jobs') renderJobsEnhanced();
   if (page === 'career' && typeof renderCareerTracker === 'function') renderCareerTracker();
   if (page === 'apidev' && typeof renderAPIPage === 'function') renderAPIPage();
   if (page === 'chapters') renderChapters();
@@ -631,6 +725,7 @@ function showPage(page) {
   }
   if (page === 'admin') {
     if (typeof renderBulkImportPanel === 'function') renderBulkImportPanel();
+    loadImportHistory(); // pulls the real audit trail, then re-renders the panel
     if (typeof renderRBACTableV2 === 'function') renderRBACTableV2(); else renderRBACTable();
     renderAuditLog();
     renderComplianceGrid();
@@ -793,7 +888,17 @@ function initAnalyticsChart() {
       plugins: {
         legend: {
           display: true,
-          labels: { color: '#8B9CC4', font: { family: 'Inter', size: 12 }, padding: 20 }
+          // Compact swatches so the legend sits on one line at 375px instead of
+          // consuming two rows of chart height.
+          labels: {
+            color: '#8B9CC4',
+            font: { family: 'Inter', size: 12 },
+            padding: window.innerWidth < 900 ? 12 : 20,
+            boxWidth: window.innerWidth < 900 ? 12 : 40,
+            boxHeight: window.innerWidth < 900 ? 12 : 12,
+            usePointStyle: true,
+            pointStyle: 'circle'
+          }
         },
         tooltip: {
           backgroundColor: 'rgba(17, 27, 46, 0.95)',
@@ -841,80 +946,88 @@ function approveAlumni(name) {
   showToast(`✅ ${name} approved successfully`);
 }
 
-function renderAlumniGrid(filter = '') {
-  const container = document.getElementById('alumni-grid');
-  if (!container) return;
+// Directory is served from PostgreSQL. Search, filters, sorting and paging are
+// all query parameters — the browser no longer filters a hardcoded array.
+async function renderAlumniGrid({ append = false } = {}) {
+  const containers = renderTargets('alumni-grid');
+  if (!containers.length) return;
+  const container = containers[0];
 
-  let alumni = MOCK_ALUMNI;
-  if (filter) {
-    const q = filter.toLowerCase();
-    alumni = MOCK_ALUMNI.filter(a =>
-      a.name.toLowerCase().includes(q) ||
-      a.company.toLowerCase().includes(q) ||
-      a.domain.toLowerCase().includes(q) ||
-      a.skills.some(s => s.toLowerCase().includes(q)) ||
-      a.location.toLowerCase().includes(q) ||
-      a.batch.toString().includes(q)
-    );
+  const d = state.directory;
+  const countEl = document.getElementById('dir-count');
+  const loadMoreWrap = document.querySelector('.load-more-container');
+
+  if (!append) containers.forEach(c => c.innerHTML = renderSkeletonCards(4, 'alumni'));
+  if (countEl && !append) countEl.textContent = 'Loading profiles…';
+
+  const result = await API.getAlumni({
+    search: d.search, batch: d.batch, domain: d.domain,
+    mentor: d.mentor, sort: d.sort, limit: d.limit, offset: d.offset
+  });
+
+  if (result === null) {
+    container.innerHTML = renderErrorState('Could not load the alumni directory.', 'renderAlumniGrid()');
+    if (countEl) countEl.textContent = '';
+    if (loadMoreWrap) loadMoreWrap.style.display = 'none';
+    return;
   }
 
-  const shown = alumni.slice(0, state.displayedAlumni);
-  document.getElementById('dir-count').textContent = `Showing ${shown.length} of ${MOCK_ALUMNI.length} profiles`;
+  const { alumni, total } = result;
 
-  container.innerHTML = shown.map(a => `
-    <div class="alumni-card" onclick="viewAlumniProfile(${a.id})">
-      <div class="alumni-card-top">
-        <div class="alumni-avatar ${a.verified ? 'verified-ring' : ''}" style="background: linear-gradient(135deg, ${a.color}40, ${a.color}20);">
-          <span style="color:${a.color}">${a.initials}</span>
-          ${a.verified ? '<div class="verified-badge-icon">✓</div>' : ''}
-        </div>
-        <div class="alumni-card-info">
-          <div class="alumni-card-name">${a.name}</div>
-          <div class="alumni-card-role">${a.role} · ${a.company}</div>
-          <div class="alumni-card-location">📍 ${a.location} · Batch ${a.batch}</div>
-        </div>
-      </div>
-      <div class="alumni-tags">
-        ${a.skills.map(s => `<span class="alumni-tag">${s}</span>`).join('')}
-        ${a.mentor ? '<span class="alumni-tag mentor-tag">🤝 Mentor</span>' : ''}
-      </div>
-      <div class="alumni-card-actions">
-        ${(() => {
-          const isConn = state.connectedAlumni && state.connectedAlumni[a.name];
-          return `<button class="connect-btn ${isConn ? 'connected' : ''}" onclick="event.stopPropagation(); connectAlumni('${a.name}', this)" ${isConn ? 'disabled style="background:rgba(0,212,170,0.15);color:var(--teal);border-color:rgba(0,212,170,0.4)"' : ''}>${isConn ? '✓ Connected' : '+ Connect'}</button>`;
-        })()}
-        ${a.mentor ? `<button class="mentor-req-btn" onclick="event.stopPropagation(); showMentorModal('${a.name}')">🤝 Request Mentorship</button>` : ''}
-      </div>
-    </div>
-  `).join('');
+  if (total === 0) {
+    container.innerHTML = renderEmptyState('🔍', 'No profiles match your search',
+      'Try a different name, company, skill, batch year or location.');
+    if (countEl) countEl.textContent = 'Showing 0 profiles';
+    if (loadMoreWrap) loadMoreWrap.style.display = 'none';
+    return;
+  }
+
+  const cards = alumni.map(renderAlumniCard).join('');
+  containers.forEach(c => append ? c.insertAdjacentHTML('beforeend', cards) : (c.innerHTML = cards));
+
+  const shownCount = container.querySelectorAll('.alumni-card').length;
+  if (countEl) countEl.textContent = `Showing ${shownCount} of ${total} profile${total === 1 ? '' : 's'}`;
+  if (loadMoreWrap) loadMoreWrap.style.display = shownCount < total ? '' : 'none';
 }
 
 function loadMoreAlumni() {
-  state.displayedAlumni = Math.min(state.displayedAlumni + 12, MOCK_ALUMNI.length);
-  renderAlumniGrid();
+  state.directory.offset += state.directory.limit;
+  renderAlumniGrid({ append: true });
 }
 
 function filterDirectory(value) {
   clearTimeout(state.searchTimeout);
   const indicator = document.getElementById('search-indicator');
-  indicator.style.display = 'flex';
+  if (indicator) indicator.style.display = 'flex';
   state.searchTimeout = setTimeout(() => {
-    indicator.style.display = 'none';
-    renderAlumniGrid(value);
-  }, 600);
+    if (indicator) indicator.style.display = 'none';
+    state.directory.search = value;
+    state.directory.offset = 0;
+    renderAlumniGrid();
+  }, 400);
 }
 
+// Chip filters map onto real query parameters instead of slicing a local array.
 function toggleChip(el, filter) {
   document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
-  if (filter === 'all') { renderAlumniGrid(); return; }
-  if (filter === 'mentor') {
-    const container = document.getElementById('alumni-grid');
-    const mentors = MOCK_ALUMNI.filter(a => a.mentor);
-    container.innerHTML = mentors.map(a => renderAlumniCard(a)).join('');
-  } else {
-    renderAlumniGrid(filter);
-  }
+
+  const d = state.directory;
+  d.offset = 0;
+  d.mentor = false;
+  d.batch = '';
+  d.domain = '';
+  d.search = '';
+
+  if (filter === 'mentor') d.mentor = true;
+  else if (/^\d{4}$/.test(filter)) d.batch = filter;
+  else if (['tech', 'finance', 'design', 'business'].includes(filter)) d.domain = filter;
+  else if (filter !== 'all') d.search = filter; // location chips: dhaka / uk / usa
+
+  const searchBox = document.getElementById('dir-search');
+  if (searchBox) searchBox.value = d.search;
+
+  renderAlumniGrid();
 }
 
 function connectAlumni(name, btn) {
@@ -948,66 +1061,67 @@ function connectAlumni(name, btn) {
   showToast('🤝 Connection request sent to ' + name + '!');
 }
 
+// Single card renderer shared by the directory grid and the dashboard
+// recommendations — these were two near-identical copies that had already
+// drifted apart (one omitted the verified ring, the other the click target).
 function renderAlumniCard(a) {
   const isConn = state.connectedAlumni && state.connectedAlumni[a.name];
+  const color = a.color || '#00A859';
+  const nameAttr = escapeHtml(a.name).replace(/'/g, '&#39;');
+  const subtitle = [a.role, a.company].filter(Boolean).join(' · ') || 'Profile incomplete';
+
   return `
-    <div class="alumni-card">
+    <div class="alumni-card" onclick="viewAlumniProfile(${a.id})">
       <div class="alumni-card-top">
-        <div class="alumni-avatar verified-ring" style="background: linear-gradient(135deg, ${a.color}40, ${a.color}20);">
-          <span style="color:${a.color}">${a.initials}</span>
+        <div class="alumni-avatar ${a.verified ? 'verified-ring' : ''}" style="background: linear-gradient(135deg, ${color}40, ${color}20);">
+          <span style="color:${color}">${escapeHtml(a.initials)}</span>
           ${a.verified ? '<div class="verified-badge-icon">✓</div>' : ''}
         </div>
         <div class="alumni-card-info">
-          <div class="alumni-card-name">${a.name}</div>
-          <div class="alumni-card-role">${a.role} · ${a.company}</div>
-          <div class="alumni-card-location">📍 ${a.location} · Batch ${a.batch}</div>
+          <div class="alumni-card-name">${escapeHtml(a.name)}</div>
+          <div class="alumni-card-role">${escapeHtml(subtitle)}</div>
+          <div class="alumni-card-location">📍 ${escapeHtml(a.location || 'Location not set')}${a.batch ? ` · Batch ${a.batch}` : ''}</div>
         </div>
       </div>
-      <div class="alumni-tags">${a.skills.map(s => `<span class="alumni-tag">${s}</span>`).join('')}${a.mentor ? '<span class="alumni-tag mentor-tag">🤝 Mentor</span>' : ''}</div>
+      <div class="alumni-tags">
+        ${(a.skills || []).map(s => `<span class="alumni-tag">${escapeHtml(s)}</span>`).join('')}
+        ${a.mentor ? '<span class="alumni-tag mentor-tag">🤝 Mentor</span>' : ''}
+      </div>
       <div class="alumni-card-actions">
-        <button class="connect-btn ${isConn ? 'connected' : ''}" onclick="event.stopPropagation(); connectAlumni('${a.name}', this)" ${isConn ? 'disabled style="background:rgba(0,212,170,0.15);color:var(--teal);border-color:rgba(0,212,170,0.4)"' : ''}>${isConn ? '✓ Connected' : '+ Connect'}</button>
-        ${a.mentor ? `<button class="mentor-req-btn" onclick="event.stopPropagation(); showMentorModal('${a.name}')">🤝 Request</button>` : ''}
+        <button class="connect-btn ${isConn ? 'connected' : ''}"
+                onclick="event.stopPropagation(); connectAlumni('${nameAttr}', this)"
+                ${isConn ? 'disabled' : ''}>${isConn ? '✓ Connected' : '+ Connect'}</button>
+        ${a.mentor ? `<button class="mentor-req-btn" onclick="event.stopPropagation(); showMentorModal('${nameAttr}', ${a.id})">🤝 Request Mentorship</button>` : ''}
       </div>
     </div>`;
 }
 
-function sortDirectory(by) { renderAlumniGrid(); }
+// Previously ignored its argument entirely and just re-rendered the same order.
+function sortDirectory(by) {
+  state.directory.sort = by === 'relevance' ? 'name' : by;
+  state.directory.offset = 0;
+  renderAlumniGrid();
+}
 
 async function viewAlumniProfile(id) {
-  showToast(`👤 Loading profile for DIC Alumni #${id}…`);
-  let profile = null;
+  const profile = await API.getAlumniProfile(id);
 
-  try {
-    if (typeof API !== 'undefined') {
-      profile = await API.getAlumniProfile(id);
-    }
-  } catch (err) {
-    console.warn('PostgreSQL fetch fallback:', err);
-  }
-
+  // No silent mock substitution: if the profile cannot be fetched, say so.
   if (!profile || !profile.name) {
-    const a = MOCK_ALUMNI.find(x => x.id === parseInt(id)) || MOCK_ALUMNI[0];
-    profile = {
-      id: a.id,
-      name: a.name,
-      studentId: a.studentId || `DIC-2020-0${a.id}`,
-      batch: a.batch || 2020,
-      department: a.dept || 'Computer Science & Engineering',
-      degree: a.degree || 'BSc in Computer Science & Engineering',
-      company: a.company || 'Brain Station 23',
-      jobTitle: a.role || 'Senior Software Engineer',
-      location: a.location || 'Dhaka, Bangladesh',
-      bio: a.bio || 'DIC alumni tech lead, software architect, and community mentor.',
-      skills: a.skills || ['React', 'Node.js', 'PostgreSQL', 'AWS'],
-      mobile: a.mobile || '+880 1712-345678',
-      email: a.email || `${a.name.toLowerCase().replace(/ /g, '.')}@dic.edu.bd`,
-      linkedin: a.linkedin || 'https://linkedin.com',
-      github: a.github || 'https://github.com',
-      verified: true,
-      canMentor: a.mentor !== undefined ? a.mentor : true,
-      hiring: true
-    };
+    showModal(`
+      <div class="modal-header">
+        <div class="modal-title">Profile unavailable</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      ${renderErrorState('Could not load this alumni profile.', `closeModal(); viewAlumniProfile(${parseInt(id)})`)}
+    `);
+    return;
   }
+
+  // Fields the database genuinely has no value for render as an explicit
+  // placeholder rather than a plausible-looking invention.
+  const unset = '<span class="field-unset">Not provided</span>';
+  const val = (v) => (v === null || v === undefined || v === '') ? unset : escapeHtml(v);
 
   const matchScore = 96; // AI Mentorship Vector Match Score (REQ-04)
 
@@ -1020,8 +1134,8 @@ async function viewAlumniProfile(id) {
         </div>
         <div style="flex:1">
           <div class="onboarding-title" style="font-size:18px">${profile.name}</div>
-          <div class="onboarding-sub">${profile.jobTitle} · ${profile.company}</div>
-          <div style="font-size:11px;color:var(--teal);margin-top:2px">🎓 ${profile.degree} (Batch ${profile.batch}) · ${profile.department}</div>
+          <div class="onboarding-sub">${[profile.jobTitle, profile.company].filter(Boolean).join(" · ") || "Profile incomplete"}</div>
+          <div style="font-size:11px;color:var(--teal);margin-top:2px">🎓 ${val(profile.degree)}${profile.batch ? ` (Batch ${profile.batch})` : ""} · ${val(profile.department)}</div>
         </div>
         <button class="modal-close" onclick="closeModal()">✕</button>
       </div>
@@ -1042,25 +1156,25 @@ async function viewAlumniProfile(id) {
 
       <!-- VERIFICATION BADGES -->
       <div class="verification-badges-grid">
-        <span class="verify-pill">✓ Student ID ${profile.studentId}</span>
-        <span class="verify-pill">✓ Email Verified (${profile.email})</span>
+        ${profile.studentId ? `<span class="verify-pill">✓ Student ID ${escapeHtml(profile.studentId)}</span>` : ""}
+        ${profile.email ? `<span class="verify-pill">✓ Email Verified (${escapeHtml(profile.email)})</span>` : ""}
         <span class="verify-pill">✓ DIC Alumni Board Verified</span>
       </div>
 
       <!-- ABOUT BIO -->
       <div class="profile-section-card">
         <div class="profile-section-title" style="font-size:13px;font-weight:700;color:var(--teal)">📌 About &amp; Biography</div>
-        <div style="font-size:13px;color:var(--text-primary);margin-top:6px">${profile.bio}</div>
+        <div style="font-size:13px;color:var(--text-primary);margin-top:6px">${val(profile.bio)}</div>
       </div>
 
       <!-- CAREER & LOCATION -->
       <div class="profile-section-card">
         <div class="profile-section-title" style="font-size:13px;font-weight:700;color:var(--teal)">💼 Professional &amp; Location Details</div>
         <div class="field-grid-2" style="margin-top:8px">
-          <div><div class="field-label">Current Role &amp; Employer</div><div class="field-val">${profile.jobTitle} at ${profile.company}</div></div>
-          <div><div class="field-label">Geographical Location</div><div class="field-val">📍 ${profile.location}</div></div>
-          <div><div class="field-label">Primary Email</div><div class="field-val">${profile.email}</div></div>
-          <div><div class="field-label">Mobile Number</div><div class="field-val">${profile.mobile}</div></div>
+          <div><div class="field-label">Current Role &amp; Employer</div><div class="field-val">${profile.jobTitle || profile.company ? escapeHtml([profile.jobTitle, profile.company].filter(Boolean).join(" at ")) : unset}</div></div>
+          <div><div class="field-label">Geographical Location</div><div class="field-val">📍 ${val(profile.location)}</div></div>
+          <div><div class="field-label">Primary Email</div><div class="field-val">${val(profile.email)}</div></div>
+          <div><div class="field-label">Mobile Number</div><div class="field-val">${val(profile.mobile)}</div></div>
         </div>
       </div>
 
@@ -1068,7 +1182,7 @@ async function viewAlumniProfile(id) {
       <div class="profile-section-card">
         <div class="profile-section-title" style="font-size:13px;font-weight:700;color:var(--teal)">⚡ Core Expertise &amp; Skills</div>
         <div class="alumni-tags" style="margin-top:8px">
-          ${(Array.isArray(profile.skills) ? profile.skills : profile.skills.split(',')).map(s => `<span class="alumni-tag">${s.trim()}</span>`).join('')}
+          ${(profile.skills && profile.skills.length) ? profile.skills.map(s => `<span class="alumni-tag">${escapeHtml(s)}</span>`).join('') : unset}
         </div>
       </div>
 
@@ -1081,141 +1195,164 @@ async function viewAlumniProfile(id) {
       <!-- ACTION BUTTONS -->
       <div class="field-grid-2" style="margin-top:10px">
         <button class="btn btn-primary btn-full" onclick="closeModal(); connectAlumni('${profile.name}')">+ Connect</button>
-        <button class="btn btn-outline btn-full" onclick="closeModal(); showMentorModal('${profile.name}')">🤝 Request Mentorship</button>
+        <button class="btn btn-outline btn-full" onclick="closeModal(); showMentorModal('${escapeHtml(profile.name).replace(/'/g, '&#39;')}', ${profile.id})">🤝 Request Mentorship</button>
       </div>
     </div>
   `);
 }
 
-function exportProfileDSAR(name) {
-  const data = JSON.stringify(FULL_USER_PROFILE, null, 2);
-  const blob = new Blob([data], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `dic_dsar_export_${name.toLowerCase().replace(/ /g,'_')}.json`;
-  a.click();
-  showToast('📥 Downloaded DSAR GDPR/PDPA compliance data export');
-}
 
-function renderMentorships() {
+
+// ─── MENTORSHIP (REQ-04) ───
+async function renderMentorships() {
   const list = document.getElementById('mentorship-list');
-  if (list) list.innerHTML = MOCK_MENTORSHIPS.map(m => `
-    <div class="mentorship-connection">
-      <div class="alumni-avatar" style="width:44px;height:44px;background:linear-gradient(135deg,rgba(108,99,255,0.3),rgba(0,212,170,0.3));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;">${m.initials}</div>
-      <div style="flex:1">
-        <div style="font-weight:700;font-size:14px">${m.name}</div>
-        <div style="font-size:12px;color:var(--text-secondary)">${m.role} · ${m.company}</div>
-      </div>
-      <span class="mentorship-type-badge ${m.type}">${m.type === 'mentor' ? '🎓 Mentor' : '📚 Mentee'}</span>
-      <div class="health-score">${m.health}%</div>
-    </div>
-  `).join('');
-
   const pending = document.getElementById('pending-requests');
-  if (pending) pending.innerHTML = MOCK_PENDING_REQUESTS.map(r => `
-    <div class="pending-request">
-      <div class="alumni-avatar" style="width:40px;height:40px;background:linear-gradient(135deg,rgba(255,140,66,0.3),rgba(192,132,252,0.2));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">${r.initials}</div>
-      <div style="flex:1">
-        <div style="font-weight:600;font-size:13px">${r.name}</div>
-        <div style="font-size:12px;color:var(--text-secondary)">${r.subject}</div>
-      </div>
-      <span class="expiry-badge">⏱ ${r.expires}</span>
-      <button class="btn btn-sm btn-primary" onclick="acceptRequest('${r.name}')">Accept</button>
-    </div>
-  `).join('');
-
   const suggested = document.getElementById('suggested-mentors');
-  if (suggested) suggested.innerHTML = MOCK_SUGGESTED_MENTORS.map(m => `
-    <div class="suggested-mentor-card">
-      <div class="alumni-avatar" style="width:44px;height:44px;background:linear-gradient(135deg,${m.color}40,${m.color}20);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:${m.color}">${m.initials}</div>
-      <div style="flex:1">
-        <div style="font-weight:700;font-size:13px">${m.name}</div>
-        <div style="font-size:11px;color:var(--text-secondary)">${m.role} · ${m.company}</div>
-      </div>
-      <div style="text-align:right">
-        <div class="match-score">${m.score}</div>
-        <div style="font-size:10px;color:var(--text-muted)">match</div>
-      </div>
-    </div>
-  `).join('');
+
+  if (list) list.innerHTML = renderSkeletonCards(2, 'mentor');
+
+  const [data, suggestions] = await Promise.all([API.getMentorships(), API.getMentorSuggestions()]);
+
+  if (list) {
+    if (apiFailed(data)) {
+      list.innerHTML = renderErrorState(data?.error || 'Could not load mentorships.', 'renderMentorships()');
+    } else {
+      const active = [...data.asMentor, ...data.asMentee].filter(m => m.status === 'accepted');
+      list.innerHTML = active.length ? active.map(m => {
+        const isMentor = m.mentor_id === state.currentUser.id;
+        const other = isMentor ? m.mentee_name : m.mentor_name;
+        const initials = isMentor ? m.mentee_initials : m.mentor_initials;
+        return `
+        <div class="mentorship-connection">
+          <div class="alumni-avatar" style="width:44px;height:44px;background:linear-gradient(135deg,rgba(108,99,255,0.3),rgba(0,212,170,0.3));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;">${escapeHtml(initials || '??')}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:14px">${escapeHtml(other)}</div>
+            <div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(m.subject)}</div>
+          </div>
+          <span class="mentorship-type-badge ${isMentor ? 'mentor' : 'mentee'}">${isMentor ? '🎓 Mentoring' : '📚 Learning'}</span>
+          <button class="btn btn-ghost btn-sm" onclick="respondToMentorship(${m.id}, 'complete')">Complete</button>
+        </div>`;
+      }).join('') : renderEmptyState('🤝', 'No active mentorships', 'Accepted mentorship connections will appear here.');
+    }
+  }
+
+  if (pending) {
+    if (apiFailed(data)) {
+      pending.innerHTML = '';
+    } else if (data.incoming.length === 0) {
+      pending.innerHTML = renderEmptyState('📭', 'No pending requests');
+    } else {
+      pending.innerHTML = data.incoming.map(r => {
+        const daysLeft = Math.max(0, Math.ceil((new Date(r.expires_at) - Date.now()) / 86400000));
+        return `
+        <div class="pending-request">
+          <div class="alumni-avatar" style="width:40px;height:40px;background:linear-gradient(135deg,rgba(255,140,66,0.3),rgba(192,132,252,0.2));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;">${escapeHtml(r.mentee_initials || '??')}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:13px">${escapeHtml(r.mentee_name)}</div>
+            <div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(r.subject)}</div>
+          </div>
+          <span class="expiry-badge">⏱ ${daysLeft}d left</span>
+          <button class="btn btn-sm btn-primary" onclick="respondToMentorship(${r.id}, 'accept')">Accept</button>
+          <button class="btn btn-sm btn-ghost" onclick="respondToMentorship(${r.id}, 'decline')">Decline</button>
+        </div>`;
+      }).join('');
+    }
+  }
+
+  if (suggested) {
+    if (apiFailed(suggestions)) {
+      suggested.innerHTML = renderErrorState('Could not load mentor suggestions.', 'renderMentorships()');
+    } else if (suggestions.length === 0) {
+      suggested.innerHTML = renderEmptyState('✨', 'No mentor matches yet');
+    } else {
+      suggested.innerHTML = suggestions.map(m => `
+        <div class="suggested-mentor-card">
+          <div class="alumni-avatar" style="width:40px;height:40px;background:linear-gradient(135deg,${m.color || '#00A859'}40,${m.color || '#00A859'}20);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:${m.color || '#00A859'}">${escapeHtml(m.initials)}</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px">${escapeHtml(m.name)}</div>
+            <div style="font-size:11px;color:var(--text-secondary)">${escapeHtml([m.role, m.company].filter(Boolean).join(' · ') || 'DIC Alumni')}</div>
+          </div>
+          <span class="match-score-badge">${m.match_score}%</span>
+          <button class="btn btn-sm btn-primary" onclick="showMentorModal('${escapeHtml(m.name).replace(/'/g, '&#39;')}', ${m.id}, ${m.match_score})">Request</button>
+        </div>`).join('');
+    }
+  }
 }
 
-function acceptRequest(name) { showToast(`✅ Mentorship with ${name} accepted!`); }
 
-function renderCampaigns() {
-  const container = document.getElementById('campaigns-grid');
-  if (!container) return;
-  container.innerHTML = MOCK_CAMPAIGNS.map(c => {
-    const pct = Math.round((c.raised / c.goal) * 100);
-    return `
-    <div class="campaign-card">
-      <div class="campaign-card-header">
-        <span class="campaign-tag ${c.tag}">${c.tag.toUpperCase()}</span>
-        <div class="campaign-name">${c.name}</div>
-        <div class="campaign-desc">${c.desc}</div>
-      </div>
-      <div class="campaign-progress">
-        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
-        <div class="progress-meta">
-          <span class="progress-raised">৳${(c.raised/100000).toFixed(1)}L raised</span>
-          <span class="progress-goal">of ৳${(c.goal/100000).toFixed(1)}L goal · ${pct}%</span>
-        </div>
-        <div style="display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--text-muted)">
-          <span>👥 ${c.donors} donors</span>
-          <span>📅 ${c.days} days left</span>
-        </div>
-      </div>
-      <div class="campaign-footer">
-        <div class="gateway-pills">
-          ${c.gateways.map(g => `<span class="gateway-pill ${g}">${g.charAt(0).toUpperCase() + g.slice(1)}</span>`).join('')}
-        </div>
-        <button class="donate-btn" onclick="showDonateModal(${c.id}, '${c.name}')">Donate →</button>
-      </div>
-    </div>`;
-  }).join('');
-}
 
-function renderEvents(filter = 'upcoming') {
-  const container = document.getElementById('events-grid');
-  if (!container) return;
+// ─── EVENTS & TICKETING (REQ-06) ───
+// Reads from PostgreSQL, shows the signed-in user's ticket state, and drives
+// registration / cancellation / QR check-in through the real endpoints.
+async function renderEvents(filter = 'upcoming') {
+  const containers = renderTargets('events-grid');
+  if (!containers.length) return;
+  const container = { set innerHTML(v) { containers.forEach(c => c.innerHTML = v); } };
 
   if (filter === 'checkin') {
     container.innerHTML = `
-      <div class="glass-card" style="grid-column:1/-1;text-align:center;padding:48px">
-        <div style="font-size:48px;margin-bottom:16px">📷</div>
-        <div style="font-size:20px;font-weight:800;margin-bottom:8px">QR Check-In Scanner</div>
-        <div style="color:var(--text-secondary);margin-bottom:24px">Point camera at attendee QR ticket for instant check-in</div>
-        <button class="btn btn-primary" onclick="simulateCheckin()">🎫 Simulate QR Scan</button>
+      <div class="glass-card" style="grid-column:1/-1;padding:28px">
+        <div style="text-align:center;font-size:44px;margin-bottom:12px">📷</div>
+        <div style="text-align:center;font-size:19px;font-weight:800;margin-bottom:6px">QR Check-In Scanner</div>
+        <div style="text-align:center;color:var(--text-secondary);margin-bottom:20px">Scan or type an attendee ticket code to check them in.</div>
+        <form onsubmit="handleCheckIn(event)" style="max-width:420px;margin:0 auto">
+          <div class="input-group">
+            <label class="input-label">Ticket Code</label>
+            <input type="text" id="checkin-code" class="form-input" placeholder="DIC-TKT-XXXXX-XXXXXX" autocomplete="off" required />
+          </div>
+          <button type="submit" class="btn btn-primary btn-full">✓ Check In Attendee</button>
+        </form>
+        <div id="checkin-result" style="max-width:420px;margin:16px auto 0"></div>
       </div>`;
     return;
   }
 
-  const events = filter === 'past'
-    ? [{ emoji: '🎓', title: 'Alumni Day 2025', date: 'Nov 15, 2025', time: '6:00 PM', venue: 'DIC Auditorium', capacity: 400, registered: 389, price: '৳500', status: 'past', type: 'Gala' }]
-    : MOCK_EVENTS;
+  container.innerHTML = renderSkeletonCards(3, 'event');
+  const events = await API.getEvents();
 
-  container.innerHTML = events.map(e => {
-    const pct = Math.round((e.registered / e.capacity) * 100);
+  if (apiFailed(events)) {
+    container.innerHTML = renderErrorState(events?.error || 'Could not load events.', `renderEvents('${filter}')`);
+    return;
+  }
+
+  const list = events.filter(e => filter === 'past' ? e.status === 'past' : e.status !== 'past');
+
+  if (list.length === 0) {
+    container.innerHTML = renderEmptyState('📅',
+      filter === 'past' ? 'No past events' : 'No upcoming events',
+      filter === 'past' ? 'Completed events will be archived here.' : 'New events will appear here once published.');
+    return;
+  }
+
+  const canManage = state.currentUser && ['super_admin', 'univ_admin', 'dept_admin', 'moderator'].includes(state.currentUser.role);
+
+  container.innerHTML = list.map(e => {
+    const registered = e.registered_live ?? e.registered_count ?? 0;
+    const pct = e.capacity ? Math.min(100, Math.round((registered / e.capacity) * 100)) : 0;
+    const full = registered >= e.capacity;
     return `
     <div class="event-card">
       <div class="event-card-banner" style="background: linear-gradient(135deg, rgba(108,99,255,0.15), rgba(0,212,170,0.1))">
-        ${e.emoji}
-        <span class="event-status ${e.status}">${e.status === 'sold-out' ? '🔴 Sold Out' : e.status === 'live' ? '🔴 Live' : '🟢 Open'}</span>
+        ${escapeHtml(e.emoji || '🎓')}
+        <span class="event-status ${full ? 'sold-out' : e.status}">${full ? '🔴 Full' : '🟢 Open'}</span>
       </div>
       <div class="event-card-body">
-        <div style="font-size:10px;font-weight:700;color:var(--primary-light);margin-bottom:4px;text-transform:uppercase">${e.type}</div>
-        <div class="event-title">${e.title}</div>
-        <div class="event-meta">
-          <span>📅 ${e.date} · ${e.time}</span>
-          <span>📍 ${e.venue}</span>
+        <div style="font-size:10px;font-weight:700;color:var(--primary-light);margin-bottom:4px;text-transform:uppercase">${escapeHtml(e.type || 'Event')}</div>
+        <div class="event-title">${escapeHtml(e.title)}</div>
+        <div class="event-meta">📅 ${escapeHtml(e.event_date || 'TBA')}${e.event_time ? ` · ${escapeHtml(e.event_time)}` : ''}</div>
+        <div class="event-meta">📍 ${escapeHtml(e.venue)}</div>
+        <div class="event-capacity-track"><div class="event-capacity-fill" style="width:${pct}%"></div></div>
+        <div class="event-capacity-meta">
+          <span>${registered.toLocaleString()} / ${Number(e.capacity).toLocaleString()} registered</span>
+          <span>${escapeHtml(e.price || 'Free')}</span>
         </div>
-        <div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">${e.registered}/${e.capacity} registered (${pct}%)</div>
-        <div class="event-capacity-bar"><div class="event-capacity-fill" style="width:${pct}%"></div></div>
-      </div>
-      <div class="event-footer">
-        <div class="event-price">${e.price}</div>
-        <button class="event-ticket-btn" onclick="buyTicket('${e.title}')">${e.status === 'sold-out' ? '⏳ Waitlist' : '🎫 Get Ticket'}</button>
+        <div class="event-card-actions">
+          ${e.is_registered
+            ? `<button class="btn btn-outline btn-sm" onclick="viewMyTicket(${e.id})">🎫 View Ticket</button>
+               <button class="btn btn-ghost btn-sm" onclick="cancelTicket(${e.id}, '${escapeHtml(e.title).replace(/'/g, '&#39;')}')">Cancel</button>`
+            : `<button class="btn btn-primary btn-sm" onclick="registerForEvent(${e.id}, '${escapeHtml(e.title).replace(/'/g, '&#39;')}', ${full})">${full ? '⏳ Join Waitlist' : '🎫 Get Ticket'}</button>`}
+          ${canManage ? `<button class="btn btn-ghost btn-sm" onclick="showAttendeesModal(${e.id})">👥 Attendees</button>` : ''}
+        </div>
       </div>
     </div>`;
   }).join('');
@@ -1229,6 +1366,7 @@ function filterEvents(filter, btn) {
 
 // ─── EVENT MANAGEMENT PLANNER WORKSPACE ENGINE ───
 let CURRENT_PLANNER_DATA = null;
+let CURRENT_PLANNER_EVENT_ID = 1;
 let ACTIVE_PLANNER_TAB = 'overview';
 
 function switchEventWorkspaceMode(mode, btn) {
@@ -1250,73 +1388,21 @@ function switchEventWorkspaceMode(mode, btn) {
 }
 
 async function loadEventPlannerWorkspace(eventId = 1) {
-  showToast('📋 Loading Event Planner Workspace data…');
-  let data = await API.getEventPlanner(eventId);
+  const container = document.getElementById("planner-tab-content");
+  if (container) container.innerHTML = renderSkeletonCards(3, "planner");
 
-  if (!data || !data.proposal) {
-    // Local fallback state
-    data = {
-      proposal: {
-        id: 1,
-        name: 'DIC 10th Annual Reunion & Tech Gala 2026',
-        description: 'Comprehensive 10th anniversary alumni reunion featuring keynotes, networking gala, career fair, and fundraising drive.',
-        objectives: 'Foster alumni-student mentorship, raise scholarship funds, and showcase DIC computer science achievements.',
-        outcomes: '500+ attendees, ৳10L+ raised for scholarships, 50+ mentorship connections created.',
-        category: 'Alumni Gala',
-        type: 'Reunion & Gala',
-        department: 'Computer Science & Engineering',
-        organizer_name: 'DIC Alumni Relations & Executive Board',
-        expected_attendance: 2000,
-        venue: 'DIC Main Campus Auditorium & International Hall',
-        event_date: 'Aug 15, 2026',
-        duration: '8 Hours',
-        status: 'approved'
-      },
-      budgets: [
-        { id: 1, category: 'Venue & Hall Rental', estimated_cost: 150000, actual_cost: 140000, vendor_name: 'DIC Campus Operations', status: 'approved', payment_status: 'paid' },
-        { id: 2, category: 'Stage & LED Screen Setup', estimated_cost: 180000, actual_cost: 185000, vendor_name: 'Dhaka Event Tech Ltd', status: 'approved', payment_status: 'paid' },
-        { id: 3, category: 'Catering & Buffet Food (2000 pax)', estimated_cost: 350000, actual_cost: 340000, vendor_name: 'Grand Prince Catering', status: 'approved', payment_status: 'paid' },
-        { id: 4, category: 'Photography & 4K Video Crew', estimated_cost: 80000, actual_cost: 75000, vendor_name: 'Cinematic Studio BD', status: 'approved', payment_status: 'paid' },
-        { id: 5, category: 'Security & Medical First Aid Team', estimated_cost: 50000, actual_cost: 48000, vendor_name: 'Elite Security Services', status: 'approved', payment_status: 'paid' },
-        { id: 6, category: 'Merchandise & Printed Welcome Kits', estimated_cost: 120000, actual_cost: 115000, vendor_name: 'PressCraft Printers', status: 'approved', payment_status: 'paid' }
-      ],
-      sponsors: [
-        { id: 1, company: 'Brain Station 23', contact_person: 'Tanvir Ahmed', package_tier: 'title', contribution_amount: 500000, pipeline_status: 'received', deliverables: 'Main stage banner branding, keynote session slot, 10 VIP passes' },
-        { id: 2, company: 'bKash Limited', contact_person: 'Arif Hossain', package_tier: 'gold', contribution_amount: 300000, pipeline_status: 'received', deliverables: 'Ticketing partner branding, booth space in lobby' },
-        { id: 3, company: 'Pathao Tech', contact_person: 'Nusrat Rima', package_tier: 'silver', contribution_amount: 150000, pipeline_status: 'agreed', deliverables: 'Rideshare promo codes for attendees' },
-        { id: 4, company: 'SSL Wireless', contact_person: 'Farhana S', package_tier: 'bronze', contribution_amount: 100000, pipeline_status: 'proposed', deliverables: 'SMS gateway sponsorship' }
-      ],
-      committees: [
-        { id: 1, name: 'Finance & Sponsorship', leader_name: 'Super Admin (Mohiuddin)', members_count: 4, budget_allocated: 250000 },
-        { id: 2, name: 'Marketing & Media', leader_name: 'Nusrat Jahan', members_count: 6, budget_allocated: 150000 },
-        { id: 3, name: 'Logistics & Stage', leader_name: 'Rafiqul Islam', members_count: 8, budget_allocated: 300000 },
-        { id: 4, name: 'Security & Volunteers', leader_name: 'Imtiaz Ahmed', members_count: 12, budget_allocated: 100000 }
-      ],
-      tasks: [
-        { id: 1, committee_name: 'Finance & Sponsorship', title: 'Finalize Title Sponsor Agreement with Brain Station 23', priority: 'critical', status: 'completed', assigned_to: 'Super Admin', deadline: 'Aug 01, 2026' },
-        { id: 2, committee_name: 'Logistics & Stage', title: 'Book Auditorium & Confirm Sound/Lighting Quotation', priority: 'high', status: 'completed', assigned_to: 'Rafiqul Islam', deadline: 'Aug 05, 2026' },
-        { id: 3, committee_name: 'Marketing & Media', title: 'Launch Social Media Campaign & Press Release', priority: 'medium', status: 'in_progress', assigned_to: 'Nusrat Jahan', deadline: 'Aug 10, 2026' },
-        { id: 4, committee_name: 'Security & Volunteers', title: 'Assign 25 Volunteers to Check-In & VIP Security Duties', priority: 'high', status: 'todo', assigned_to: 'Imtiaz Ahmed', deadline: 'Aug 12, 2026' },
-        { id: 5, committee_name: 'Logistics & Stage', title: 'Receive 500 Printed Welcome Gift Boxes & Lanyards', priority: 'low', status: 'blocked', assigned_to: 'Rafiqul Islam', deadline: 'Aug 13, 2026' }
-      ],
-      procurement: [
-        { id: 1, item_name: 'Custom Alumni Welcome T-Shirts', category: 'Merchandise', quantity: 500, estimated_price: 100000, actual_price: 95000, vendor_name: 'PressCraft Printers', delivery_status: 'delivered' },
-        { id: 2, item_name: 'Lanyards & Anti-Spoof QR ID Badges', category: 'Branding', quantity: 600, estimated_price: 25000, actual_price: 24000, vendor_name: 'PressCraft Printers', delivery_status: 'delivered' },
-        { id: 3, item_name: 'VIP Flowers & Recognition Crests', category: 'Decorations', quantity: 20, estimated_price: 15000, actual_price: 14500, vendor_name: 'Flower Garden BD', delivery_status: 'ordered' }
-      ],
-      volunteers: [
-        { id: 1, volunteer_name: 'Tanvir Ahmed', shift_time: '8:00 AM - 1:00 PM', assigned_committee: 'Registration & Check-In', attendance_status: 'checked_in', certificate_issued: true },
-        { id: 2, volunteer_name: 'Farhana Sultana', shift_time: '12:00 PM - 5:00 PM', assigned_committee: 'Hospitality & VIP Lounge', attendance_status: 'checked_in', certificate_issued: true },
-        { id: 3, volunteer_name: 'Sabbir Rahman', shift_time: '8:00 AM - 4:00 PM', assigned_committee: 'Stage & Tech Support', attendance_status: 'assigned', certificate_issued: false }
-      ],
-      risks: [
-        { id: 1, risk_title: 'Monsoon Heavy Rainfall / Weather Disruption', category: 'Weather', severity: 'high', contingency_plan: 'Shift outdoor booths to indoor Gymnasium. Covered walkway installed.' },
-        { id: 2, risk_title: 'Main Power Grid Failure during Keynote', category: 'Technical', severity: 'high', contingency_plan: 'Auto-synchronizing 250kVA standby diesel generator with zero-downtime UPS.' }
-      ]
-    };
+  // One bundled call returns all thirteen planner sections from PostgreSQL.
+  // This previously fell back to ~80 lines of hardcoded sample data whenever
+  // the request failed, which made an outage look like a populated workspace.
+  const data = await API.getPlannerWorkspace(eventId);
+
+  if (apiFailed(data)) {
+    if (container) container.innerHTML = renderErrorState(data?.error || "Could not load the planner workspace.", "loadEventPlannerWorkspace(" + eventId + ")");
+    return;
   }
 
   CURRENT_PLANNER_DATA = data;
+  CURRENT_PLANNER_EVENT_ID = eventId;
   renderPlannerTabContent(ACTIVE_PLANNER_TAB);
 }
 
@@ -1331,11 +1417,22 @@ function renderPlannerTabContent(tab) {
   const container = document.getElementById('planner-tab-content');
   if (!container || !CURRENT_PLANNER_DATA) return;
 
+  // Modules added in Phase 6 render through their own function.
+  if (['vendors', 'timeline', 'logistics'].includes(tab)) {
+    renderPlannerExtraTab(tab);
+    return;
+  }
+
   const p = CURRENT_PLANNER_DATA.proposal;
   const b = CURRENT_PLANNER_DATA.budgets;
   const s = CURRENT_PLANNER_DATA.sponsors;
   const t = CURRENT_PLANNER_DATA.tasks;
-  const c = CURRENT_PLANNER_DATA.committees;
+  const c = CURRENT_PLANNER_DATA.committees || [];
+  const vendors = CURRENT_PLANNER_DATA.vendors || [];
+  const timeline = CURRENT_PLANNER_DATA.timeline || [];
+  const logistics = CURRENT_PLANNER_DATA.logistics || [];
+  const marketing = CURRENT_PLANNER_DATA.marketing || [];
+  const meetings = CURRENT_PLANNER_DATA.meetings || [];
 
   // Calculate Metrics
   const totalEstBudget = b.reduce((acc, curr) => acc + Number(curr.estimated_cost), 0);
@@ -1568,47 +1665,49 @@ function renderPlannerTabContent(tab) {
   } else if (tab === 'marketing') {
     container.innerHTML = `
       <div class="glass-card">
-        <div class="card-header"><h3 class="card-title">📢 Omnichannel Marketing &amp; Meeting Minutes</h3></div>
-        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">Schedule broadcast announcements, review meeting minutes (MoM), and track promotional assets.</p>
-        <div class="field-grid-2">
-          <div style="padding:14px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
-            <div style="font-weight:700;font-size:14px">📱 Social Media &amp; SMS Campaign</div>
-            <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Broadcast event registration invites directly to 2,000+ alumni emails &amp; SMS gateways.</div>
-            <button class="btn btn-sm btn-primary mt-12" onclick="showBroadcastModal()">📢 Launch Broadcast</button>
-          </div>
-          <div style="padding:14px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
-            <div style="font-weight:700;font-size:14px">📝 Executive Meeting Minutes (MoM)</div>
-            <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Logged: Meeting #4 (Aug 01) — Title Sponsor confirmed; Main Auditorium stage lighting finalized.</div>
-            <button class="btn btn-sm btn-outline mt-12" onclick="showToast('📝 Meeting minutes updated')">+ Add MoM Entry</button>
-          </div>
+        <div class="card-header">
+          <h3 class="card-title">📢 Marketing Campaigns</h3>
+          ${plannerToolbar('marketing', 'Campaign')}
         </div>
+        ${plannerTable(
+          ['Channel', 'Campaign', 'Audience', 'Budget', 'Reach', 'Conversions', 'Status', ''],
+          marketing,
+          m => [
+            escapeHtml(m.channel),
+            `<strong>${escapeHtml(m.campaign_name)}</strong>`,
+            escapeHtml(m.audience || '—'),
+            `৳${Number(m.budget).toLocaleString()}`,
+            Number(m.reach).toLocaleString(),
+            `${Number(m.conversions).toLocaleString()}${Number(m.reach) ? ` (${((m.conversions / m.reach) * 100).toFixed(1)}%)` : ''}`,
+            `<span class="card-badge ${m.status === 'live' ? 'teal' : m.status === 'completed' ? '' : 'amber'}">${escapeHtml(m.status)}</span>`,
+            `<button class="btn btn-sm btn-ghost" onclick="deletePlannerItem('marketing', ${m.id})">🗑</button>`
+          ],
+          '📢', 'No marketing campaigns planned yet')}
+        <button class="btn btn-sm btn-outline mt-14" onclick="showBroadcastModal()">📣 Send a broadcast now</button>
+      </div>
+
+      <div class="glass-card mt-16">
+        <div class="card-header">
+          <h3 class="card-title">📝 Committee Meetings &amp; Minutes</h3>
+          ${plannerToolbar('meetings', 'Meeting')}
+        </div>
+        ${plannerTable(
+          ['Meeting', 'Date', 'Location', 'Attendees', 'Status', ''],
+          meetings,
+          mt => [
+            `<strong>${escapeHtml(mt.title)}</strong>${mt.agenda ? `<div style="font-size:11px;color:var(--text-muted)">${escapeHtml(mt.agenda)}</div>` : ''}`,
+            `${escapeHtml(formatDate(mt.meeting_date))}${mt.meeting_time ? ` · ${escapeHtml(mt.meeting_time)}` : ''}`,
+            escapeHtml(mt.location || '—'),
+            escapeHtml(mt.attendees || '—'),
+            `<span class="card-badge ${mt.status === 'held' ? 'teal' : 'amber'}">${escapeHtml(mt.status)}</span>`,
+            `<button class="btn btn-sm btn-ghost" onclick="deletePlannerItem('meetings', ${mt.id})">🗑</button>`
+          ],
+          '📝', 'No meetings scheduled yet')}
       </div>`;
   } else if (tab === 'analytics') {
-    container.innerHTML = `
-      <div class="glass-card">
-        <div class="card-header">
-          <h3 class="card-title">📈 Event ROI Analytics &amp; Post-Event Audit Reports</h3>
-          <button class="btn btn-sm btn-primary" onclick="downloadEventReport('summary')">📥 Download Full Event Report (JSON)</button>
-        </div>
-        <div class="planner-metrics-ribbon mt-14 mb-16">
-          <div class="pmetric-card">
-            <div class="pmetric-val" style="color:var(--teal)">+16.6%</div>
-            <div class="pmetric-lab">Financial ROI</div>
-          </div>
-          <div class="pmetric-card">
-            <div class="pmetric-val">100%</div>
-            <div class="pmetric-lab">Task Completion</div>
-          </div>
-          <div class="pmetric-card">
-            <div class="pmetric-val">2,000</div>
-            <div class="pmetric-lab">Total Ticket Cap</div>
-          </div>
-          <div class="pmetric-card">
-            <div class="pmetric-val" style="color:var(--teal)">4.9 / 5.0</div>
-            <div class="pmetric-lab">Attendee Rating</div>
-          </div>
-        </div>
-      </div>`;
+    container.innerHTML = renderSkeletonCards(2, 'analytics');
+    renderPlannerAnalytics();
+    return;
   } else if (tab === 'ai') {
     container.innerHTML = `
       <div class="glass-card">
@@ -1693,16 +1792,7 @@ async function runEventAIEstimate() {
   }
 }
 
-function downloadEventReport(type) {
-  const dataStr = JSON.stringify(CURRENT_PLANNER_DATA, null, 2);
-  const blob = new Blob([dataStr], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `dic_event_planner_report_${type}.json`;
-  a.click();
-  showToast('📥 Downloaded Event Management Planner Report JSON');
-}
+
 
 function showCreateProposalModal() {
   showModal(`
@@ -1917,102 +2007,17 @@ async function handleAddTaskSubmit(e) {
   renderPlannerTabContent('tasks');
 }
 
-function renderJobs(filter = '') {
-  const container = document.getElementById('jobs-list');
-  if (!container) return;
 
-  let jobs = MOCK_JOBS;
-  if (filter) {
-    const q = filter.toLowerCase();
-    jobs = MOCK_JOBS.filter(j =>
-      j.title.toLowerCase().includes(q) || j.company.toLowerCase().includes(q) ||
-      j.tags.some(t => t.toLowerCase().includes(q))
-    );
-  }
 
-  container.innerHTML = jobs.map(j => `
-    <div class="job-card">
-      <div class="job-company-logo">${j.emoji}</div>
-      <div class="job-info">
-        <div class="job-title">${j.title}</div>
-        <div class="job-company">${j.company}</div>
-        <div class="job-meta">
-          <span class="job-meta-item">📍 ${j.location}</span>
-          <span class="job-meta-item">👤 Posted by ${j.posted_by} (${j.batch})</span>
-          <span class="job-meta-item">🕒 ${j.days}d ago</span>
-        </div>
-        <div class="job-tags">${j.tags.map(t => `<span class="job-tag">${t}</span>`).join('')}</div>
-      </div>
-      <div class="job-right">
-        <div class="job-salary">${j.salary}</div>
-        <span class="job-type-badge ${j.type}">${j.type.charAt(0).toUpperCase() + j.type.slice(1)}</span>
-        <button class="apply-btn" onclick="applyJob('${j.title}')">Apply →</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function filterJobs(value) { renderJobs(value); }
-function filterJobType(v) { renderJobs(v); }
-function filterJobLocation(v) { renderJobs(v); }
-
-let USER_CHAPTER_MEMBERSHIPS = new Set([1, 3]);
-
-async function renderChapters() {
-  const tree = document.getElementById('chapter-tree');
-  if (!tree) return;
-
-  // Sync with PostgreSQL API if available
-  if (typeof API !== 'undefined') {
-    const chaptersFromApi = await API.getChapters();
-    if (chaptersFromApi && Array.isArray(chaptersFromApi) && chaptersFromApi.length > 0) {
-      const apiMapped = chaptersFromApi.map(c => ({
-        id: c.id,
-        name: c.name,
-        type: c.type,
-        icon: c.icon || '🏫',
-        members: c.members_count || 1,
-        events: c.events_count || 0,
-        parent: (c.parent_id === null || c.parent_id === undefined || c.parent_id === 'null') ? null : c.parent_id
-      }));
-
-      // Preserve local newly added chapters that haven't been fetched yet
-      MOCK_CHAPTERS.forEach(localChap => {
-        if (!apiMapped.some(ac => ac.id === localChap.id || ac.name === localChap.name)) {
-          apiMapped.push(localChap);
-        }
-      });
-
-      MOCK_CHAPTERS = apiMapped;
-    }
-  }
-
-  const roots = MOCK_CHAPTERS.filter(c => c.parent === null || c.parent === undefined || c.parent === 'null' || !c.parent);
-  const children = (parentId) => MOCK_CHAPTERS.filter(c => c.parent == parentId && c.parent !== null && c.parent !== undefined);
-
-  tree.innerHTML = roots.map(c => `
-    <div class="chapter-node" onclick="selectChapter(${c.id})">
-      <span class="chapter-icon">${c.icon}</span>
-      <span class="chapter-name">${c.name}</span>
-      <span class="chapter-type ${c.type}">${c.type}</span>
-      <span class="chapter-count">${c.members ? c.members.toLocaleString() : '1'}</span>
-    </div>
-    ${children(c.id).map(sub => `
-      <div class="chapter-node chapter-indent" onclick="selectChapter(${sub.id})">
-        <span class="chapter-icon">${sub.icon}</span>
-        <span class="chapter-name">${sub.name}</span>
-        <span class="chapter-type ${sub.type}">${sub.type}</span>
-        <span class="chapter-count">${sub.members ? sub.members.toLocaleString() : '1'}</span>
-      </div>
-    `).join('')}
-  `).join('');
-
-  if (MOCK_CHAPTERS.length > 0) selectChapter(MOCK_CHAPTERS[MOCK_CHAPTERS.length - 1].id);
+function filterJobs(value) { renderJobsEnhanced(value); }
+function filterJobType(v) {
+  state.jobFilters = { ...(state.jobFilters || {}), type: v === 'all' ? '' : v };
+  renderJobsEnhanced();
 }
 
 function selectChapter(id) {
   document.querySelectorAll('.chapter-node').forEach(n => n.classList.remove('active'));
-  const c = MOCK_CHAPTERS.find(ch => ch.id === id);
+  const c = chaptersCache.find(ch => ch.id === id);
   if (!c) return;
 
   const isJoined = USER_CHAPTER_MEMBERSHIPS.has(c.id);
@@ -2047,41 +2052,26 @@ function selectChapter(id) {
 }
 
 async function toggleJoinChapter(id) {
-  const c = MOCK_CHAPTERS.find(ch => ch.id === id);
+  const c = chaptersCache.find(ch => ch.id === id);
   if (!c) return;
 
-  let joined = false;
-  if (typeof API !== 'undefined') {
-    const res = await API.joinChapter(id, state.currentUser ? state.currentUser.id : 5);
-    if (res) joined = res.joined;
-  } else {
-    if (USER_CHAPTER_MEMBERSHIPS.has(id)) {
-      USER_CHAPTER_MEMBERSHIPS.delete(id);
-      c.members = Math.max(1, c.members - 1);
-      joined = false;
-    } else {
-      USER_CHAPTER_MEMBERSHIPS.add(id);
-      c.members = c.members + 1;
-      joined = true;
-    }
+  // The server owns membership state and returns the resulting flag; the
+  // client no longer guesses or maintains a parallel counter.
+  const res = await API.joinChapter(id);
+
+  if (!res || res.error) {
+    showToast('⚠ Could not update your membership — please try again.');
+    return;
   }
 
-  if (joined) {
-    USER_CHAPTER_MEMBERSHIPS.add(id);
-    c.members += 1;
-    showToast(`🎉 You have joined "${c.name}"!`);
-  } else {
-    USER_CHAPTER_MEMBERSHIPS.delete(id);
-    c.members = Math.max(1, c.members - 1);
-    showToast(`ℹ Left chapter "${c.name}".`);
-  }
+  showToast(res.joined ? `🎉 You have joined ${c.name}!` : `ℹ Left chapter ${c.name}.`);
 
+  await renderChapters();
   selectChapter(id);
-  renderChapters();
 }
 
 async function showChapterMembersModal(id) {
-  const c = MOCK_CHAPTERS.find(ch => ch.id === id);
+  const c = chaptersCache.find(ch => ch.id === id);
   let members = [];
 
   if (typeof API !== 'undefined') {
@@ -2089,14 +2079,24 @@ async function showChapterMembersModal(id) {
     if (res && Array.isArray(res)) members = res;
   }
 
+  // An empty chapter shows an empty state — it used to display four unrelated
+  // alumni as though they were members.
   if (members.length === 0) {
-    members = MOCK_ALUMNI.slice(0, 4);
+    openModal(`
+      <div class="onboarding-header">
+        <div class="onboarding-title">👥 Chapter Enrolled Members</div>
+        <div class="onboarding-sub">${escapeHtml(c ? c.name : 'DIC Alumni Chapter')}</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      ${renderEmptyState('👤', 'No members yet', 'Be the first to join this chapter.')}
+    `);
+    return;
   }
 
   openModal(`
     <div class="onboarding-header">
       <div class="onboarding-title">👥 Chapter Enrolled Members</div>
-      <div class="onboarding-sub">${c ? c.name : 'DIC Alumni Chapter'} · ${members.length} Enrolled Members</div>
+      <div class="onboarding-sub">${escapeHtml(c ? c.name : 'DIC Alumni Chapter')} · ${members.length} Enrolled Member${members.length === 1 ? '' : 's'}</div>
     </div>
 
     <div style="display:flex;flex-direction:column;gap:10px;margin-top:14px;max-height:55vh;overflow-y:auto">
@@ -2107,9 +2107,9 @@ async function showChapterMembersModal(id) {
               <span>${m.initials || (m.name ? m.name.slice(0,2).toUpperCase() : 'AL')}</span>
             </div>
             <div>
-              <div style="font-weight:700;font-size:14px;color:var(--text-primary)">${m.name}</div>
-              <div style="font-size:12px;color:var(--text-secondary)">${m.role || 'Software Engineer'} · ${m.company || 'Brain Station 23'}</div>
-              <div style="font-size:11px;color:var(--text-muted)">Batch ${m.batch || 2020} · ${m.dept || 'CSE'}</div>
+              <div style="font-weight:700;font-size:14px;color:var(--text-primary)">${escapeHtml(m.name)}</div>
+              <div style="font-size:12px;color:var(--text-secondary)">${escapeHtml([m.role, m.company].filter(Boolean).join(" · ") || "Profile incomplete")}</div>
+              <div style="font-size:11px;color:var(--text-muted)">Batch ${m.batch || "—"} · ${escapeHtml(m.dept || "—")}</div>
             </div>
           </div>
           <button class="btn btn-outline btn-sm" onclick="closeModal(); viewAlumniProfile(${m.id || 5})">View Profile</button>
@@ -2119,41 +2119,73 @@ async function showChapterMembersModal(id) {
   `);
 }
 
-function renderNewsFeed() {
+async function renderNewsFeed() {
   const feed = document.getElementById('news-feed');
   if (!feed) return;
-  feed.innerHTML = MOCK_NEWS.map(n => `
+
+  feed.innerHTML = renderSkeletonCards(2, 'news');
+
+  const stories = await API.getStories();
+
+  if (stories === null) {
+    feed.innerHTML = renderErrorState('Could not load the news feed.', 'renderNewsFeed()');
+    return;
+  }
+  if (stories.length === 0) {
+    feed.innerHTML = renderEmptyState('📰', 'No stories published yet',
+      'Approved alumni stories and college announcements will appear here.');
+    return;
+  }
+
+  feed.innerHTML = stories.map(n => {
+    const author = n.author_name || 'DIC Press Office';
+    const date = n.published_date || formatDate(n.created_at);
+    return `
     <div class="news-card">
-      <div class="news-banner" style="background:linear-gradient(135deg, rgba(108,99,255,0.12), rgba(0,212,170,0.08))">${n.emoji}</div>
+      <div class="news-banner" style="background:linear-gradient(135deg, rgba(108,99,255,0.12), rgba(0,212,170,0.08))">${escapeHtml(n.emoji || '🌟')}</div>
       <div class="news-card-body">
-        <div class="news-category">${n.category}</div>
-        <div class="news-title">${n.title}</div>
-        <div class="news-excerpt">${n.excerpt}</div>
+        <div class="news-category">${escapeHtml(n.category)}</div>
+        <div class="news-title">${escapeHtml(n.title)}</div>
+        <div class="news-excerpt">${escapeHtml(n.excerpt || '')}</div>
         <div class="news-footer">
           <div class="news-author">
-            <div class="news-author-avatar">${n.author.slice(0,2).toUpperCase()}</div>
+            <div class="news-author-avatar">${escapeHtml(author.slice(0,2).toUpperCase())}</div>
             <div>
-              <div style="font-weight:600">${n.author}</div>
-              <div class="news-meta">${n.date}</div>
+              <div style="font-weight:600">${escapeHtml(author)}</div>
+              <div class="news-meta">${escapeHtml(date)}</div>
             </div>
           </div>
           <span class="moderated-badge">✓ Published</span>
         </div>
       </div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
-function renderSpotlightAlumni() {
+async function renderSpotlightAlumni() {
   const el = document.getElementById('spotlight-alumni');
   if (!el) return;
-  const spotlights = MOCK_ALUMNI.filter(a => a.mentor).slice(0, 5);
+
+  el.innerHTML = renderSkeletonCards(2, 'spotlight');
+  const result = await API.getAlumni({ mentor: true, limit: 5 });
+
+  if (result === null) {
+    el.innerHTML = renderErrorState('Could not load alumni spotlights.', 'renderSpotlightAlumni()');
+    return;
+  }
+  const spotlights = result.alumni;
+  if (spotlights.length === 0) {
+    el.innerHTML = renderEmptyState('✨', 'No mentors available yet');
+    return;
+  }
+
   el.innerHTML = spotlights.map(a => `
     <div class="spotlight-card">
-      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,${a.color}40,${a.color}20);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${a.color};flex-shrink:0">${a.initials}</div>
+      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,${a.color}40,${a.color}20);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${a.color};flex-shrink:0">${escapeHtml(a.initials)}</div>
       <div class="spotlight-info">
-        <div class="spotlight-name">${a.name}</div>
-        <div class="spotlight-sub">${a.company} · Batch ${a.batch}</div>
+        <div class="spotlight-name">${escapeHtml(a.name)}</div>
+        <div class="spotlight-sub">${escapeHtml(a.company || "—")} · Batch ${a.batch || "—"}</div>
       </div>
     </div>
   `).join('');
@@ -2222,35 +2254,52 @@ function renderRBACTable() {
   table.innerHTML = html;
 }
 
-function renderAuditLog() {
+// ─── IMMUTABLE AUDIT LOG ───
+async function renderAuditLog() {
   const el = document.getElementById('audit-log');
   if (!el) return;
-  el.innerHTML = MOCK_AUDIT_LOG.map(log => `
-    <div class="audit-log-item">
-      <div class="audit-log-icon" style="background:${log.bg}">${log.icon}</div>
-      <div class="audit-log-body">
-        <div class="audit-log-action">${log.action}</div>
-        <div class="audit-log-meta">${log.meta}</div>
-        <div class="audit-log-hash">${log.hash}</div>
+
+  const rows = await API.getAuditLogs();
+  if (apiFailed(rows)) {
+    el.innerHTML = renderErrorState(rows?.error || 'Could not load audit logs.', 'renderAuditLog()');
+    return;
+  }
+  if (rows.length === 0) {
+    el.innerHTML = renderEmptyState('🛡', 'No audit entries yet', 'Privileged actions are recorded here as they happen.');
+    return;
+  }
+
+  el.innerHTML = rows.map(l => `
+    <div class="audit-entry">
+      <div class="audit-icon" style="background:${escapeHtml(l.bg_color || 'rgba(0,168,89,0.15)')}">${escapeHtml(l.icon || '🛡')}</div>
+      <div style="flex:1;min-width:0">
+        <div class="audit-action">${escapeHtml(l.action)}</div>
+        <div class="audit-meta">${escapeHtml(l.meta)} · ${escapeHtml(formatRelativeTime(l.created_at))}</div>
       </div>
-    </div>
-  `).join('');
+      <div class="audit-hash" title="Hash-chained to the previous entry">${escapeHtml(l.hash)}</div>
+    </div>`).join('');
 }
 
-function renderComplianceGrid() {
+// ─── COMPLIANCE GRID (REQ-14) ───
+// Reports actual encryption / consent / audit state instead of fixed green pills.
+async function renderComplianceGrid() {
   const el = document.getElementById('compliance-grid');
   if (!el) return;
-  el.innerHTML = MOCK_COMPLIANCE.map(c => `
-    <div class="compliance-card glass-card">
+
+  const items = await API.getComplianceStatus();
+  if (apiFailed(items)) {
+    el.innerHTML = renderErrorState(items?.error || 'Could not load compliance status.', 'renderComplianceGrid()');
+    return;
+  }
+
+  const labels = { compliant: '✓ Compliant', pending: '◐ No data yet', at_risk: '⚠ Action required' };
+  el.innerHTML = items.map(c => `
+    <div class="compliance-card ${c.status}">
       <div class="compliance-icon">${c.icon}</div>
-      <div class="compliance-title">${c.title}</div>
-      <div class="compliance-desc">${c.desc}</div>
-      <div class="compliance-status ${c.status}">
-        <div class="compliance-status-dot"></div>
-        ${c.status === 'compliant' ? '✓ Compliant' : '⚠ Partial'}
-      </div>
-    </div>
-  `).join('');
+      <div class="compliance-title">${escapeHtml(c.title)}</div>
+      <div class="compliance-desc">${escapeHtml(c.desc)}</div>
+      <span class="compliance-status ${c.status}">${labels[c.status] || c.status}</span>
+    </div>`).join('');
 }
 
 function renderTenantList() {
@@ -2275,20 +2324,61 @@ function renderTenantList() {
   `).join('');
 }
 
-function renderNotifications() {
+async function renderNotifications() {
   const el = document.getElementById('notif-list');
   if (!el) return;
-  el.innerHTML = MOCK_NOTIFICATIONS.map(n => `
-    <div class="notif-item">
-      <div class="notif-item-icon">${n.icon}</div>
+
+  el.innerHTML = renderSkeletonCards(3, 'notif');
+
+  const items = await API.getNotifications();
+
+  if (items === null) {
+    el.innerHTML = renderErrorState('Could not load notifications.', 'renderNotifications()');
+    updateNotifBadge(0);
+    return;
+  }
+  if (items.length === 0) {
+    el.innerHTML = renderEmptyState('🔔', 'You are all caught up', 'New activity will show up here.');
+    updateNotifBadge(0);
+    return;
+  }
+
+  el.innerHTML = items.map(n => `
+    <div class="notif-item${n.is_unread ? ' unread' : ''}" onclick="markNotificationRead(${n.id})">
+      <div class="notif-item-icon">${escapeHtml(n.icon || '🔔')}</div>
       <div class="notif-item-body">
-        <div class="notif-item-title">${n.title}</div>
-        <div style="font-size:12px;color:var(--text-secondary)">${n.sub}</div>
-        <div class="notif-item-time">${n.time}</div>
+        <div class="notif-item-title">${escapeHtml(n.title)}</div>
+        <div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(n.subtitle || '')}</div>
+        <div class="notif-item-time">${escapeHtml(formatRelativeTime(n.created_at))}</div>
       </div>
-      ${n.unread ? '<div class="notif-item-unread"></div>' : ''}
+      ${n.is_unread ? '<div class="notif-item-unread"></div>' : ''}
     </div>
   `).join('');
+
+  updateNotifBadge(items.filter(n => n.is_unread).length);
+}
+
+// Keeps the topbar bell count honest instead of the hardcoded "7".
+function updateNotifBadge(count) {
+  document.querySelectorAll('.notif-count').forEach(badge => {
+    badge.textContent = count;
+    badge.style.display = count > 0 ? '' : 'none';
+  });
+}
+
+async function markNotificationRead(id) {
+  const res = await API.markNotificationRead(id);
+  if (res) renderNotifications();
+}
+
+async function markAllNotificationsRead() {
+  const res = await API.markAllNotificationsRead();
+  if (res) {
+    showToast(`✓ ${res.updated} notification${res.updated === 1 ? '' : 's'} marked as read`);
+    renderNotifications();
+  } else {
+    showToast('⚠ Could not update notifications — please retry.');
+  }
 }
 
 function renderInternshipDrives() {
@@ -2303,7 +2393,7 @@ function renderInternshipDrives() {
     <div class="internship-item">
       <span>${d.emoji}</span>
       <div style="flex:1"><div style="font-weight:600;font-size:13px">${d.role}</div><div style="font-size:11px;color:var(--text-muted)">${d.company}</div></div>
-      <button class="btn btn-sm btn-outline" onclick="applyJob('${d.role}')">Apply</button>
+      <button class="btn btn-sm btn-outline" onclick="showPage('jobs')">View Board</button>
     </div>
   `).join('');
 }
@@ -2389,7 +2479,12 @@ function closeModal(e) {
   document.body.style.overflow = '';
 }
 
-function showMentorModal(mentorName = '') {
+// ─── MENTOR REQUEST MODAL ───
+function showMentorModal(mentorName = '', mentorId = null, matchScore = 0) {
+  if (!mentorId) {
+    showToast('ℹ Open a mentor from the suggestions list to send a request.');
+    return;
+  }
   showModal(`
     <div class="modal-header">
       <div class="modal-title">🤝 Request a Mentor</div>
@@ -2398,96 +2493,67 @@ function showMentorModal(mentorName = '') {
     <div class="socratic-prompt">
       <div class="socratic-prompt-icon">🤖</div>
       <div class="socratic-prompt-text">
-        <strong>ConnectAI:</strong> I'll help you craft an effective mentorship request. What's your primary career goal? What specific guidance are you looking for?
+        <strong>ConnectAI:</strong> Be specific about your goal and what guidance you need — focused requests are accepted far more often.
       </div>
     </div>
-    ${mentorName ? `<div style="margin-bottom:16px;padding:12px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm);">
+    <div style="margin-bottom:14px;padding:12px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
       <div style="font-size:12px;color:var(--text-muted)">Requesting mentorship from</div>
-      <div style="font-size:15px;font-weight:700;margin-top:2px">${mentorName}</div>
-    </div>` : ''}
-    <div class="modal-section">
-      <div class="modal-section-title">Mentorship Focus Area</div>
-      <select class="form-select" id="mentor-focus">
-        <option>Career Transition & Growth</option>
-        <option>FAANG / Big Tech Interview Prep</option>
-        <option>Startup & Entrepreneurship</option>
-        <option>Academic Research Guidance</option>
-        <option>International Career & Visa</option>
-        <option>Technical Skills (Specific Stack)</option>
-      </select>
+      <div style="font-size:15px;font-weight:700;margin-top:2px">${escapeHtml(mentorName)}</div>
+      ${matchScore ? `<div style="font-size:12px;color:var(--teal);margin-top:2px">${matchScore}% career vector match</div>` : ''}
     </div>
-    <div class="modal-section">
-      <div class="modal-section-title">Your Request (AI-Assisted)</div>
-      <textarea class="form-input" rows="5" placeholder="Hi, I'm a recent DIC alumni interested in transitioning into machine learning. I've been self-studying Python and TensorFlow, and would love guidance on building a portfolio and navigating job applications at AI companies...">Hi, I'm Mohiuddin from Batch 2020. I'm currently a full-stack developer looking to transition into AI/ML engineering. Your experience at Google inspires me. I'd love guidance on bridging the gap from web dev to ML — specifically around building projects that stand out to top tech recruiters.</textarea>
+    <div class="input-group">
+      <label class="input-label">What do you need help with?</label>
+      <input type="text" id="mentor-subject" class="form-input" placeholder="e.g. Transitioning from web development into ML engineering" required />
     </div>
-    <div class="modal-section">
-      <div class="modal-section-title">Preferred Meeting Style</div>
-      <div style="display:flex;gap:8px">
-        <button class="chip active" onclick="toggleChipGroup(this)">Video Call</button>
-        <button class="chip" onclick="toggleChipGroup(this)">Chat / Async</button>
-        <button class="chip" onclick="toggleChipGroup(this)">Either</button>
-      </div>
+    <div class="input-group">
+      <label class="input-label">Your message</label>
+      <textarea id="mentor-message" class="form-input" rows="5" placeholder="Introduce yourself, your background and what specific guidance would help most…"></textarea>
     </div>
-    <button class="btn btn-primary btn-full" onclick="submitMentorRequest()">🤝 Send Mentorship Request</button>
+    <button class="btn btn-primary btn-full" onclick="submitMentorRequest(${mentorId}, ${matchScore})">🤝 Send Request</button>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:10px;text-align:center">Unanswered requests expire automatically after 5 days.</div>
   `);
 }
 
-function submitMentorRequest() {
-  closeModal();
-  showToast('✅ Mentorship request sent! Expected response within 5 days.');
-}
 
-function showDonateModal(id, name) {
-  const campaign = MOCK_CAMPAIGNS.find(c => c.id === id);
-  state.selectedGateway = null;
+
+// ─── DONATE MODAL ───
+function showDonateModal(campaignId, campaignName) {
   state.selectedAmount = null;
-  state.donationStep = 1;
+  state.selectedGateway = null;
 
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">❤ Donate</div>
+      <div class="modal-title">💚 Donate</div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
-    <div style="margin-bottom:20px;padding:12px;background:var(--primary-glow);border:1px solid rgba(108,99,255,0.3);border-radius:var(--radius-sm)">
-      <div style="font-size:12px;color:var(--text-muted)">Campaign</div>
-      <div style="font-size:15px;font-weight:700;color:var(--text-primary)">${name}</div>
+    <div style="margin-bottom:14px;padding:12px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
+      <div style="font-size:12px;color:var(--text-muted)">Contributing to</div>
+      <div style="font-size:15px;font-weight:700;margin-top:2px">${escapeHtml(campaignName)}</div>
     </div>
     <div class="modal-section">
-      <div class="modal-section-title">Select Amount</div>
+      <div class="modal-section-title">Select Amount (৳)</div>
       <div class="amount-grid">
-        <button class="amount-option" onclick="selectAmount(this, 500)">৳500</button>
-        <button class="amount-option" onclick="selectAmount(this, 1000)">৳1,000</button>
-        <button class="amount-option" onclick="selectAmount(this, 2000)">৳2,000</button>
-        <button class="amount-option" onclick="selectAmount(this, 5000)">৳5,000</button>
-        <button class="amount-option" onclick="selectAmount(this, 10000)">৳10,000</button>
-        <button class="amount-option" onclick="selectAmount(this, 25000)">৳25,000</button>
+        ${[500, 1000, 2500, 5000, 10000, 25000].map(a =>
+          `<button class="amount-btn" onclick="selectAmount(this, ${a})">৳${a.toLocaleString()}</button>`).join('')}
       </div>
-      <input type="number" class="form-input" style="margin-top:8px" placeholder="Or enter custom amount (৳)" id="custom-amount" oninput="state.selectedAmount = this.value" />
+      <div class="input-group mt-16">
+        <label class="input-label">Or enter a custom amount</label>
+        <input type="number" id="custom-amount" class="form-input" min="1" placeholder="e.g. 7500" inputmode="numeric" />
+      </div>
     </div>
     <div class="modal-section">
-      <div class="modal-section-title">Payment Gateway</div>
+      <div class="modal-section-title">Payment Method</div>
       <div class="gateway-grid">
-        <div class="gateway-option" onclick="selectGateway(this, 'bkash')">
-          <div class="gateway-logo" style="color:#E2136E">b</div>
-          <div><div class="gateway-name">bKash</div><div class="gateway-sub">Mobile Banking</div></div>
-        </div>
-        <div class="gateway-option" onclick="selectGateway(this, 'nagad')">
-          <div class="gateway-logo" style="color:#FF6B00">N</div>
-          <div><div class="gateway-name">Nagad</div><div class="gateway-sub">Mobile Banking</div></div>
-        </div>
-        <div class="gateway-option" onclick="selectGateway(this, 'rocket')">
-          <div class="gateway-logo" style="color:#8B2FC9">R</div>
-          <div><div class="gateway-name">Rocket</div><div class="gateway-sub">DBBL Mobile</div></div>
-        </div>
-        <div class="gateway-option" onclick="selectGateway(this, 'card')">
-          <div class="gateway-logo">💳</div>
-          <div><div class="gateway-name">Visa / MC</div><div class="gateway-sub">International Card</div></div>
-        </div>
+        ${[['bkash','📱','bKash'],['nagad','📲','Nagad'],['rocket','🚀','Rocket'],['card','💳','Card']].map(([id, icon, label]) =>
+          `<div class="gateway-option" onclick="selectGateway(this, '${id}')">
+             <div style="font-size:22px">${icon}</div><div style="font-size:12px;font-weight:700">${label}</div>
+           </div>`).join('')}
       </div>
     </div>
-    <button class="btn btn-primary btn-full" id="donate-confirm-btn" onclick="processDonation('${name}')">
-      Proceed to Payment →
-    </button>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);margin:14px 0;cursor:pointer">
+      <input type="checkbox" id="donate-anonymous" /> Donate anonymously
+    </label>
+    <button class="btn btn-primary btn-full" onclick="processDonation(${campaignId}, '${escapeHtml(campaignName).replace(/'/g, '&#39;')}')">Continue to Payment →</button>
   `);
 }
 
@@ -2504,161 +2570,80 @@ function selectGateway(el, gateway) {
   state.selectedGateway = gateway;
 }
 
-function processDonation(campaignName) {
-  if (!state.selectedAmount && !document.getElementById('custom-amount').value) {
-    showToast('⚠ Please select or enter a donation amount'); return;
-  }
-  if (!state.selectedGateway) {
-    showToast('⚠ Please select a payment gateway'); return;
-  }
 
-  const amount = state.selectedAmount || document.getElementById('custom-amount').value;
-  const gwNames = { bkash: 'bKash', nagad: 'Nagad', rocket: 'Rocket', card: 'Visa/MC' };
 
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title">🔐 Authorize Payment</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div class="payment-step">
-      <div style="font-size:48px;margin-bottom:12px">${state.selectedGateway === 'bkash' ? '📱' : state.selectedGateway === 'nagad' ? '📲' : state.selectedGateway === 'rocket' ? '🚀' : '💳'}</div>
-      <div style="font-size:18px;font-weight:800;margin-bottom:6px">Authorizing via ${gwNames[state.selectedGateway]}</div>
-      <div style="color:var(--text-secondary);margin-bottom:20px">Amount: <strong style="color:var(--teal)">৳${Number(amount).toLocaleString()}</strong></div>
-      <div style="background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm);padding:16px;margin-bottom:20px;">
-        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:10px">Enter your ${gwNames[state.selectedGateway]} PIN/OTP</div>
-        <div class="otp-inputs" style="justify-content:center">
-          <input type="password" class="otp-box" maxlength="1" />
-          <input type="password" class="otp-box" maxlength="1" />
-          <input type="password" class="otp-box" maxlength="1" />
-          <input type="password" class="otp-box" maxlength="1" />
-        </div>
-      </div>
-      <button class="btn btn-primary btn-full" onclick="completeDonation(${amount}, '${campaignName}', '${gwNames[state.selectedGateway]}')">✓ Confirm Payment</button>
-    </div>
-  `);
-}
 
-function completeDonation(amount, campaign, gateway) {
-  const txRef = 'TXN-' + Date.now().toString(36).toUpperCase();
-  const date = new Date().toLocaleString('en-BD', { timeZone: 'Asia/Dhaka' });
 
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title">🎉 Payment Successful!</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div class="payment-step">
-      <div class="payment-success">✅</div>
-      <div class="payment-success-title">Thank you for your donation!</div>
-      <div class="payment-success-sub">Your contribution to "${campaign}" has been processed.</div>
-      <div class="receipt-preview">
-        <div style="font-size:13px;font-weight:700;margin-bottom:10px;text-align:center;">OFFICIAL TAX RECEIPT</div>
-        <div style="font-size:11px;text-align:center;color:var(--text-muted);margin-bottom:12px">Dhaka International College Alumni Association</div>
-        <div class="receipt-row"><span>Donor Name</span><span>Mohiuddin Rahman</span></div>
-        <div class="receipt-row"><span>Campaign</span><span style="font-size:11px">${campaign.slice(0,20)}…</span></div>
-        <div class="receipt-row"><span>Transaction ID</span><span style="font-family:monospace;font-size:11px">${txRef}</span></div>
-        <div class="receipt-row"><span>Gateway</span><span>${gateway}</span></div>
-        <div class="receipt-row"><span>Date & Time</span><span style="font-size:11px">${date}</span></div>
-        <div class="receipt-row"><span>Total Amount</span><span>৳${Number(amount).toLocaleString()}</span></div>
-      </div>
-      <div style="margin-top:16px;display:flex;gap:8px;justify-content:center">
-        <button class="btn btn-outline" onclick="downloadReceipt()">📄 Download PDF</button>
-        <button class="btn btn-outline" onclick="closeModal()">✓ Done</button>
-      </div>
-      <div style="font-size:11px;color:var(--text-muted);margin-top:12px">Receipt also sent via SMS & Email · Cryptographic QR code embedded</div>
-    </div>
-  `);
-}
 
-function downloadReceipt() { showToast('📄 PDF receipt downloading…'); }
 
-function showBroadcastModal() {
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title">📢 Broadcast Message</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div class="modal-section">
-      <div class="modal-section-title">Target Audience</div>
-      <div class="filter-chips" style="flex-wrap:wrap">
-        <button class="chip active">All Alumni (12,847)</button>
-        <button class="chip">Batch 2020</button>
-        <button class="chip">Dhaka Chapter</button>
-        <button class="chip">Mentors Only</button>
-        <button class="chip">Event Attendees</button>
-      </div>
-    </div>
-    <div class="modal-section">
-      <div class="modal-section-title">Message</div>
-      <textarea class="form-input" rows="4" placeholder="Write your broadcast message…">🎓 Alumni Reunion 2026 Registration closes in 48 hours! Secure your spot now at dic.alumnai.io/events. Limited seats available.</textarea>
-    </div>
-    <div class="modal-section">
-      <div class="modal-section-title">Channels</div>
-      <div style="display:flex;gap:8px">
-        <button class="chip active">📱 SMS</button>
-        <button class="chip active">🔔 Push</button>
-        <button class="chip active">📧 Email</button>
-      </div>
-    </div>
-    <div style="background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px;font-size:12px;color:var(--text-secondary)">
-      ⚡ Fallback routing enabled: If preferred channel fails, system automatically tries next available channel.
-    </div>
-    <button class="btn btn-primary btn-full" onclick="sendBroadcast()">📢 Send Broadcast to 12,847 Alumni</button>
-  `);
-}
 
-function sendBroadcast() { closeModal(); showToast('📢 Broadcast sent to 12,847 alumni via SMS + Push + Email'); }
 
-function showCreateCampaign() {
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title">➕ Create Campaign</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div class="input-group"><label class="input-label">Campaign Name</label><input type="text" class="form-input" placeholder="e.g., Science Lab Fund 2026" /></div>
-    <div class="input-group"><label class="input-label">Description</label><textarea class="form-input" rows="3" placeholder="Describe the impact of this campaign…"></textarea></div>
-    <div class="input-group"><label class="input-label">Goal Amount (৳)</label><input type="number" class="form-input" placeholder="e.g., 1500000" /></div>
-    <div class="input-group"><label class="input-label">Category</label><select class="form-select"><option>Education</option><option>Scholarship</option><option>Infrastructure</option><option>Sports</option></select></div>
-    <div class="input-group"><label class="input-label">Payment Gateways</label><div style="display:flex;gap:8px;flex-wrap:wrap"><button class="chip active">bKash</button><button class="chip active">Nagad</button><button class="chip">Rocket</button><button class="chip active">Card</button></div></div>
-    <button class="btn btn-primary btn-full" onclick="closeModal(); showToast('✅ Campaign created and published!')">Create Campaign</button>
-  `);
-}
-
+// ─── CREATE EVENT (was a toast-only shell) ───
 function showCreateEventModal() {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">➕ Create Event</div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
-    <div class="input-group"><label class="input-label">Event Title</label><input type="text" class="form-input" placeholder="e.g., Alumni Career Summit 2026" /></div>
-    <div class="field-grid-2">
-      <div class="input-group"><label class="input-label">Date</label><input type="date" class="form-input" /></div>
-      <div class="input-group"><label class="input-label">Time</label><input type="time" class="form-input" /></div>
-    </div>
-    <div class="input-group"><label class="input-label">Venue</label><input type="text" class="form-input" placeholder="Venue or Online (Zoom)" /></div>
-    <div class="field-grid-2">
-      <div class="input-group"><label class="input-label">Capacity</label><input type="number" class="form-input" placeholder="e.g., 200" /></div>
-      <div class="input-group"><label class="input-label">Ticket Price (৳)</label><input type="text" class="form-input" placeholder="0 for free" /></div>
-    </div>
-    <button class="btn btn-primary btn-full" onclick="closeModal(); showToast('✅ Event created! QR tickets will be generated upon registration.')">Create Event</button>
+    <form onsubmit="handleCreateEventSubmit(event)">
+      <div class="input-group"><label class="input-label">Event Title</label>
+        <input type="text" id="event-title" class="form-input" placeholder="e.g. Alumni Career Summit 2026" required /></div>
+      <div class="input-group"><label class="input-label">Emoji</label>
+        <input type="text" id="event-emoji" class="form-input" value="🎓" /></div>
+      <div class="field-grid-2">
+        <div class="input-group"><label class="input-label">Date</label>
+          <input type="date" id="event-date" class="form-input" required /></div>
+        <div class="input-group"><label class="input-label">Time</label>
+          <input type="time" id="event-time" class="form-input" /></div>
+      </div>
+      <div class="input-group"><label class="input-label">Venue</label>
+        <input type="text" id="event-venue" class="form-input" placeholder="Venue or Online (Zoom)" required /></div>
+      <div class="field-grid-2">
+        <div class="input-group"><label class="input-label">Capacity</label>
+          <input type="number" id="event-capacity" class="form-input" min="1" value="200" required /></div>
+        <div class="input-group"><label class="input-label">Ticket Price</label>
+          <input type="text" id="event-price" class="form-input" placeholder="Free or ৳500" value="Free" /></div>
+      </div>
+      <div class="input-group"><label class="input-label">Type</label>
+        <select id="event-type" class="form-select">
+          <option>Gala</option><option>Professional</option><option>Conference</option>
+          <option>Workshop</option><option>Reunion</option>
+        </select></div>
+      <button type="submit" class="btn btn-primary btn-full">Create Event</button>
+    </form>
   `);
 }
 
+// ─── POST JOB (was a toast-only shell) ───
 function showPostJobModal() {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">➕ Post a Job</div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
-    <div style="background:var(--primary-glow);border:1px solid rgba(108,99,255,0.2);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--primary-light)">🔒 Alumni-only posting — only DIC verified alumni can post jobs.</div>
-    <div class="input-group"><label class="input-label">Job Title</label><input type="text" class="form-input" placeholder="e.g., Senior Software Engineer" /></div>
-    <div class="input-group"><label class="input-label">Company</label><input type="text" class="form-input" placeholder="Your company name" /></div>
-    <div class="field-grid-2">
-      <div class="input-group"><label class="input-label">Type</label><select class="form-select"><option>Full-time</option><option>Part-time</option><option>Internship</option><option>Contract</option></select></div>
-      <div class="input-group"><label class="input-label">Location</label><input type="text" class="form-input" placeholder="Dhaka / Remote / etc." /></div>
+    <div style="background:var(--primary-glow);border:1px solid rgba(108,99,255,0.2);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--primary-light)">
+      🔒 Alumni-only posting — visible to verified DIC alumni.
     </div>
-    <div class="input-group"><label class="input-label">Salary Range</label><input type="text" class="form-input" placeholder="e.g., ৳80K–৳120K/mo" /></div>
-    <button class="btn btn-primary btn-full" onclick="closeModal(); showToast('✅ Job posted! Visible to 12,847 verified alumni.')">Post Job</button>
+    <form onsubmit="handlePostJobSubmit(event)">
+      <div class="input-group"><label class="input-label">Job Title</label>
+        <input type="text" id="job-title" class="form-input" placeholder="e.g. Senior Software Engineer" required /></div>
+      <div class="input-group"><label class="input-label">Company</label>
+        <input type="text" id="job-company" class="form-input" placeholder="Your company name" required /></div>
+      <div class="field-grid-2">
+        <div class="input-group"><label class="input-label">Type</label>
+          <select id="job-type" class="form-select">
+            <option value="fulltime">Full-time</option><option value="parttime">Part-time</option>
+            <option value="internship">Internship</option><option value="contract">Contract</option>
+          </select></div>
+        <div class="input-group"><label class="input-label">Location</label>
+          <input type="text" id="job-location" class="form-input" placeholder="Dhaka / Remote" value="Dhaka" /></div>
+      </div>
+      <div class="input-group"><label class="input-label">Salary Range</label>
+        <input type="text" id="job-salary" class="form-input" placeholder="e.g. ৳80K–৳120K/mo" /></div>
+      <div class="input-group"><label class="input-label">Skill Tags (comma separated)</label>
+        <input type="text" id="job-tags" class="form-input" placeholder="React, Node.js, PostgreSQL" /></div>
+      <button type="submit" class="btn btn-primary btn-full">Post Job</button>
+    </form>
   `);
 }
 
@@ -2687,37 +2672,27 @@ async function handleCreateChapterSubmit(e) {
 
   if (!name) return;
 
-  const userRole = state.currentUser ? state.currentUser.role : 'alumni';
-  let newChapObj = null;
+  // The server decides the status from the session role: admins publish
+  // immediately, everyone else enters the moderation queue.
+  const res = await API.submitChapter({ name, type, icon, description });
 
-  if (typeof API !== 'undefined') {
-    const res = await API.submitChapter({ name, type, icon, description, createdByRole: userRole });
-    if (res && res.chapter) {
-      newChapObj = {
-        id: res.chapter.id,
-        name: res.chapter.name || name,
-        type: res.chapter.type || type,
-        icon: res.chapter.icon || icon,
-        members: 1,
-        events: 0,
-        parent: null
-      };
-    }
+  if (!res || res.error || !res.chapter) {
+    showToast(`⚠ Could not create the chapter: ${res?.error || 'the server did not respond.'}`);
+    return;
   }
-
-  if (!newChapObj) {
-    newChapObj = { id: Date.now(), name, type, icon, members: 1, events: 0, parent: null };
-  }
-
-  // Add to local state array
-  const exists = MOCK_CHAPTERS.find(c => c.id === newChapObj.id);
-  if (!exists) MOCK_CHAPTERS.push(newChapObj);
-
-  showToast(`✅ Chapter "${name}" created and published!`);
 
   closeModal();
+
+  if (res.status === 'pending_review') {
+    showToast(`⏳ Chapter "${name}" submitted for moderator approval.`);
+  } else {
+    showToast(`✅ Chapter "${name}" created and published!`);
+  }
+
   await renderChapters();
-  selectChapter(newChapObj.id);
+  // Only approved chapters are in the public list; select it if it is there.
+  if (chaptersCache.some(c => c.id === res.chapter.id)) selectChapter(res.chapter.id);
+  renderNotifications();
 }
 
 function showCreateNewsModal() {
@@ -2747,13 +2722,20 @@ async function handleCreateStorySubmit(e) {
 
   const authorName = state.currentUser ? state.currentUser.name : 'Mohiuddin Rahman';
 
-  if (typeof API !== 'undefined') {
-    await API.submitStory({ title, category, emoji, content, authorName });
+  const result = await API.submitStory({ title, category, emoji, content, authorName });
+
+  if (!result || result.error) {
+    showToast('⚠ Could not submit the story — please try again.');
+    return;
   }
 
   closeModal();
   showToast(`⏳ Story "${title}" submitted for Super Admin moderation!`);
+
+  // Refresh both sides of the workflow so the submission is visible immediately.
   if (typeof renderModerationPanel === 'function') renderModerationPanel();
+  renderNewsFeed();
+  renderNotifications();
 }
 
 function showTenantSwitcher() {
@@ -2790,45 +2772,15 @@ function switchAdmin(section, btn) {
 }
 
 // ─── MISC ACTIONS ────────────────────────────────────────────
-function buyTicket(event) { showToast(`🎫 Ticket purchased for "${event}"! QR code sent to email.`); }
-function applyJob(title) { showToast(`📄 Application submitted for "${title}"!`); }
-function simulateCheckin() { showToast('✅ QR Scanned! Attendee checked in: Rafiq Hossain — Batch 2021'); }
 
-function showNotifications() {
-  const panel = document.getElementById('notif-panel');
-  panel.classList.toggle('hidden');
-}
-function closeNotifications() {
-  document.getElementById('notif-panel').classList.add('hidden');
-}
 
 function showEditProfile() { showToast('✏ Profile editor loading…'); }
 
-function exportUserData(format) {
-  showToast(`📦 Preparing ${format.toUpperCase()} export. Download will start shortly.`);
-}
 
-function showDeleteAccount() {
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title">⚠ Request Account Deletion</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.3);border-radius:var(--radius-sm);padding:14px;margin-bottom:20px;font-size:13px;color:var(--red);">
-      ⚠ This action initiates a 30-day grace period after which all your data will be permanently deleted (PDPA 2026 compliance). This cannot be undone.
-    </div>
-    <div class="input-group"><label class="input-label">Reason for Deletion</label><select class="form-select"><option>Privacy Concerns</option><option>No Longer Alumni</option><option>Using Another Platform</option><option>Other</option></select></div>
-    <div class="input-group"><label class="input-label">Type "DELETE" to confirm</label><input type="text" class="form-input" placeholder="DELETE" /></div>
-    <button class="btn btn-danger btn-full" onclick="closeModal(); showToast('🗑 Deletion requested. 30-day grace period started.')">Request Data Deletion</button>
-  `);
-}
 
-function exportPDF() { showToast('📄 Generating analytics PDF report…'); }
-function exportExcel() { showToast('📊 Generating Excel export…'); }
-function triggerResumeUpload() { document.getElementById('resume-input').click(); }
-function toggleChipGroup(el) {
-  el.classList.toggle('active');
-}
+
+
+
 
 function handleGlobalSearch(value) {
   if (value.length > 2) {
@@ -2909,10 +2861,22 @@ function toggleProgressiveDisclosure(targetId, btn) {
 
 // ─── INSTANT MOBILE & DESKTOP DOM INITIALIZER ────────────────
 let __appInitialized = false;
-function initAppOnce() {
+// Boot: restore an existing session if the stored token is still valid,
+// otherwise show the login screen. This previously called enterApp()
+// unconditionally, which walked straight past authentication.
+async function initAppOnce() {
   if (__appInitialized) return;
   __appInitialized = true;
-  enterApp();
+
+  initAppTheme();
+
+  const user = await API.me();
+  if (user) {
+    enterAuthenticatedApp(user);
+  } else {
+    API.logout();
+    showLoginScreen();
+  }
 }
 
 if (document.readyState === 'complete' || document.readyState === 'interactive') {
@@ -2972,121 +2936,141 @@ function startCampaignTicker() {
 }
 
 // Enhanced renderCampaigns with live IDs and ticker
-function renderCampaignsEnhanced() {
+// ─── DONATIONS (REQ-05) ───
+// Two-phase: a PENDING ledger row is written, the gateway step is authorised,
+// then the transaction is confirmed and the campaign total moves.
+async function renderCampaignsEnhanced() {
   const container = document.getElementById('campaigns-grid');
   if (!container) return;
-  container.innerHTML = MOCK_CAMPAIGNS.map(c => {
-    const pct = Math.round((c.raised / c.goal) * 100);
+
+  container.innerHTML = renderSkeletonCards(3, 'campaign');
+  const campaigns = await API.getCampaigns();
+
+  if (apiFailed(campaigns)) {
+    container.innerHTML = renderErrorState(campaigns?.error || 'Could not load campaigns.', 'renderCampaignsEnhanced()');
+    return;
+  }
+  if (campaigns.length === 0) {
+    container.innerHTML = renderEmptyState('💚', 'No active campaigns', 'Fundraising campaigns will appear here once launched.');
+    return;
+  }
+
+  const canManage = state.currentUser && ['super_admin', 'univ_admin'].includes(state.currentUser.role);
+
+  container.innerHTML = campaigns.map(c => {
+    const raised = Number(c.raised_amount) || 0;
+    const goal = Number(c.goal_amount) || 1;
+    const pct = Math.min(100, Math.round((raised / goal) * 100));
+    const gateways = Array.isArray(c.gateways) ? c.gateways : [];
+    const safeName = escapeHtml(c.name).replace(/'/g, '&#39;');
     return `
     <div class="campaign-card">
       <div class="campaign-card-header">
-        <span class="campaign-tag ${c.tag}">${c.tag.toUpperCase()}</span>
-        <div class="campaign-name">${c.name}</div>
-        <div class="campaign-desc">${c.desc}</div>
+        <span class="campaign-tag ${escapeHtml(c.tag)}">${escapeHtml((c.tag || '').toUpperCase())}</span>
+        <div class="campaign-name">${escapeHtml(c.name)}</div>
+        <div class="campaign-desc">${escapeHtml(c.description || '')}</div>
       </div>
       <div class="campaign-progress">
         <div class="campaign-live-indicator"><div class="live-dot"></div> Live</div>
-        <div class="progress-track"><div class="progress-fill" id="campaign-pct-${c.id}" style="width:${pct}%"></div></div>
+        <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
         <div class="progress-meta">
-          <span class="progress-raised" id="campaign-raised-${c.id}">৳${(c.raised/100000).toFixed(1)}L raised</span>
-          <span class="progress-goal">of ৳${(c.goal/100000).toFixed(1)}L goal · ${pct}%</span>
+          <span class="progress-raised">৳${(raised / 100000).toFixed(1)}L raised</span>
+          <span class="progress-goal">of ৳${(goal / 100000).toFixed(1)}L goal · ${pct}%</span>
         </div>
         <div style="display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--text-muted)">
-          <span>👥 <span id="campaign-donors-${c.id}">${c.donors}</span> donors</span>
-          <span>📅 ${c.days} days left</span>
+          <span>👥 ${Number(c.donors_count || 0).toLocaleString()} donors</span>
+          <span>📅 ${c.days_left} days left</span>
         </div>
       </div>
       <div class="campaign-footer">
         <div class="gateway-pills">
-          ${c.gateways.map(g => `<span class="gateway-pill ${g}">${g.charAt(0).toUpperCase() + g.slice(1)}</span>`).join('')}
+          ${gateways.map(g => `<span class="gateway-pill ${escapeHtml(g)}">${escapeHtml(g.charAt(0).toUpperCase() + g.slice(1))}</span>`).join('')}
         </div>
-        <button class="donate-btn" onclick="showDonateModal(${c.id}, '${c.name}')">Donate →</button>
+        <div style="display:flex;gap:6px">
+          ${canManage ? `<button class="btn btn-ghost btn-sm" onclick="deleteCampaignPrompt(${c.id}, '${safeName}')">🗑</button>` : ''}
+          <button class="donate-btn" onclick="showDonateModal(${c.id}, '${safeName}')">Donate →</button>
+        </div>
       </div>
     </div>`;
   }).join('');
 }
 
 // ─── REQ-07: REFERRAL REQUEST WORKFLOW ──────────────────────
-function showReferralModal(jobTitle, postedBy, company) {
+function showReferralModal(jobId, jobTitle, postedBy) {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">🤝 Request a Referral</div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
-    <div style="background:var(--teal-glow);border:1px solid rgba(0,212,170,0.2);border-radius:var(--radius-sm);padding:12px;margin-bottom:16px">
-      <div style="font-size:11px;color:var(--text-muted)">Position at</div>
-      <div style="font-size:15px;font-weight:700">${jobTitle}</div>
-      <div style="font-size:12px;color:var(--teal);margin-top:2px">${company} · Referred by ${postedBy}</div>
+    <div style="margin-bottom:14px;padding:12px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
+      <div style="font-size:12px;color:var(--text-muted)">Referral for</div>
+      <div style="font-size:15px;font-weight:700;margin-top:2px">${escapeHtml(jobTitle)}</div>
+      ${postedBy ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:2px">Posted by ${escapeHtml(postedBy)}</div>` : ''}
     </div>
-    <div class="socratic-prompt">
-      <div class="socratic-prompt-icon">🤖</div>
-      <div class="socratic-prompt-text"><strong>ConnectAI:</strong> A strong referral request includes your connection to the poster, your relevant experience, and why you're a great fit. Let me help you craft it.</div>
+    <div class="input-group">
+      <label class="input-label">Your message</label>
+      <textarea id="referral-message" class="form-input" rows="5" placeholder="Introduce yourself and explain why you are a strong fit for this role…"></textarea>
     </div>
-    <div class="modal-section">
-      <div class="modal-section-title">Your Message to ${postedBy}</div>
-      <textarea class="form-input" rows="5">Hi ${postedBy},
-
-I noticed you posted the ${jobTitle} opening at ${company} on the DIC Alumni Network. 
-
-I'm a DIC alumni (Batch 2020, BSc CSE) with 4+ years of full-stack development experience. I've been following ${company}'s engineering blog and I'm passionate about the problems you're solving.
-
-Would you be open to referring me for this role? I'd be happy to share my resume and portfolio.
-
-Thank you!</textarea>
-    </div>
-    <div class="modal-section">
-      <div class="modal-section-title">Attach</div>
-      <div style="display:flex;gap:8px">
-        <button class="btn btn-outline btn-sm" onclick="showToast('📄 Resume attached!')">📄 Attach Resume</button>
-        <button class="btn btn-outline btn-sm" onclick="showToast('🔗 LinkedIn profile attached!')">🔗 LinkedIn Profile</button>
-      </div>
-    </div>
-    <button class="btn btn-primary btn-full" onclick="submitReferralRequest('${postedBy}', '${jobTitle}')">🤝 Send Referral Request</button>
+    <button class="btn btn-primary btn-full" onclick="submitReferralRequest(${jobId})">🤝 Send Referral Request</button>
   `);
 }
 
-function submitReferralRequest(name, job) {
-  closeModal();
-  showToast(`✅ Referral request sent to ${name} for "${job}"`);
-}
+
 
 // Updated renderJobs with Referral button
-function renderJobsEnhanced(filter = '') {
+// ─── JOBS (REQ-07) — served from PostgreSQL ───
+async function renderJobsEnhanced(filter = '') {
   const container = document.getElementById('jobs-list');
   if (!container) return;
 
-  let jobs = MOCK_JOBS;
-  if (filter) {
-    const q = filter.toLowerCase();
-    jobs = MOCK_JOBS.filter(j =>
-      j.title.toLowerCase().includes(q) || j.company.toLowerCase().includes(q) ||
-      j.tags.some(t => t.toLowerCase().includes(q))
-    );
+  container.innerHTML = renderSkeletonCards(3, 'job');
+  const q = { ...(filter ? { search: filter } : {}), ...(state.jobFilters || {}) };
+  const jobs = await API.getJobs(q);
+
+  if (apiFailed(jobs)) {
+    container.innerHTML = renderErrorState(jobs?.error || 'Could not load the job board.', 'renderJobsEnhanced()');
+    return;
+  }
+  if (jobs.length === 0) {
+    container.innerHTML = renderEmptyState('💼', 'No openings match your filters',
+      'Verified alumni can post roles using the button above.');
+    return;
   }
 
-  container.innerHTML = jobs.map(j => `
+  const meId = state.currentUser?.id;
+  const isAdmin = state.currentUser && ['super_admin', 'univ_admin'].includes(state.currentUser.role);
+
+  container.innerHTML = jobs.map(j => {
+    const tags = Array.isArray(j.tags) ? j.tags : [];
+    const mine = j.posted_by_id === meId;
+    const safeTitle = escapeHtml(j.title).replace(/'/g, '&#39;');
+    return `
     <div class="job-card">
-      <div class="job-company-logo">${j.emoji}</div>
+      <div class="job-company-logo">${escapeHtml(j.emoji || '💼')}</div>
       <div class="job-info">
-        <div class="job-title">${j.title}</div>
-        <div class="job-company">${j.company}</div>
+        <div class="job-title">${escapeHtml(j.title)}</div>
+        <div class="job-company">${escapeHtml(j.company)}</div>
         <div class="job-meta">
-          <span class="job-meta-item">📍 ${j.location}</span>
-          <span class="job-meta-item">👤 Posted by ${j.posted_by} (${j.batch})</span>
-          <span class="job-meta-item">🕒 ${j.days}d ago</span>
+          <span class="job-meta-item">📍 ${escapeHtml(j.location || '—')}</span>
+          <span class="job-meta-item">👤 ${escapeHtml(j.posted_by_name || 'DIC Alumni')}</span>
+          <span class="job-meta-item">🕒 ${escapeHtml(formatRelativeTime(j.created_at))}</span>
+          <span class="job-meta-item">📥 ${j.applicants} applicant${j.applicants === 1 ? '' : 's'}</span>
         </div>
-        <div class="job-tags">${j.tags.map(t => `<span class="job-tag">${t}</span>`).join('')}</div>
+        <div class="job-tags">${tags.map(t => `<span class="job-tag">${escapeHtml(t)}</span>`).join('')}</div>
       </div>
       <div class="job-right">
-        <div class="job-salary">${j.salary}</div>
-        <span class="job-type-badge ${j.type}">${j.type.charAt(0).toUpperCase() + j.type.slice(1)}</span>
+        <div class="job-salary">${escapeHtml(j.salary || 'Negotiable')}</div>
+        <span class="job-type-badge ${escapeHtml(j.type)}">${escapeHtml((j.type || '').charAt(0).toUpperCase() + (j.type || '').slice(1))}</span>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="apply-btn" onclick="applyJob('${j.title}')">Apply →</button>
-          <button class="referral-btn" onclick="showReferralModal('${j.title}', '${j.posted_by}', '${j.company}')">🤝 Referral</button>
+          ${mine || isAdmin
+            ? `<button class="apply-btn" onclick="showJobApplicants(${j.id}, '${safeTitle}')">👥 Applicants (${j.applicants})</button>
+               <button class="referral-btn" onclick="deleteJobPrompt(${j.id}, '${safeTitle}')">🗑 Delete</button>`
+            : `<button class="apply-btn" ${j.has_applied ? 'disabled' : ''} onclick="applyJob(${j.id}, '${safeTitle}')">${j.has_applied ? '✓ Applied' : 'Apply →'}</button>
+               <button class="referral-btn" onclick="showReferralModal(${j.id}, '${safeTitle}', '${escapeHtml(j.posted_by_name || '').replace(/'/g, '&#39;')}')">🤝 Referral</button>`}
         </div>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
 // ─── REQ-08: CAREER PROGRESSION TRACKER ─────────────────────
@@ -3281,9 +3265,11 @@ function renderRBACTableV2() {
     ${MOCK_RBAC_V2.roles.map(r => `<th class="role-col" style="font-size:9px">${r}</th>`).join('')}
   </tr></thead><tbody>`;
   MOCK_RBAC_V2.matrix.forEach((row, i) => {
+    // data-label lets the same markup render as a table on desktop and as one
+    // card per module on mobile (see the ≤900px block in styles.css).
     html += `<tr>
-      <td class="module-name">${MOCK_RBAC_V2.modules[i]}</td>
-      ${row.map(p => `<td class="perm-cell"><span class="${permClass[p] || 'perm-none'}">${p}</span></td>`).join('')}
+      <td class="module-name">${escapeHtml(MOCK_RBAC_V2.modules[i])}</td>
+      ${row.map((p, j) => `<td class="perm-cell" data-label="${escapeHtml(MOCK_RBAC_V2.roles[j])}"><span class="${permClass[p] || 'perm-none'}">${escapeHtml(p)}</span></td>`).join('')}
     </tr>`;
   });
   html += '</tbody>';
@@ -3358,44 +3344,37 @@ function renderOfflineSyncPanel() {
 }
 
 // ─── REQ-12: BROADCAST HISTORY WITH READ RECEIPTS ────────────
-const MOCK_BROADCAST_HISTORY = [
-  { id: 1, title: 'Reunion 2026 Registration Reminder', msg: '🎓 Alumni Reunion 2026 closes in 48 hours! Register now at dic.alumnai.io/events', audience: 'All Alumni (12,847)', channels: ['sms', 'push', 'email'], sent: 'Jul 28, 2026 · 10:00 AM', delivered: 98.4, opened: 74.2, clicked: 42.1 },
-  { id: 2, title: 'Merit Scholarship Fund Appeal', msg: '❤ Help us reach our ৳25L goal! 50 students need your support.', audience: 'Verified Alumni (11,203)', channels: ['push', 'email'], sent: 'Jul 24, 2026 · 2:30 PM', delivered: 99.1, opened: 61.8, clicked: 28.3 },
-  { id: 3, title: 'New Job Postings Available', msg: '💼 8 new jobs posted by DIC alumni at bKash, Pathao, Google & more.', audience: 'Tech Domain (4,821)', channels: ['push'], sent: 'Jul 20, 2026 · 9:15 AM', delivered: 96.7, opened: 83.4, clicked: 57.2 },
-  { id: 4, title: 'AI & Tech Symposium Tickets', msg: '🚀 Limited seats remain for the Aug 30 AI Symposium — ৳1,200/seat.', audience: 'Batch 2015–2023 (8,431)', channels: ['sms', 'email'], sent: 'Jul 15, 2026 · 3:00 PM', delivered: 97.8, opened: 69.5, clicked: 34.7 },
-];
 
-function renderBroadcastHistory() {
-  const el = document.getElementById('broadcast-history-list');
+// ─── BROADCAST HISTORY ───
+async function renderBroadcastHistory() {
+  const el = document.getElementById('broadcast-history');
   if (!el) return;
-  el.innerHTML = MOCK_BROADCAST_HISTORY.map(b => `
-    <div class="broadcast-history-item">
-      <div class="broadcast-history-header">
-        <div>
-          <div class="broadcast-history-title">${b.title}</div>
-          <div class="broadcast-history-meta">To: ${b.audience} · Sent: ${b.sent}</div>
-        </div>
-        <button class="btn btn-sm btn-outline" onclick="showToast('📢 Re-sending: ${b.title}')">Resend</button>
-      </div>
-      <div class="broadcast-channels">
-        ${b.channels.map(c => `<span class="channel-badge ${c}">${c.toUpperCase()}</span>`).join('')}
-      </div>
-      <div class="broadcast-read-receipts">
-        <div class="receipt-stat">
-          <div class="receipt-stat-val" style="color:var(--teal)">${b.delivered}%</div>
-          <div class="receipt-stat-label">Delivered</div>
-        </div>
-        <div class="receipt-stat">
-          <div class="receipt-stat-val" style="color:var(--primary-light)">${b.opened}%</div>
-          <div class="receipt-stat-label">Opened</div>
-        </div>
-        <div class="receipt-stat">
-          <div class="receipt-stat-val" style="color:var(--amber)">${b.clicked}%</div>
-          <div class="receipt-stat-label">Clicked</div>
+
+  const rows = await API.getBroadcasts();
+  if (apiFailed(rows)) {
+    el.innerHTML = renderErrorState(rows?.error || 'Could not load broadcast history.', 'renderBroadcastHistory()');
+    return;
+  }
+  if (rows.length === 0) {
+    el.innerHTML = renderEmptyState('📢', 'No broadcasts sent yet', 'Announcements you send will be listed here with delivery counts.');
+    return;
+  }
+
+  el.innerHTML = rows.map(b => `
+    <div class="broadcast-entry">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:700;font-size:13px">${escapeHtml(b.title)}</div>
+        <div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(b.body)}</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">
+          ${escapeHtml(formatRelativeTime(b.created_at))} · by ${escapeHtml(b.sender_name || 'System')}
+          ${b.target_role ? ` · to ${escapeHtml(b.target_role)}` : ' · to everyone'}
         </div>
       </div>
-    </div>
-  `).join('');
+      <div style="text-align:right;flex-shrink:0">
+        <div class="card-badge teal">${b.delivered_count}/${b.recipients_count} delivered</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${(b.channels || []).join(' · ')}</div>
+      </div>
+    </div>`).join('');
 }
 
 // ─── REQ-18: DEVELOPER API & WEBHOOKS PAGE ───────────────────
@@ -3654,27 +3633,32 @@ function renderTenantListEnhanced() {
 // ============================================================
 
 // ─── 1. TOP DONORS LEADERBOARD (DASHBOARD) ───────────────────
-const MOCK_TOP_DONORS = [
-  { rank: 1, name: 'Tariqul Islam', initials: 'TI', batch: 2012, amount: '৳1,50,000', label: 'Gold Benefactor' },
-  { rank: 2, name: 'Nusrat Jahan', initials: 'NJ', batch: 2015, amount: '৳1,20,000', label: 'Silver Patron' },
-  { rank: 3, name: 'Sabbir Hossain', initials: 'SH', batch: 2010, amount: '৳95,000', label: 'Bronze Supporter' },
-  { rank: 4, name: 'Fatima Khanam', initials: 'FK', batch: 2019, amount: '৳60,000', label: 'Alumni Sustainer' },
-  { rank: 5, name: 'Tanvir Ahmed', initials: 'TA', batch: 2017, amount: '৳45,000', label: 'Annual Contributor' }
-];
 
-function renderDonorLeaderboard() {
+// ─── DONOR LEADERBOARD ───
+async function renderDonorLeaderboard() {
   const el = document.getElementById('donor-leaderboard');
   if (!el) return;
-  el.innerHTML = MOCK_TOP_DONORS.map(d => `
-    <div class="leaderboard-item">
-      <div class="rank-badge rank-${d.rank > 3 ? 'other' : d.rank}">${d.rank}</div>
-      <div class="leaderboard-info">
-        <div class="leaderboard-name">${d.name} <span class="leaderboard-sub">· Batch '${d.batch % 100}</span></div>
-        <div class="leaderboard-sub">${d.label}</div>
+
+  const rows = await API.getDonorLeaderboard();
+  if (apiFailed(rows)) {
+    el.innerHTML = renderErrorState('Could not load the leaderboard.', 'renderDonorLeaderboard()');
+    return;
+  }
+  if (rows.length === 0) {
+    el.innerHTML = renderEmptyState('🏆', 'No donations yet', 'The top contributors will be listed here.');
+    return;
+  }
+
+  const tiers = ['Gold Benefactor', 'Silver Patron', 'Bronze Supporter', 'Alumni Sustainer', 'Annual Contributor'];
+  el.innerHTML = rows.map((d, i) => `
+    <div class="donor-row">
+      <div class="donor-rank rank-${i + 1}">${i + 1}</div>
+      <div style="flex:1;min-width:0">
+        <div class="donor-name">${escapeHtml(d.name || 'Anonymous Donor')}${d.batch ? ` · <span style="color:var(--text-muted);font-weight:500">Batch '${String(d.batch).slice(-2)}</span>` : ''}</div>
+        <div class="donor-tier">${tiers[i] || 'Contributor'}</div>
       </div>
-      <div class="leaderboard-amount">${d.amount}</div>
-    </div>
-  `).join('');
+      <div class="donor-amount">৳${Number(d.total).toLocaleString()}</div>
+    </div>`).join('');
 }
 
 // ─── 2. ANALYTICS: MENTORSHIP HEALTH & EVENT ROI ─────────────
@@ -3784,64 +3768,59 @@ function renderEventROIAnalytics() {
 }
 
 // ─── 3. REQ-14: NID & BRC AES-256 ENCRYPTED VAULT ───────────
-const MOCK_NID_VAULT = [
-  { id: 'USR-8472', name: 'Mohiuddin Rahman', type: 'National ID (NID)', ciphertext: 'AES256:gcm:e8f4c9a1b2d3e4f5061728394a5b6c7d8e9f0a1b2c3d4e5f6a7b8c9d0e1f2a3b', consentVer: 'v2.4 (Accepted Jan 15, 2026)', status: 'VERIFIED' },
-  { id: 'USR-9014', name: 'Fatima Khanam', type: 'Birth Registration Cert (BRC)', ciphertext: 'AES256:gcm:3f2e1d0c9b8a7f6e5d4c3b2a1f0e9d8c7b6a5f4e3d2c1b0a9f8e7d6c5b4a3f2e', consentVer: 'v2.4 (Accepted Jan 18, 2026)', status: 'VERIFIED' },
-  { id: 'USR-1105', name: 'Tasnim Akter', type: 'National ID (NID)', ciphertext: 'AES256:gcm:a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f67890a1b2c3d4e5f60718', consentVer: 'v2.3 (Accepted Dec 10, 2025)', status: 'VERIFIED' }
-];
 
-function renderNIDVaultPanel() {
+// ─── IDENTITY VAULT PANEL (REQ-14) ───
+async function renderNIDVaultPanel() {
   const el = document.getElementById('nid-vault-panel');
   if (!el) return;
+
+  const data = await API.getVault();
+  if (apiFailed(data)) {
+    el.innerHTML = renderErrorState(data?.error || 'Could not load the identity vault.', 'renderNIDVaultPanel()');
+    return;
+  }
+
+  const banner = data.encryptionEnabled
+    ? `<div class="vault-banner ok">🔐 AES-256-GCM encryption active. Values are decryptable only with a logged reason.</div>`
+    : `<div class="vault-banner warn">⚠ ENCRYPTION_KEY is not configured — the vault is refusing to store identity data.</div>`;
+
   el.innerHTML = `
-    <div class="glass-card mb-16">
-      <div class="card-header">
-        <h3 class="card-title">🔐 Personal Data &amp; Compliance Vault (PDPA 2026 / CA 2023)</h3>
-        <span class="card-badge teal">AES-256-GCM Field-Level Encryption</span>
-      </div>
-      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:14px">
-        Strict application-layer field encryption for National ID (NID) and Birth Registration Certificate (BRC) numbers. Decryption requires HSM key release and triggers an immutable administrative audit log.
-      </p>
-      ${MOCK_NID_VAULT.map(v => `
-        <div class="nid-vault-card">
-          <div class="vault-header">
-            <div>
-              <span class="vault-title">${v.name}</span>
-              <span style="font-size:11px;color:var(--text-muted);margin-left:8px">(${v.id})</span>
-            </div>
-            <span class="card-badge teal">${v.status}</span>
-          </div>
-          <div style="font-size:11px;color:var(--text-secondary)">Document Type: <strong>${v.type}</strong></div>
-          <div class="cipher-box">${v.ciphertext}</div>
-          <div class="vault-meta">
-            <span>Consent Log: ${v.consentVer}</span>
-            <button class="api-key-btn" onclick="decryptVaultField('${v.id}', '${v.name}')">🔓 Decrypt (Audit Logged)</button>
-          </div>
-        </div>
-      `).join('')}
+    ${banner}
+    <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap">
+      <button class="btn btn-outline btn-sm" onclick="showStoreIdentityModal()">➕ Encrypt a field</button>
+      <button class="btn btn-ghost btn-sm" onclick="showVaultAccessLogs()">📜 Access log</button>
     </div>
+    ${data.entries.length === 0
+      ? renderEmptyState('🔐', 'No identity fields stored', 'Encrypted NID / BRC records will be listed here, masked.')
+      : `<div style="display:flex;flex-direction:column;gap:8px">
+          ${data.entries.map(v => `
+            <div class="vault-row">
+              <div class="vault-icon">🪪</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:13px">${escapeHtml(v.owner_name)}</div>
+                <div style="font-size:12px;color:var(--text-secondary)">
+                  ${escapeHtml(v.field_type.toUpperCase())} · <span style="font-family:monospace">•••• •••• ${escapeHtml(v.last_four || '••••')}</span>
+                </div>
+              </div>
+              <button class="btn btn-sm btn-outline" onclick="decryptVaultField(${v.id}, '${escapeHtml(v.owner_name).replace(/'/g, '&#39;')}')">🔓 Decrypt</button>
+            </div>`).join('')}
+        </div>`}
   `;
 }
 
-function decryptVaultField(id, name) {
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title">🔓 Decryption Key Release Authorization</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div style="background:rgba(248,113,113,0.1);border:1px solid rgba(248,113,113,0.25);border-radius:var(--radius-sm);padding:12px;margin-bottom:14px;font-size:12px;color:var(--red)">
-      ⚠ WARNING: Decrypting identity fields for <strong>${name} (${id})</strong> will write an immutable record to the System Security Audit Log.
-    </div>
-    <div class="input-group"><label class="input-label">Admin Master Password / Security Token</label><input type="password" class="form-input" placeholder="••••••••••••" /></div>
-    <button class="btn btn-primary btn-full" onclick="closeModal(); showToast('🔓 Decrypted value: NID 19942691520000847 (Logged to Audit Trail)')">Confirm Decryption</button>
-  `);
-}
+
 
 // ─── 4. BULK USER IMPORT & AUTOMATIC PROFILE CREATION ENGINE ──
-let MOCK_IMPORT_HISTORY = [
-  { batchId: 'BATCH-2026-042', filename: 'dic_alumni_batch_2020.csv', total: 1250, success: 1248, failed: 2, duplicates: 14, date: '2026-07-28 14:32', admin: 'Super Admin', timeSec: '1.4s' },
-  { batchId: 'BATCH-2026-041', filename: 'cse_graduates_2021.xlsx', total: 420, success: 420, failed: 0, duplicates: 3, date: '2026-07-20 10:15', admin: 'College Admin', timeSec: '0.8s' }
-];
+// Import audit rows, loaded from PostgreSQL by loadImportHistory().
+let importHistory = [];
+
+// Fetches the audit trail then re-renders the panel with the real rows.
+async function loadImportHistory() {
+  const rows = await API.getImportHistory();
+  if (rows === null) return;
+  importHistory = rows;
+  renderBulkImportPanel();
+}
 
 let currentImportState = {
   step: 1,
@@ -3941,16 +3920,16 @@ function renderBulkImportPanel() {
             <tr><th>Batch ID</th><th>Filename</th><th>Total Records</th><th>Successful</th><th>Failed</th><th>Duplicates</th><th>Date &amp; Admin</th><th>Speed</th></tr>
           </thead>
           <tbody>
-            ${MOCK_IMPORT_HISTORY.map(h => `
+            ${importHistory.map(h => `
               <tr>
-                <td><strong>${h.batchId}</strong></td>
-                <td>📄 ${h.filename}</td>
-                <td>${h.total}</td>
-                <td><span class="card-badge teal">${h.success}</span></td>
-                <td>${h.failed > 0 ? `<span class="card-badge amber">${h.failed}</span>` : '0'}</td>
-                <td>${h.duplicates}</td>
-                <td>${h.date} (${h.admin})</td>
-                <td>${h.timeSec}</td>
+                <td><strong>${escapeHtml(h.batch_code)}</strong></td>
+                <td>📄 ${escapeHtml(h.filename)}</td>
+                <td>${h.total_records}</td>
+                <td><span class="card-badge teal">${h.success_count}</span></td>
+                <td>${h.failed_count > 0 ? `<span class="card-badge amber">${h.failed_count}</span>` : '0'}</td>
+                <td>${h.duplicate_count}</td>
+                <td>${formatDate(h.created_at)} (${escapeHtml(h.admin_name)})</td>
+                <td>${escapeHtml(h.processing_time)}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -4160,43 +4139,40 @@ function downloadImportErrorReportCSV() {
   showToast('📥 Downloaded bulk_import_error_report.csv');
 }
 
-function executeBulkImportProcess() {
+// Sends the parsed rows to POST /api/bulk-import, which inserts real users +
+// alumni_profiles and writes an import_history audit row. This previously
+// pushed objects into an in-memory array, which is why import_history stayed
+// empty even though the endpoint worked.
+async function executeBulkImportProcess() {
   currentImportState.step = 4;
-  
-  // Push valid records into MOCK_ALUMNI
-  currentImportState.validRecords.forEach((r, idx) => {
-    MOCK_ALUMNI.push({
-      id: MOCK_ALUMNI.length + 1,
-      name: r.name,
-      initials: r.name.split(' ').map(n=>n[0]).join('').slice(0,2),
-      role: 'Software Engineer',
-      company: r.company || 'DIC Tech Hub',
-      batch: parseInt(r.year),
-      dept: r.dept,
-      domain: 'tech',
-      location: 'Dhaka, BD',
-      skills: ['React', 'Node.js', 'SQL'],
-      mentor: true,
-      verified: true,
-      color: '#00A859'
-    });
-  });
 
-  // Log to Audit History
-  MOCK_IMPORT_HISTORY.unshift({
-    batchId: `BATCH-2026-0${MOCK_IMPORT_HISTORY.length + 43}`,
+  const records = currentImportState.validRecords;
+  const startedAt = Date.now();
+
+  showToast(`⏳ Importing ${records.length} record${records.length === 1 ? '' : 's'} into PostgreSQL…`);
+
+  const result = await API.postBulkImport({
+    records,
     filename: currentImportState.filename,
-    total: currentImportState.totalRows,
-    success: currentImportState.validRecords.length,
-    failed: currentImportState.invalidRecords.length,
-    duplicates: currentImportState.duplicateRecords.length,
-    date: new Date().toISOString().replace('T', ' ').slice(0, 16),
-    admin: state.currentUser.name,
-    timeSec: '1.1s'
+    adminName: state.currentUser ? state.currentUser.name : 'Admin',
+    failedCount: currentImportState.invalidRecords.length,
+    duplicateCount: currentImportState.duplicateRecords.length,
+    processingTime: `${((Date.now() - startedAt) / 1000).toFixed(1)}s`
   });
 
-  renderBulkImportPanel();
-  showToast(`🎉 Bulk Import Success! ${currentImportState.validRecords.length} accounts created.`);
+  if (!result || result.error) {
+    currentImportState.step = 3;
+    renderBulkImportPanel();
+    showToast(`⚠ Import failed: ${result?.error || 'the server did not respond.'}`);
+    return;
+  }
+
+  loadImportHistory(); // re-renders the panel including the new audit row
+  showToast(`🎉 Bulk import complete — ${result.count} account${result.count === 1 ? '' : 's'} created in PostgreSQL.`);
+
+  // Reflect the new alumni immediately wherever they appear.
+  state.directory.offset = 0;
+  renderAlumniGrid();
 }
 
 // ─── 5. ADMIN DYNAMIC CUSTOM FIELD MANAGER ───────────────────
@@ -4206,103 +4182,75 @@ let MOCK_CUSTOM_FIELDS = [
   { id: 'cf_3', label: 'Startup Pitch Deck / Video Link', section: 'networking', type: 'url', required: false }
 ];
 
-function renderCustomFieldManager() {
-  const el = document.getElementById('custom-fields-panel');
+// ─── CUSTOM FIELDS ───
+async function renderCustomFieldManager() {
+  const el = document.getElementById('custom-field-manager');
   if (!el) return;
 
+  const fields = await API.getCustomFields();
+  if (apiFailed(fields)) {
+    el.innerHTML = renderErrorState(fields?.error || 'Could not load custom fields.', 'renderCustomFieldManager()');
+    return;
+  }
+
   el.innerHTML = `
-    <div class="glass-card">
-      <div class="card-header">
-        <h3 class="card-title">⚙ Admin Dynamic Custom Field Builder</h3>
-        <span class="card-badge teal">No-Code Schema Extender</span>
-      </div>
-      <p style="font-size:12px;color:var(--text-secondary);margin-bottom:16px">Define custom user profile fields without changing source code. Newly created fields instantly render across user profiles and edit forms.</p>
-
-      <form onsubmit="handleCreateCustomField(event)" class="custom-field-form" style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:10px;align-items:end;margin-bottom:20px;padding:14px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
-        <div class="input-group" style="margin:0">
-          <label class="input-label">Field Name / Label</label>
-          <input type="text" id="cf-name" class="form-input" placeholder="e.g. High School Name, Kaggle Rank" required />
-        </div>
-        <div class="input-group" style="margin:0">
-          <label class="input-label">Target Section</label>
+    <form onsubmit="handleCreateCustomField(event)" class="custom-field-form">
+      <div class="field-grid-2">
+        <div class="input-group"><label class="input-label">Field Label</label>
+          <input type="text" id="cf-label" class="form-input" placeholder="e.g. LinkedIn Headline" required /></div>
+        <div class="input-group"><label class="input-label">Section</label>
           <select id="cf-section" class="form-select">
-            <option value="basic">Basic Info</option>
-            <option value="academic">Academic Record</option>
-            <option value="professional">Professional Info</option>
-            <option value="networking">Networking</option>
-            <option value="social">Social Links</option>
-          </select>
-        </div>
-        <div class="input-group" style="margin:0">
-          <label class="input-label">Input Type</label>
-          <select id="cf-type" class="form-select">
-            <option value="text">Short Text</option>
-            <option value="number">Number</option>
-            <option value="url">URL Link</option>
-            <option value="date">Date Picker</option>
-            <option value="checkbox">Checkbox</option>
-          </select>
-        </div>
-        <div class="input-group" style="margin:0">
-          <label class="input-label">Required?</label>
-          <select id="cf-required" class="form-select">
-            <option value="false">Optional</option>
-            <option value="true">Required</option>
-          </select>
-        </div>
-        <button type="submit" class="btn btn-primary">+ Add Field</button>
-      </form>
-
-      <div class="table-scroll">
-        <table class="rbac-table">
-          <thead>
-            <tr><th>Field ID</th><th>Field Label</th><th>Target Section</th><th>Type</th><th>Required</th><th>Actions</th></tr>
-          </thead>
-          <tbody>
-            ${MOCK_CUSTOM_FIELDS.map(f => `
-              <tr>
-                <td><code>${f.id}</code></td>
-                <td><strong>${f.label}</strong></td>
-                <td><span class="card-badge teal">${f.section}</span></td>
-                <td>${f.type}</td>
-                <td>${f.required ? '<span class="card-badge amber">Required</span>' : 'Optional'}</td>
-                <td><button class="btn btn-sm btn-danger" onclick="deleteCustomField('${f.id}')">Delete</button></td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
+            <option value="academic">Academic</option><option value="professional">Professional</option>
+            <option value="contact">Contact</option><option value="personal">Personal</option>
+          </select></div>
       </div>
-    </div>
-  `;
+      <div class="field-grid-2">
+        <div class="input-group"><label class="input-label">Field Type</label>
+          <select id="cf-type" class="form-select">
+            <option value="text">Text</option><option value="number">Number</option>
+            <option value="date">Date</option><option value="select">Dropdown</option>
+            <option value="url">URL</option>
+          </select></div>
+        <div class="input-group" style="display:flex;align-items:flex-end">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;min-height:48px;cursor:pointer">
+            <input type="checkbox" id="cf-required" /> Required field
+          </label></div>
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">➕ Add Custom Field</button>
+    </form>
+    <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
+      ${fields.length ? fields.map(f => `
+        <div class="custom-field-row">
+          <div class="vault-icon">🧩</div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px">${escapeHtml(f.label)}${f.is_required ? ' <span style="color:var(--red)">*</span>' : ''}</div>
+            <div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(f.section)} · ${escapeHtml(f.field_type)} · <span style="font-family:monospace;font-size:11px">${escapeHtml(f.id)}</span></div>
+          </div>
+          <button class="btn btn-sm btn-ghost" onclick="deleteCustomField('${escapeHtml(f.id)}', '${escapeHtml(f.label).replace(/'/g, '&#39;')}')">🗑</button>
+        </div>`).join('')
+      : renderEmptyState('🧩', 'No custom fields yet', 'Add schema fields without a code change.')}
+    </div>`;
 }
 
-function handleCreateCustomField(e) {
-  e.preventDefault();
-  const label = document.getElementById('cf-name').value.trim();
-  const section = document.getElementById('cf-section').value;
-  const type = document.getElementById('cf-type').value;
-  const required = document.getElementById('cf-required').value === 'true';
-
-  if (!label) return;
-
-  MOCK_CUSTOM_FIELDS.push({
-    id: `cf_${Date.now()}`,
-    label,
-    section,
-    type,
-    required
+async function handleCreateCustomField(e) {
+  if (e) e.preventDefault();
+  const res = await API.createCustomField({
+    label: document.getElementById('cf-label').value.trim(),
+    section: document.getElementById('cf-section').value,
+    fieldType: document.getElementById('cf-type').value,
+    isRequired: document.getElementById('cf-required').checked
   });
-
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not create the field.'}`); return; }
+  showToast(`✅ Custom field "${res.label}" added.`);
   renderCustomFieldManager();
-  render10SectionProfile();
-  showToast(`✅ Created Custom Field: "${label}"`);
 }
 
-function deleteCustomField(id) {
-  MOCK_CUSTOM_FIELDS = MOCK_CUSTOM_FIELDS.filter(f => f.id !== id);
+async function deleteCustomField(id, label) {
+  if (!confirm(`Delete the custom field "${label}"?`)) return;
+  const res = await API.deleteCustomFieldApi(id);
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not delete.'}`); return; }
+  showToast('🗑 Custom field deleted.');
   renderCustomFieldManager();
-  render10SectionProfile();
-  showToast('🗑 Custom field removed.');
 }
 
 // ─── 6. COMPREHENSIVE 10-SECTION USER PROFILE HUB ─────────────
@@ -4655,42 +4603,50 @@ function updateSegmentCount() {
 }
 
 // ─── 6. NEWS POLLS & TRENDING TAGS ───────────────────────────
-const MOCK_POLL = {
-  question: 'Where should the Alumni Reunion 2027 Gala be hosted?',
-  votes: 1420,
-  options: [
-    { text: 'Dhaka Campus Auditorium', pct: 48, count: 681 },
-    { text: 'Cox\'s Bazar Beach Resort', pct: 32, count: 454 },
-    { text: 'Sylhet Tea Garden Convention Center', pct: 20, count: 285 }
-  ]
-};
 
-function renderActivePoll() {
-  const el = document.getElementById('active-poll');
-  if (!el) return;
+// ─── LIVE POLL ───
+async function renderActivePoll() {
+  const els = renderTargets('active-poll');
+  if (!els.length) return;
+  const el = { set innerHTML(v) { els.forEach(e => e.innerHTML = v); } };
+
+  const poll = await API.getActivePoll();
+  if (apiFailed(poll)) {
+    el.innerHTML = renderErrorState('Could not load the poll.', 'renderActivePoll()');
+    return;
+  }
+  if (!poll) {
+    el.innerHTML = renderEmptyState('🗳', 'No active poll');
+    return;
+  }
+
   el.innerHTML = `
     <div class="poll-header">
       <div class="poll-title">🗳 Institutional Alumni Poll</div>
-      <div class="poll-meta">🟢 Live · ${MOCK_POLL.votes} votes</div>
+      <div class="poll-meta">🟢 Live · ${poll.total} vote${poll.total === 1 ? '' : 's'}</div>
     </div>
-    <div class="poll-question-text">${MOCK_POLL.question}</div>
+    <div class="poll-question-text">${escapeHtml(poll.question)}</div>
     <div class="poll-options">
-      ${MOCK_POLL.options.map((o, idx) => `
-        <button class="poll-option-btn" onclick="votePoll(${idx})">
-          <div class="poll-option-bar" style="width:${o.pct}%"></div>
-          <span class="poll-option-text">${o.text}</span>
-          <span class="poll-option-pct">${o.pct}%</span>
-        </button>
-      `).join('')}
+      ${poll.options.map((o, idx) => {
+        const pct = poll.total ? Math.round((poll.counts[idx] / poll.total) * 100) : 0;
+        const mine = poll.myVote === idx;
+        return `
+        <button class="poll-option-btn${mine ? ' voted' : ''}" onclick="votePoll(${poll.id}, ${idx})">
+          <div class="poll-option-bar" style="width:${pct}%"></div>
+          <span class="poll-option-text">${mine ? '✓ ' : ''}${escapeHtml(o)}</span>
+          <span class="poll-option-pct">${pct}%</span>
+        </button>`;
+      }).join('')}
     </div>
+    ${poll.myVote !== null ? '<div style="font-size:11px;color:var(--text-muted);margin-top:8px;text-align:center">Your vote is recorded. Tap another option to change it.</div>' : ''}
   `;
 }
 
-function votePoll(idx) {
-  MOCK_POLL.options[idx].pct += 2;
-  MOCK_POLL.votes += 1;
+async function votePoll(pollId, idx) {
+  const res = await API.votePoll(pollId, idx);
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Vote failed.'}`); return; }
+  showToast('🗳 Your vote has been recorded.');
   renderActivePoll();
-  showToast(`✅ Vote recorded for "${MOCK_POLL.options[idx].text}"`);
 }
 
 function renderTrendingTags() {
@@ -4925,3 +4881,1051 @@ switchAdmin = function(tab, btn) {
 };
 
 
+
+/* ============================================================
+   v2 ACTION HANDLERS
+   Replace the toast-only stubs (buyTicket, applyJob, simulateCheckin,
+   acceptRequest, sendBroadcast, exportUserData, downloadReceipt,
+   decryptVaultField, showDeleteAccount, downloadEventReport …) with calls
+   to the real endpoints.
+   ============================================================ */
+
+// ─── EVENT REGISTRATION & TICKETS ───
+
+async function registerForEvent(eventId, title, isFull) {
+  showToast(isFull ? '⏳ Joining the waitlist…' : '🎫 Reserving your ticket…');
+
+  // A client mutation id makes an offline replay idempotent server-side.
+  const res = await API.registerForEvent(eventId, {
+    clientMutationId: `reg-${eventId}-${state.currentUser.id}-${Date.now()}`
+  });
+
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Registration failed.'}`); return; }
+
+  showToast(res.status === 'waitlisted'
+    ? `⏳ "${title}" is full — you are on the waitlist.`
+    : `✅ Ticket confirmed for "${title}".`);
+
+  renderEvents(state.eventFilter || 'upcoming');
+  renderNotifications();
+  if (res.status === 'confirmed') viewMyTicket(eventId);
+}
+
+async function cancelTicket(eventId, title) {
+  if (!confirm(`Cancel your ticket for "${title}"?`)) return;
+  const res = await API.cancelRegistration(eventId);
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not cancel.'}`); return; }
+  showToast(`✓ Ticket cancelled${res.promoted ? ' — a waitlisted alumnus was promoted.' : '.'}`);
+  renderEvents(state.eventFilter || 'upcoming');
+}
+
+async function viewMyTicket(eventId) {
+  const ticket = await API.getMyTicket(eventId);
+  if (apiFailed(ticket) || !ticket) { showToast('⚠ No ticket found for this event.'); return; }
+
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">🎫 Your Ticket</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div style="text-align:center;padding:8px 0">
+      <div id="ticket-qr" style="display:flex;justify-content:center;margin-bottom:14px"></div>
+      <div style="font-family:monospace;font-size:15px;font-weight:800;letter-spacing:0.06em;color:var(--teal)">${escapeHtml(ticket.ticket_code)}</div>
+      <div style="font-size:12px;color:var(--text-secondary);margin-top:6px">
+        ${escapeHtml(ticket.status === 'waitlisted' ? 'Waitlisted — you will be notified if a seat opens' : 'Confirmed')}
+        ${ticket.checked_in ? ' · ✅ Checked in' : ''}
+      </div>
+      ${Number(ticket.amount_paid) > 0
+        ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px">Paid ৳${Number(ticket.amount_paid).toLocaleString()}${ticket.payment_gateway ? ` via ${escapeHtml(ticket.payment_gateway)}` : ''}</div>`
+        : ''}
+      <div style="font-size:11px;color:var(--text-muted);margin-top:14px">Present this QR code at the venue entrance.</div>
+    </div>
+  `);
+
+  // Render the signed payload as a scannable QR.
+  if (typeof QRCode !== 'undefined') {
+    try {
+      new QRCode(document.getElementById('ticket-qr'), {
+        text: ticket.qr_payload, width: 168, height: 168,
+        colorDark: '#0B3897', colorLight: '#ffffff'
+      });
+    } catch (e) {
+      document.getElementById('ticket-qr').innerHTML = '<div style="font-size:52px">🎫</div>';
+    }
+  } else {
+    document.getElementById('ticket-qr').innerHTML = '<div style="font-size:52px">🎫</div>';
+  }
+}
+
+async function handleCheckIn(e) {
+  if (e) e.preventDefault();
+  const input = document.getElementById('checkin-code');
+  const box = document.getElementById('checkin-result');
+  const code = input.value.trim();
+  if (!code) return;
+
+  const res = await API.checkInTicket(code);
+
+  if (apiFailed(res)) {
+    box.innerHTML = `<div class="state-panel state-error" style="padding:18px">
+        <div class="state-title">${escapeHtml(res?.error || 'Check-in failed')}</div>
+      </div>`;
+    return;
+  }
+
+  box.innerHTML = `<div class="state-panel" style="padding:18px;border-color:rgba(52,211,153,0.4);background:rgba(52,211,153,0.08)">
+      <div class="state-icon">✅</div>
+      <div class="state-title">${escapeHtml(res.attendee)} checked in</div>
+      ${res.batch ? `<div class="state-subtitle">Batch ${res.batch}</div>` : ''}
+    </div>`;
+  input.value = '';
+  input.focus();
+}
+
+async function showAttendeesModal(eventId) {
+  const rows = await API.getAttendees(eventId);
+  if (apiFailed(rows)) { showToast(`⚠ ${rows?.error || 'Could not load attendees.'}`); return; }
+
+  const confirmed = rows.filter(r => r.status === 'confirmed');
+  const waitlisted = rows.filter(r => r.status === 'waitlisted');
+  const checkedIn = rows.filter(r => r.checked_in).length;
+
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">👥 Attendees</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      <span class="card-badge teal">${confirmed.length} confirmed</span>
+      <span class="card-badge amber">${waitlisted.length} waitlisted</span>
+      <span class="card-badge">${checkedIn} checked in</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;max-height:56vh;overflow-y:auto">
+      ${rows.length ? rows.map(a => `
+        <div class="glass-card" style="display:flex;align-items:center;gap:10px;padding:10px 12px">
+          <div class="alumni-avatar" style="width:36px;height:36px;font-size:12px;background:var(--teal);flex-shrink:0"><span>${escapeHtml(a.initials || '??')}</span></div>
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:700;font-size:13px">${escapeHtml(a.name)}</div>
+            <div style="font-size:11px;color:var(--text-secondary)">${escapeHtml([a.dept, a.batch && `Batch ${a.batch}`, a.company].filter(Boolean).join(' · ') || '—')}</div>
+            <div style="font-size:10px;color:var(--text-muted);font-family:monospace">${escapeHtml(a.ticket_code)}</div>
+          </div>
+          <span class="card-badge ${a.checked_in ? 'teal' : a.status === 'waitlisted' ? 'amber' : ''}">${a.checked_in ? '✅ In' : a.status === 'waitlisted' ? 'Waitlist' : 'Confirmed'}</span>
+        </div>`).join('')
+      : renderEmptyState('👤', 'No registrations yet')}
+    </div>
+  `);
+}
+
+// ─── DONATIONS ───
+
+async function processDonation(campaignId, campaignName) {
+  const custom = document.getElementById('custom-amount');
+  const amount = state.selectedAmount || (custom && parseFloat(custom.value));
+
+  if (!amount || amount <= 0) { showToast('⚠ Please select or enter a donation amount'); return; }
+  if (!state.selectedGateway) { showToast('⚠ Please select a payment gateway'); return; }
+
+  // Phase 1: write the PENDING ledger row before contacting the gateway.
+  const created = await API.createDonation({
+    campaignId, amount, gateway: state.selectedGateway,
+    isAnonymous: document.getElementById('donate-anonymous')?.checked || false
+  });
+
+  if (apiFailed(created)) { showToast(`⚠ ${created?.error || 'Could not start the donation.'}`); return; }
+
+  const gwNames = { bkash: 'bKash', nagad: 'Nagad', rocket: 'Rocket', card: 'Visa/Mastercard' };
+  const gwName = gwNames[state.selectedGateway] || state.selectedGateway;
+  const donation = created.donation;
+
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">🔐 Authorize Payment</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="payment-step">
+      <div style="font-size:44px;margin-bottom:10px">${state.selectedGateway === 'bkash' ? '📱' : state.selectedGateway === 'nagad' ? '📲' : state.selectedGateway === 'rocket' ? '🚀' : '💳'}</div>
+      <div style="font-size:17px;font-weight:800;margin-bottom:6px">Authorising via ${escapeHtml(gwName)}</div>
+      <div style="color:var(--text-secondary);margin-bottom:6px">Amount: <strong style="color:var(--teal)">৳${Number(amount).toLocaleString()}</strong></div>
+      <div style="font-family:monospace;font-size:11px;color:var(--text-muted);margin-bottom:18px">Ref ${escapeHtml(donation.transaction_reference)}</div>
+      <div style="background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm);padding:16px;margin-bottom:18px">
+        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:10px">Enter your ${escapeHtml(gwName)} PIN</div>
+        <div class="otp-inputs" style="justify-content:center">
+          ${[0,1,2,3].map(() => '<input type="password" class="otp-box" maxlength="1" inputmode="numeric" />').join('')}
+        </div>
+      </div>
+      <button class="btn btn-primary btn-full" onclick="settleDonation(${donation.id}, true)">✓ Confirm Payment</button>
+      <button class="btn btn-ghost btn-full mt-8" onclick="settleDonation(${donation.id}, false)">Simulate a failed payment</button>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:10px">A PENDING ledger entry has already been recorded. The campaign total updates only on confirmation.</div>
+    </div>
+  `);
+}
+
+async function settleDonation(donationId, success) {
+  const res = await API.confirmDonation(donationId, {
+    success, failureReason: success ? null : 'Simulated gateway decline'
+  });
+
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not settle the transaction.'}`); return; }
+
+  const d = res.donation;
+
+  if (d.status === 'FAILED') {
+    showModal(`
+      <div class="modal-header">
+        <div class="modal-title">❌ Payment Failed</div>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="payment-step">
+        <div style="font-size:44px;margin-bottom:10px">⚠️</div>
+        <div style="font-size:16px;font-weight:800;margin-bottom:6px">The transaction was declined</div>
+        <div style="color:var(--text-secondary);margin-bottom:8px">${escapeHtml(d.failure_reason || 'The gateway rejected the payment.')}</div>
+        <div style="font-family:monospace;font-size:11px;color:var(--text-muted);margin-bottom:18px">Ref ${escapeHtml(d.transaction_reference)}</div>
+        <button class="btn btn-primary btn-full" onclick="closeModal(); showPage('donations')">Try again</button>
+      </div>
+    `);
+    renderCampaignsEnhanced();
+    return;
+  }
+
+  const date = new Date(d.completed_at || Date.now()).toLocaleString('en-GB', { timeZone: 'Asia/Dhaka' });
+
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">🎉 Payment Successful</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="payment-step">
+      <div class="payment-success">✅</div>
+      <div class="payment-success-title">Thank you for your donation!</div>
+      <div class="payment-success-sub">Your contribution has been recorded in the ledger.</div>
+      <div class="receipt-preview">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;text-align:center">OFFICIAL TAX RECEIPT</div>
+        <div style="font-size:11px;text-align:center;color:var(--text-muted);margin-bottom:12px">Daffodil International College Alumni Association</div>
+        <div class="receipt-row"><span>Donor</span><span>${escapeHtml(d.is_anonymous ? 'Anonymous' : d.donor_name)}</span></div>
+        <div class="receipt-row"><span>Receipt No.</span><span style="font-family:monospace;font-size:11px">${escapeHtml(d.receipt_code)}</span></div>
+        <div class="receipt-row"><span>Transaction</span><span style="font-family:monospace;font-size:11px">${escapeHtml(d.transaction_reference)}</span></div>
+        <div class="receipt-row"><span>Gateway</span><span>${escapeHtml(d.payment_gateway)}</span></div>
+        <div class="receipt-row"><span>Date</span><span style="font-size:11px">${escapeHtml(date)}</span></div>
+        <div class="receipt-row"><span>Amount</span><span>৳${Number(d.amount).toLocaleString()}</span></div>
+      </div>
+      <div style="margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
+        <button class="btn btn-outline" onclick="downloadReceipt(${d.id})">📄 Download Receipt</button>
+        <button class="btn btn-outline" onclick="closeModal()">✓ Done</button>
+      </div>
+    </div>
+  `);
+
+  state.selectedAmount = null;
+  state.selectedGateway = null;
+  renderCampaignsEnhanced();
+  renderDonorLeaderboard();
+  renderNotifications();
+}
+
+// Generates a real downloadable receipt from the ledger row.
+async function downloadReceipt(donationId) {
+  const rows = await API.getMyDonations();
+  if (apiFailed(rows)) { showToast('⚠ Could not load your receipt.'); return; }
+
+  const d = rows.find(r => r.id === donationId) || rows[0];
+  if (!d) { showToast('⚠ Receipt not found.'); return; }
+
+  const lines = [
+    'DAFFODIL INTERNATIONAL COLLEGE — ALUMNI ASSOCIATION',
+    'OFFICIAL DONATION RECEIPT (Tax Deductible)',
+    '',
+    `Receipt No.      : ${d.receipt_code || '—'}`,
+    `Transaction Ref  : ${d.transaction_reference}`,
+    `Donor            : ${d.is_anonymous ? 'Anonymous' : d.donor_name}`,
+    `Campaign         : ${d.campaign_name || '—'}`,
+    `Amount           : BDT ${Number(d.amount).toLocaleString()}`,
+    `Payment Gateway  : ${d.payment_gateway}`,
+    `Status           : ${d.status}`,
+    `Date             : ${new Date(d.completed_at || d.created_at).toLocaleString('en-GB')}`,
+    '',
+    'This receipt was generated from the institutional donation ledger.',
+    'Verify at: alumni.dic.edu.bd/verify/' + (d.receipt_code || '')
+  ];
+
+  downloadTextFile(`DIC_Receipt_${d.receipt_code || d.id}.txt`, lines.join('\n'));
+  showToast('📄 Receipt downloaded.');
+}
+
+async function deleteCampaignPrompt(id, name) {
+  if (!confirm(`Delete the campaign "${name}"? Donations already recorded are retained in the ledger.`)) return;
+  const res = await API.deleteCampaign(id);
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not delete.'}`); return; }
+  showToast('🗑 Campaign deleted.');
+  renderCampaignsEnhanced();
+}
+
+// ─── MENTORSHIP ───
+
+async function submitMentorRequest(mentorId, matchScore) {
+  const subject = document.getElementById('mentor-subject')?.value.trim();
+  const message = document.getElementById('mentor-message')?.value.trim();
+  if (!subject) { showToast('⚠ Please describe what you need help with.'); return; }
+
+  const res = await API.requestMentorship({ mentorId, subject, message, matchScore });
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Request failed.'}`); return; }
+
+  closeModal();
+  showToast('🤝 Mentorship request sent — it expires in 5 days if unanswered.');
+  renderMentorships();
+  renderNotifications();
+}
+
+async function respondToMentorship(id, action) {
+  const res = await API.respondMentorship(id, action);
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not update the request.'}`); return; }
+  const verb = { accept: 'accepted', decline: 'declined', complete: 'marked complete' }[action];
+  showToast(`✓ Mentorship ${verb}.`);
+  renderMentorships();
+  renderNotifications();
+}
+
+// ─── JOBS ───
+
+async function applyJob(jobId, title) {
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">📄 Apply — ${escapeHtml(title)}</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <form onsubmit="submitJobApplication(event, ${jobId})">
+      <div class="input-group">
+        <label class="input-label">Cover note</label>
+        <textarea id="apply-note" class="form-input" rows="4" placeholder="Why are you a good fit for this role?"></textarea>
+      </div>
+      <div class="input-group">
+        <label class="input-label">Resume / portfolio URL (optional)</label>
+        <input type="url" id="apply-resume" class="form-input" placeholder="https://…" />
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">Submit Application</button>
+    </form>
+  `);
+}
+
+async function submitJobApplication(e, jobId) {
+  if (e) e.preventDefault();
+  const res = await API.applyToJob(jobId, {
+    coverNote: document.getElementById('apply-note')?.value.trim(),
+    resumeUrl: document.getElementById('apply-resume')?.value.trim()
+  });
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Application failed.'}`); return; }
+  closeModal();
+  showToast('✅ Application submitted.');
+  renderJobsEnhanced();
+}
+
+async function showJobApplicants(jobId, title) {
+  const rows = await API.getJobApplicants(jobId);
+  if (apiFailed(rows)) { showToast(`⚠ ${rows?.error || 'Could not load applicants.'}`); return; }
+
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">👥 Applicants — ${escapeHtml(title)}</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;max-height:56vh;overflow-y:auto">
+      ${rows.length ? rows.map(a => `
+        <div class="glass-card" style="padding:12px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="alumni-avatar" style="width:36px;height:36px;font-size:12px;background:var(--teal);flex-shrink:0"><span>${escapeHtml(a.initials || '??')}</span></div>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:700;font-size:13px">${escapeHtml(a.name)}</div>
+              <div style="font-size:11px;color:var(--text-secondary)">${escapeHtml([a.dept, a.batch && `Batch ${a.batch}`, a.company].filter(Boolean).join(' · ') || '—')}</div>
+            </div>
+            <span class="card-badge">${escapeHtml(a.status)}</span>
+          </div>
+          ${a.cover_note ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:8px;padding-top:8px;border-top:1px solid var(--border-glass)">${escapeHtml(a.cover_note)}</div>` : ''}
+        </div>`).join('')
+      : renderEmptyState('📭', 'No applications yet')}
+    </div>
+  `);
+}
+
+async function submitReferralRequest(jobId) {
+  const message = document.getElementById('referral-message')?.value.trim();
+  const res = await API.requestReferral(jobId, message);
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not send the request.'}`); return; }
+  closeModal();
+  showToast('🤝 Referral request sent to the poster.');
+}
+
+async function deleteJobPrompt(id, title) {
+  if (!confirm(`Delete the posting "${title}"?`)) return;
+  const res = await API.deleteJob(id);
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not delete.'}`); return; }
+  showToast('🗑 Job posting deleted.');
+  renderJobsEnhanced();
+}
+
+// ─── BROADCASTS ───
+
+async function sendBroadcast() {
+  const title = document.getElementById('broadcast-title')?.value.trim();
+  const body = document.getElementById('broadcast-body')?.value.trim();
+  const targetRole = document.getElementById('broadcast-target')?.value || 'all';
+  const channels = [...document.querySelectorAll('.broadcast-channel.active')].map(c => c.dataset.channel);
+
+  if (!title) { showToast('⚠ Enter a broadcast title.'); return; }
+  if (!body) { showToast('⚠ Enter the message body.'); return; }
+
+  const res = await API.sendBroadcastApi({ title, body, channels: channels.length ? channels : ['push'], targetRole });
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Broadcast failed.'}`); return; }
+
+  closeModal();
+  showToast(`📢 Broadcast delivered to ${res.recipients} recipient${res.recipients === 1 ? '' : 's'} via ${(channels.length ? channels : ['push']).join(' + ')}.`);
+  if (typeof renderBroadcastHistory === 'function') renderBroadcastHistory();
+  renderNotifications();
+}
+
+// ─── COMPLIANCE: DSAR & IDENTITY VAULT ───
+
+function downloadTextFile(filename, content, mime = 'text/plain') {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// Downloads through fetch so the Authorization header is attached.
+async function exportUserData(format = 'json') {
+  showToast(`📦 Preparing your ${format.toUpperCase()} export…`);
+  try {
+    const res = await fetch(API.dsarExportUrl(format), {
+      headers: { Authorization: `Bearer ${localStorage.getItem('dic_session_token')}` }
+    });
+    if (!res.ok) throw new Error('export failed');
+    const text = await res.text();
+    downloadTextFile(`dic_my_data.${format}`, text, format === 'csv' ? 'text/csv' : 'application/json');
+    showToast('✅ Your data export has been downloaded.');
+  } catch {
+    showToast('⚠ Could not generate the export. Please try again.');
+  }
+}
+
+async function exportProfileDSAR() {
+  return exportUserData('json');
+}
+
+async function showDeleteAccount() {
+  const pending = await API.getDeletionRequest();
+  const hasPending = !apiFailed(pending) && pending;
+
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">⚠ Delete Account</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    ${hasPending ? `
+      <div class="state-panel" style="border-color:rgba(255,140,66,0.4);background:rgba(255,140,66,0.08)">
+        <div class="state-icon">⏳</div>
+        <div class="state-title">Deletion already scheduled</div>
+        <div class="state-subtitle">Your account will be permanently purged on ${escapeHtml(formatDate(pending.purge_after))}. You can cancel until then.</div>
+      </div>
+      <button class="btn btn-primary btn-full mt-16" onclick="cancelAccountDeletion()">↩ Cancel deletion request</button>
+    ` : `
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">
+        Under PDPA 2026 your account enters a <strong>30-day grace period</strong> before permanent deletion.
+        You can cancel at any point during that window. We recommend exporting your data first.
+      </p>
+      <button class="btn btn-outline btn-full" onclick="exportUserData('json')">📦 Export my data first</button>
+      <div class="input-group mt-16">
+        <label class="input-label">Reason (optional)</label>
+        <textarea id="delete-reason" class="form-input" rows="3" placeholder="Help us understand why you are leaving…"></textarea>
+      </div>
+      <button class="btn btn-danger btn-full" onclick="confirmAccountDeletion()">Request account deletion</button>
+    `}
+  `);
+}
+
+async function confirmAccountDeletion() {
+  if (!confirm('Schedule your account for deletion in 30 days?')) return;
+  const res = await API.requestDeletion(document.getElementById('delete-reason')?.value.trim());
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not submit the request.'}`); return; }
+  closeModal();
+  showToast(`⚠ Account deletion scheduled for ${formatDate(res.request.purge_after)}. You can cancel until then.`);
+  renderNotifications();
+}
+
+async function cancelAccountDeletion() {
+  const res = await API.cancelDeletion();
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not cancel.'}`); return; }
+  closeModal();
+  showToast('✓ Deletion request cancelled — your account is active.');
+}
+
+// Decrypts a real AES-256-GCM field; the reason is mandatory and audited.
+async function decryptVaultField(vaultId, ownerName) {
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">🔓 Decrypt Identity Field</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">
+      Decrypting ${escapeHtml(ownerName)}'s identity data is a privileged action. Your name, the reason
+      and a timestamp are written to the immutable access log.
+    </p>
+    <div class="input-group">
+      <label class="input-label">Reason for access (required)</label>
+      <input type="text" id="vault-reason" class="form-input" placeholder="e.g. Scholarship eligibility verification" required />
+    </div>
+    <button class="btn btn-primary btn-full" onclick="performVaultReveal(${vaultId})">🔓 Decrypt & Log Access</button>
+    <div id="vault-reveal-result" class="mt-16"></div>
+  `);
+}
+
+async function performVaultReveal(vaultId) {
+  const reason = document.getElementById('vault-reason')?.value.trim();
+  const box = document.getElementById('vault-reveal-result');
+
+  const res = await API.revealVaultField(vaultId, reason);
+  if (apiFailed(res)) {
+    box.innerHTML = `<div class="state-panel state-error" style="padding:16px"><div class="state-title">${escapeHtml(res?.error || 'Decryption failed')}</div></div>`;
+    return;
+  }
+
+  box.innerHTML = `
+    <div class="state-panel" style="padding:18px;border-color:rgba(52,211,153,0.4);background:rgba(52,211,153,0.08)">
+      <div class="state-title" style="font-family:monospace;font-size:18px;letter-spacing:0.08em">${escapeHtml(res.value)}</div>
+      <div class="state-subtitle">${escapeHtml(res.fieldType.toUpperCase())} · ${escapeHtml(res.owner)} · access logged</div>
+    </div>`;
+  if (typeof renderAuditLog === 'function') renderAuditLog();
+}
+
+async function storeIdentityField() {
+  const fieldType = document.getElementById('vault-field-type')?.value;
+  const value = document.getElementById('vault-field-value')?.value.trim();
+  if (!value) { showToast('⚠ Enter a value to encrypt.'); return; }
+
+  const res = await API.storeVaultField({ fieldType, value });
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not store the field.'}`); return; }
+  closeModal();
+  showToast(`🔐 ${fieldType.toUpperCase()} encrypted with AES-256-GCM and stored.`);
+  if (typeof renderNIDVaultPanel === 'function') renderNIDVaultPanel();
+}
+
+// Records consent with IP + policy version (PDPA 2026).
+async function recordConsent(consentType, granted = true) {
+  const res = await API.recordConsent({ consentType, granted });
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not record consent.'}`); return; }
+  showToast(granted ? '✓ Consent recorded.' : '✓ Consent withdrawn.');
+}
+
+// ─── EVENT PLANNER REPORTS ───
+
+async function downloadEventReport(type = 'full', eventId = 1) {
+  showToast(`📊 Generating the ${type} report…`);
+  try {
+    const res = await fetch(API.plannerReportUrl(eventId, type), {
+      headers: { Authorization: `Bearer ${localStorage.getItem('dic_session_token')}` }
+    });
+    if (!res.ok) throw new Error('report failed');
+    downloadTextFile(`dic_event_${eventId}_${type}_report.csv`, await res.text(), 'text/csv');
+    showToast('✅ Report downloaded.');
+  } catch {
+    showToast('⚠ Could not generate the report.');
+  }
+}
+
+async function exportPDF() { return downloadEventReport('full'); }
+async function exportExcel() { return downloadEventReport('full'); }
+
+function filterJobLocation(v) {
+  state.jobFilters = { ...(state.jobFilters || {}), location: v === 'all' ? '' : v };
+  renderJobsEnhanced();
+}
+
+async function handleCreateEventSubmit(e) {
+  if (e) e.preventDefault();
+  const rawDate = document.getElementById('event-date').value;
+  const res = await API.createEvent({
+    title: document.getElementById('event-title').value.trim(),
+    emoji: document.getElementById('event-emoji').value.trim() || '🎓',
+    eventDate: rawDate ? new Date(rawDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBA',
+    eventTime: document.getElementById('event-time').value,
+    venue: document.getElementById('event-venue').value.trim(),
+    capacity: document.getElementById('event-capacity').value,
+    price: document.getElementById('event-price').value.trim() || 'Free',
+    type: document.getElementById('event-type').value
+  });
+
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not create the event.'}`); return; }
+  closeModal();
+  showToast(`✅ "${res.title}" created and published.`);
+  renderEvents(state.eventFilter || 'upcoming');
+}
+
+async function handlePostJobSubmit(e) {
+  if (e) e.preventDefault();
+  const res = await API.createJob({
+    title: document.getElementById('job-title').value.trim(),
+    company: document.getElementById('job-company').value.trim(),
+    type: document.getElementById('job-type').value,
+    location: document.getElementById('job-location').value.trim(),
+    salary: document.getElementById('job-salary').value.trim(),
+    tags: document.getElementById('job-tags').value
+  });
+
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not post the job.'}`); return; }
+  closeModal();
+  showToast(`✅ "${res.title}" posted to the job board.`);
+  renderJobsEnhanced();
+}
+
+// ─── CREATE CAMPAIGN (was a toast-only shell) ───
+function showCreateCampaign() {
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">➕ Create Campaign</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <form onsubmit="handleCreateCampaignSubmit(event)">
+      <div class="input-group"><label class="input-label">Campaign Name</label>
+        <input type="text" id="campaign-name" class="form-input" placeholder="e.g. Science Lab Fund 2026" required /></div>
+      <div class="input-group"><label class="input-label">Description</label>
+        <textarea id="campaign-desc" class="form-input" rows="3" placeholder="Describe the impact of this campaign…"></textarea></div>
+      <div class="field-grid-2">
+        <div class="input-group"><label class="input-label">Goal Amount (৳)</label>
+          <input type="number" id="campaign-goal" class="form-input" min="1" value="1500000" required /></div>
+        <div class="input-group"><label class="input-label">Days to run</label>
+          <input type="number" id="campaign-days" class="form-input" min="1" value="30" /></div>
+      </div>
+      <div class="input-group"><label class="input-label">Category</label>
+        <select id="campaign-tag" class="form-select">
+          <option value="scholarship">Scholarship</option><option value="education">Education</option>
+          <option value="infrastructure">Infrastructure</option><option value="sports">Sports</option>
+        </select></div>
+      <div class="input-group"><label class="input-label">Payment Gateways</label>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          ${['bkash','nagad','rocket','card'].map((g, i) =>
+            `<button type="button" class="chip campaign-gateway${i !== 2 ? ' active' : ''}" data-gateway="${g}" onclick="this.classList.toggle('active')">${g.charAt(0).toUpperCase() + g.slice(1)}</button>`).join('')}
+        </div></div>
+      <button type="submit" class="btn btn-primary btn-full">Create Campaign</button>
+    </form>
+  `);
+}
+
+async function handleCreateCampaignSubmit(e) {
+  if (e) e.preventDefault();
+  const gateways = [...document.querySelectorAll('.campaign-gateway.active')].map(b => b.dataset.gateway);
+  const res = await API.createCampaign({
+    name: document.getElementById('campaign-name').value.trim(),
+    description: document.getElementById('campaign-desc').value.trim(),
+    goalAmount: document.getElementById('campaign-goal').value,
+    daysLeft: document.getElementById('campaign-days').value,
+    tag: document.getElementById('campaign-tag').value,
+    gateways
+  });
+
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not create the campaign.'}`); return; }
+  closeModal();
+  showToast(`✅ "${res.name}" is now live.`);
+  renderCampaignsEnhanced();
+}
+
+// ─── BROADCAST MODAL (was a toast-only shell) ───
+function showBroadcastModal() {
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">📢 Send Broadcast</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="input-group"><label class="input-label">Title</label>
+      <input type="text" id="broadcast-title" class="form-input" placeholder="e.g. Reunion registration now open" required /></div>
+    <div class="input-group"><label class="input-label">Message</label>
+      <textarea id="broadcast-body" class="form-input" rows="4" placeholder="Write your announcement…" required></textarea></div>
+    <div class="input-group"><label class="input-label">Audience</label>
+      <select id="broadcast-target" class="form-select">
+        <option value="all">Everyone</option>
+        <option value="alumni">Alumni only</option>
+        <option value="moderator">Moderators</option>
+        <option value="dept_admin">Department admins</option>
+        <option value="univ_admin">College admins</option>
+      </select></div>
+    <div class="input-group"><label class="input-label">Channels</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${[['push','🔔 Push'],['sms','💬 SMS'],['email','✉ Email']].map((c, i) =>
+          `<button type="button" class="chip broadcast-channel${i === 0 ? ' active' : ''}" data-channel="${c[0]}" onclick="this.classList.toggle('active')">${c[1]}</button>`).join('')}
+      </div></div>
+    <button class="btn btn-primary btn-full" onclick="sendBroadcast()">📢 Send Broadcast</button>
+    <div style="font-size:11px;color:var(--text-muted);margin-top:10px;text-align:center">Recipients are resolved from the live audience and delivered as in-app notifications.</div>
+  `);
+}
+
+function showStoreIdentityModal() {
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">🔐 Encrypt an Identity Field</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">
+      The value is encrypted with AES-256-GCM in the application layer before it reaches PostgreSQL.
+      Only the last four digits are stored separately for display.
+    </p>
+    <div class="input-group"><label class="input-label">Field type</label>
+      <select id="vault-field-type" class="form-select">
+        <option value="nid">National ID (NID)</option>
+        <option value="brc">Birth Registration (BRC)</option>
+        <option value="passport">Passport</option>
+      </select></div>
+    <div class="input-group"><label class="input-label">Value</label>
+      <input type="text" id="vault-field-value" class="form-input" placeholder="Enter the identity number" autocomplete="off" required /></div>
+    <button class="btn btn-primary btn-full" onclick="storeIdentityField()">🔐 Encrypt & Store</button>
+  `);
+}
+
+async function showVaultAccessLogs() {
+  const rows = await API.getVaultAccessLogs();
+  if (apiFailed(rows)) { showToast(`⚠ ${rows?.error || 'Could not load access logs.'}`); return; }
+
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">📜 Vault Access Log</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;max-height:56vh;overflow-y:auto">
+      ${rows.length ? rows.map(l => `
+        <div class="glass-card" style="padding:12px">
+          <div style="font-weight:700;font-size:13px">${escapeHtml(l.accessed_by_name || 'Unknown')} decrypted ${escapeHtml((l.field_type || '').toUpperCase())}</div>
+          <div style="font-size:12px;color:var(--text-secondary)">Subject: ${escapeHtml(l.owner_name || '—')}</div>
+          <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Reason: ${escapeHtml(l.reason)}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${escapeHtml(formatRelativeTime(l.created_at))}</div>
+        </div>`).join('')
+      : renderEmptyState('📜', 'No decryption events recorded')}
+    </div>
+  `);
+}
+
+// ─── CHAPTERS (REQ-13) — single source of truth is PostgreSQL ───
+async function renderChapters() {
+  const tree = document.getElementById('chapter-tree');
+  if (!tree) return;
+
+  tree.innerHTML = renderSkeletonCards(3, 'chapter');
+  const rows = await API.getChapters();
+
+  if (rows === null) {
+    tree.innerHTML = renderErrorState('Could not load chapters.', 'renderChapters()');
+    return;
+  }
+
+  chaptersCache = rows.map(c => ({
+    id: c.id,
+    name: c.name,
+    type: c.type,
+    icon: c.icon || '🏫',
+    description: c.description || '',
+    // members_count is the counter the join/leave endpoint maintains.
+    members: c.members_count || 0,
+    events: c.events_count || 0,
+    parent: c.parent_id ?? null
+  }));
+
+  // Membership comes from PostgreSQL for the signed-in user.
+  USER_CHAPTER_MEMBERSHIPS = new Set(rows.filter(c => c.is_member).map(c => c.id));
+
+  if (chaptersCache.length === 0) {
+    tree.innerHTML = renderEmptyState('⬡', 'No chapters yet', 'Create the first regional, batch or interest chapter.');
+    const detail = document.getElementById('chapter-detail');
+    if (detail) detail.innerHTML = '';
+    return;
+  }
+
+  const roots = chaptersCache.filter(c => c.parent === null);
+  const children = (parentId) => chaptersCache.filter(c => c.parent === parentId);
+
+  tree.innerHTML = roots.map(c => `
+    <div class="chapter-node" onclick="selectChapter(${c.id})">
+      <span class="chapter-icon">${escapeHtml(c.icon)}</span>
+      <span class="chapter-name">${escapeHtml(c.name)}</span>
+      <span class="chapter-type ${escapeHtml(c.type)}">${escapeHtml(c.type)}</span>
+      <span class="chapter-count">${c.members.toLocaleString()}</span>
+    </div>
+    ${children(c.id).map(sub => `
+      <div class="chapter-node chapter-indent" onclick="selectChapter(${sub.id})">
+        <span class="chapter-icon">${escapeHtml(sub.icon)}</span>
+        <span class="chapter-name">${escapeHtml(sub.name)}</span>
+        <span class="chapter-type ${escapeHtml(sub.type)}">${escapeHtml(sub.type)}</span>
+        <span class="chapter-count">${sub.members.toLocaleString()}</span>
+      </div>
+    `).join('')}
+  `).join('');
+
+  if (chaptersCache.length > 0) selectChapter(chaptersCache[chaptersCache.length - 1].id);
+}
+
+// ─── NOTIFICATION PANEL ───
+function showNotifications() {
+  const panel = document.getElementById('notif-panel');
+  if (!panel) return;
+  panel.classList.toggle('hidden');
+  // Pull fresh rows every time the panel opens — it previously toggled a
+  // container nothing had rendered into.
+  if (!panel.classList.contains('hidden')) renderNotifications();
+}
+
+function closeNotifications() {
+  const panel = document.getElementById('notif-panel');
+  if (panel) panel.classList.add('hidden');
+}
+// Shared table→card renderer. On mobile every planner table becomes a stack of
+// cards (Phase 7) instead of a horizontally scrolling grid.
+function plannerTable(columns, rows, rowFn, emptyIcon, emptyText) {
+  if (!rows.length) return renderEmptyState(emptyIcon, emptyText);
+  return `
+    <div class="planner-table">
+      <div class="planner-table-head">
+        ${columns.map(c => `<div>${escapeHtml(c)}</div>`).join('')}
+      </div>
+      ${rows.map(r => `<div class="planner-table-row">${rowFn(r).map((cell, i) =>
+          `<div data-label="${escapeHtml(columns[i])}">${cell}</div>`).join('')}</div>`).join('')}
+    </div>`;
+}
+
+function plannerToolbar(kind, label) {
+  const canEdit = state.currentUser && ['super_admin', 'univ_admin', 'dept_admin', 'moderator'].includes(state.currentUser.role);
+  if (!canEdit) return '';
+  return `<button class="btn btn-sm btn-primary" onclick="showPlannerItemModal('${kind}')">➕ Add ${escapeHtml(label)}</button>`;
+}
+
+// ─── PLANNER: VENDORS / TIMELINE / LOGISTICS TABS (new in Phase 6) ───
+function renderPlannerExtraTab(tab) {
+  const container = document.getElementById('planner-tab-content');
+  if (!container || !CURRENT_PLANNER_DATA) return;
+  const d = CURRENT_PLANNER_DATA;
+
+  if (tab === 'vendors') {
+    const committed = (d.vendors || []).reduce((a, v) => a + Number(v.contract_value || 0), 0);
+    container.innerHTML = `
+      <div class="glass-card">
+        <div class="card-header">
+          <h3 class="card-title">🏪 Vendor Management</h3>
+          ${plannerToolbar('vendors', 'Vendor')}
+        </div>
+        <div class="planner-metrics-ribbon mb-16">
+          <div class="pmetric-card"><div class="pmetric-val">${(d.vendors || []).length}</div><div class="pmetric-lab">Vendors</div></div>
+          <div class="pmetric-card"><div class="pmetric-val" style="color:var(--teal)">৳${committed.toLocaleString()}</div><div class="pmetric-lab">Committed Value</div></div>
+          <div class="pmetric-card"><div class="pmetric-val">${(d.vendors || []).filter(v => v.status === 'contracted' || v.status === 'paid').length}</div><div class="pmetric-lab">Contracted</div></div>
+        </div>
+        ${plannerTable(
+          ['Vendor', 'Category', 'Contact', 'Contract', 'Rating', 'Status', ''],
+          d.vendors || [],
+          v => [
+            `<strong>${escapeHtml(v.name)}</strong>`,
+            escapeHtml(v.category || '—'),
+            `${escapeHtml(v.contact_person || '—')}${v.phone ? `<div style="font-size:11px;color:var(--text-muted)">${escapeHtml(v.phone)}</div>` : ''}`,
+            `৳${Number(v.contract_value).toLocaleString()}`,
+            '★'.repeat(v.rating || 0) + '☆'.repeat(5 - (v.rating || 0)),
+            `<span class="card-badge ${v.status === 'paid' ? 'teal' : v.status === 'contracted' ? '' : 'amber'}">${escapeHtml(v.status)}</span>`,
+            `<button class="btn btn-sm btn-ghost" onclick="deletePlannerItem('vendors', ${v.id})">🗑</button>`
+          ],
+          '🏪', 'No vendors added yet')}
+      </div>`;
+
+  } else if (tab === 'timeline') {
+    const done = (d.timeline || []).filter(m => m.status === 'done').length;
+    const avg = (d.timeline || []).length
+      ? Math.round((d.timeline).reduce((a, m) => a + (m.progress || 0), 0) / d.timeline.length) : 0;
+    container.innerHTML = `
+      <div class="glass-card">
+        <div class="card-header">
+          <h3 class="card-title">🗓 Event Timeline</h3>
+          ${plannerToolbar('timeline', 'Milestone')}
+        </div>
+        <div class="planner-metrics-ribbon mb-16">
+          <div class="pmetric-card"><div class="pmetric-val">${(d.timeline || []).length}</div><div class="pmetric-lab">Milestones</div></div>
+          <div class="pmetric-card"><div class="pmetric-val" style="color:var(--teal)">${done}</div><div class="pmetric-lab">Completed</div></div>
+          <div class="pmetric-card"><div class="pmetric-val">${avg}%</div><div class="pmetric-lab">Avg Progress</div></div>
+        </div>
+        ${(d.timeline || []).length ? `<div class="timeline-track">
+          ${d.timeline.map(m => `
+            <div class="timeline-item ${escapeHtml(m.status)}">
+              <div class="timeline-dot"></div>
+              <div class="timeline-body">
+                <div class="timeline-head">
+                  <strong>${escapeHtml(m.title)}</strong>
+                  <span class="card-badge ${m.status === 'done' ? 'teal' : m.status === 'delayed' ? 'amber' : ''}">${escapeHtml(m.status.replace('_', ' '))}</span>
+                </div>
+                ${m.description ? `<div class="timeline-desc">${escapeHtml(m.description)}</div>` : ''}
+                <div class="timeline-meta">
+                  📅 ${escapeHtml(formatDate(m.starts_at))} → ${escapeHtml(formatDate(m.ends_at))}
+                  ${m.owner ? ` · 👤 ${escapeHtml(m.owner)}` : ''} · ${escapeHtml(m.phase)}
+                </div>
+                <div class="progress-track" style="margin-top:8px"><div class="progress-fill" style="width:${m.progress || 0}%"></div></div>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
+                  <span style="font-size:11px;color:var(--text-muted)">${m.progress || 0}% complete</span>
+                  <button class="btn btn-sm btn-ghost" onclick="deletePlannerItem('timeline', ${m.id})">🗑</button>
+                </div>
+              </div>
+            </div>`).join('')}
+        </div>` : renderEmptyState('🗓', 'No milestones yet', 'Break the event into phases with owners and dates.')}
+      </div>`;
+
+  } else if (tab === 'logistics') {
+    container.innerHTML = `
+      <div class="glass-card">
+        <div class="card-header">
+          <h3 class="card-title">🚚 Logistics &amp; Site Operations</h3>
+          ${plannerToolbar('logistics', 'Item')}
+        </div>
+        ${plannerTable(
+          ['Item', 'Category', 'Qty', 'Location', 'Responsible', 'Status', ''],
+          d.logistics || [],
+          l => [
+            `<strong>${escapeHtml(l.item)}</strong>`,
+            escapeHtml(l.category || '—'),
+            String(l.quantity ?? 1),
+            escapeHtml(l.location || '—'),
+            escapeHtml(l.responsible || '—'),
+            `<span class="card-badge ${l.status === 'on_site' || l.status === 'arranged' ? 'teal' : 'amber'}">${escapeHtml((l.status || '').replace('_', ' '))}</span>`,
+            `<button class="btn btn-sm btn-ghost" onclick="deletePlannerItem('logistics', ${l.id})">🗑</button>`
+          ],
+          '🚚', 'No logistics items yet')}
+      </div>`;
+  }
+}
+
+// ─── PLANNER ANALYTICS — computed server-side from real rows ───
+async function renderPlannerAnalytics() {
+  const container = document.getElementById('planner-tab-content');
+  if (!container) return;
+
+  const a = await API.getPlannerAnalytics(CURRENT_PLANNER_EVENT_ID);
+  if (apiFailed(a)) {
+    container.innerHTML = renderErrorState(a?.error || 'Could not load analytics.', 'renderPlannerAnalytics()');
+    return;
+  }
+
+  const roi = a.budget.actual ? (((a.sponsors.secured - a.budget.actual) / a.budget.actual) * 100).toFixed(1) : '0.0';
+
+  container.innerHTML = `
+    <div class="glass-card">
+      <div class="card-header">
+        <h3 class="card-title">📈 Event Analytics</h3>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="btn btn-sm btn-primary" onclick="downloadEventReport('full', ${CURRENT_PLANNER_EVENT_ID})">📥 Full report (CSV)</button>
+          <button class="btn btn-sm btn-outline" onclick="downloadEventReport('budget', ${CURRENT_PLANNER_EVENT_ID})">💰 Budget only</button>
+        </div>
+      </div>
+
+      <div class="planner-metrics-ribbon mt-14 mb-16">
+        <div class="pmetric-card">
+          <div class="pmetric-val" style="color:${roi >= 0 ? 'var(--teal)' : 'var(--red)'}">${roi >= 0 ? '+' : ''}${roi}%</div>
+          <div class="pmetric-lab">Sponsor ROI vs Spend</div>
+        </div>
+        <div class="pmetric-card">
+          <div class="pmetric-val">${a.tasks.completionRate}%</div>
+          <div class="pmetric-lab">Task Completion (${a.tasks.completed || 0}/${a.tasks.total})</div>
+        </div>
+        <div class="pmetric-card">
+          <div class="pmetric-val">${a.budget.utilisation}%</div>
+          <div class="pmetric-lab">Budget Utilisation</div>
+        </div>
+        <div class="pmetric-card">
+          <div class="pmetric-val" style="color:var(--teal)">${a.sponsors.coverage}%</div>
+          <div class="pmetric-lab">Sponsor Coverage</div>
+        </div>
+      </div>
+
+      <div class="field-grid-2">
+        <div class="analytics-block">
+          <div class="analytics-block-title">💰 Budget</div>
+          <div class="analytics-row"><span>Estimated</span><strong>৳${a.budget.estimated.toLocaleString()}</strong></div>
+          <div class="analytics-row"><span>Actual</span><strong>৳${a.budget.actual.toLocaleString()}</strong></div>
+          <div class="analytics-row"><span>Variance</span><strong style="color:${a.budget.variance >= 0 ? 'var(--teal)' : 'var(--red)'}">৳${a.budget.variance.toLocaleString()}</strong></div>
+          <div class="analytics-row"><span>Budget lines</span><strong>${a.budget.lines}</strong></div>
+        </div>
+        <div class="analytics-block">
+          <div class="analytics-block-title">🤝 Sponsorship</div>
+          <div class="analytics-row"><span>Secured</span><strong>৳${a.sponsors.secured.toLocaleString()}</strong></div>
+          <div class="analytics-row"><span>Full pipeline</span><strong>৳${a.sponsors.pipeline.toLocaleString()}</strong></div>
+          <div class="analytics-row"><span>Sponsors</span><strong>${a.sponsors.count}</strong></div>
+        </div>
+        <div class="analytics-block">
+          <div class="analytics-block-title">📢 Marketing</div>
+          <div class="analytics-row"><span>Spend</span><strong>৳${a.marketing.spend.toLocaleString()}</strong></div>
+          <div class="analytics-row"><span>Reach</span><strong>${a.marketing.reach.toLocaleString()}</strong></div>
+          <div class="analytics-row"><span>Conversions</span><strong>${a.marketing.conversions.toLocaleString()}</strong></div>
+          <div class="analytics-row"><span>Cost / conversion</span><strong>৳${a.marketing.costPerConversion.toLocaleString()}</strong></div>
+        </div>
+        <div class="analytics-block">
+          <div class="analytics-block-title">🚦 Delivery</div>
+          <div class="analytics-row"><span>Timeline progress</span><strong>${a.timeline.avgProgress}%</strong></div>
+          <div class="analytics-row"><span>Milestones done</span><strong>${a.timeline.done}/${a.timeline.milestones}</strong></div>
+          <div class="analytics-row"><span>Procurement spend</span><strong>৳${a.procurement.spend.toLocaleString()}</strong></div>
+          <div class="analytics-row"><span>Vendors committed</span><strong>৳${a.vendors.committed.toLocaleString()}</strong></div>
+          <div class="analytics-row"><span>High-severity risks</span><strong>${a.risks.high || 0}</strong></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// ─── PLANNER CRUD MODALS ───
+const PLANNER_FIELDS = {
+  vendors:    { label: 'Vendor', fields: [['name','Vendor name','text',true],['category','Category','text'],['contactPerson','Contact person','text'],['phone','Phone','tel'],['email','Email','email'],['contractValue','Contract value (৳)','number'],['rating','Rating (0-5)','number'],['status','Status','select',false,['shortlisted','contracted','paid','rejected']]] },
+  timeline:   { label: 'Milestone', fields: [['title','Milestone title','text',true],['description','Description','textarea'],['phase','Phase','text'],['startsAt','Start date','date'],['endsAt','End date','date'],['owner','Owner','text'],['progress','Progress %','number'],['status','Status','select',false,['pending','in_progress','done','delayed']]] },
+  logistics:  { label: 'Logistics item', fields: [['item','Item','text',true],['category','Category','text'],['quantity','Quantity','number'],['location','Location','text'],['responsible','Responsible','text'],['status','Status','select',false,['planned','arranged','on_site','returned']]] },
+  marketing:  { label: 'Campaign', fields: [['channel','Channel','text',true],['campaignName','Campaign name','text',true],['audience','Audience','text'],['budget','Budget (৳)','number'],['reach','Reach','number'],['conversions','Conversions','number'],['scheduledFor','Scheduled for','date'],['status','Status','select',false,['planned','live','completed','paused']]] },
+  meetings:   { label: 'Meeting', fields: [['title','Meeting title','text',true],['agenda','Agenda','textarea'],['meetingDate','Date','date'],['meetingTime','Time','text'],['location','Location','text'],['attendees','Attendees','text'],['status','Status','select',false,['scheduled','held','cancelled']]] },
+  committees: { label: 'Committee', fields: [['name','Committee name','text',true],['leaderName','Leader','text',true],['membersCount','Members','number'],['budgetAllocated','Budget (৳)','number']] },
+  volunteers: { label: 'Volunteer', fields: [['volunteerName','Volunteer name','text',true],['shiftTime','Shift','text'],['assignedCommittee','Committee','text'],['attendanceStatus','Attendance','select',false,['assigned','checked_in','absent']]] },
+  risks:      { label: 'Risk', fields: [['riskTitle','Risk','text',true],['category','Category','text'],['severity','Severity','select',false,['high','medium','low']],['contingencyPlan','Contingency plan','textarea',true]] }
+};
+
+function showPlannerItemModal(kind) {
+  const spec = PLANNER_FIELDS[kind];
+  if (!spec) return;
+
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">➕ Add ${escapeHtml(spec.label)}</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <form onsubmit="submitPlannerItem(event, '${kind}')">
+      ${spec.fields.map(([key, label, type, required, options]) => {
+        if (type === 'textarea') {
+          return `<div class="input-group"><label class="input-label">${escapeHtml(label)}</label>
+            <textarea id="pf-${key}" class="form-input" rows="3" ${required ? 'required' : ''}></textarea></div>`;
+        }
+        if (type === 'select') {
+          return `<div class="input-group"><label class="input-label">${escapeHtml(label)}</label>
+            <select id="pf-${key}" class="form-select">${options.map(o => `<option value="${o}">${o.replace('_', ' ')}</option>`).join('')}</select></div>`;
+        }
+        return `<div class="input-group"><label class="input-label">${escapeHtml(label)}</label>
+          <input type="${type}" id="pf-${key}" class="form-input" ${required ? 'required' : ''} /></div>`;
+      }).join('')}
+      <button type="submit" class="btn btn-primary btn-full">Save ${escapeHtml(spec.label)}</button>
+    </form>
+  `);
+}
+
+async function submitPlannerItem(e, kind) {
+  if (e) e.preventDefault();
+  const spec = PLANNER_FIELDS[kind];
+  const payload = { eventId: CURRENT_PLANNER_EVENT_ID };
+  spec.fields.forEach(([key]) => {
+    const el = document.getElementById('pf-' + key);
+    if (el && el.value !== '') payload[key] = el.value;
+  });
+
+  const res = await API.createPlannerItem(kind, payload);
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not save.'}`); return; }
+
+  closeModal();
+  showToast(`✅ ${spec.label} added.`);
+  await loadEventPlannerWorkspace(CURRENT_PLANNER_EVENT_ID);
+}
+
+async function deletePlannerItem(kind, id) {
+  if (!confirm('Delete this entry?')) return;
+  const res = await API.deletePlannerItem(kind, id);
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not delete.'}`); return; }
+  showToast('🗑 Deleted.');
+  await loadEventPlannerWorkspace(CURRENT_PLANNER_EVENT_ID);
+}

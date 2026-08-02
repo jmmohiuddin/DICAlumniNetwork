@@ -48,9 +48,10 @@
             </div>
             <div class="input-group">
               <label class="input-label">Password</label>
-              <input type="password" id="login-password" class="form-input" placeholder="••••••••" required />
+              <input type="password" id="login-password" class="form-input" autocomplete="current-password" placeholder="••••••••" required />
             </div>
-            <button type="submit" class="btn btn-primary btn-full">Sign In to DIC →</button>
+            <div class="login-error hidden" id="login-error" role="alert"></div>
+            <button type="submit" class="btn btn-primary btn-full" id="login-submit-btn">Sign In to DIC →</button>
           </form>
           
           <!-- QUICK DEMO LOGINS -->
@@ -90,6 +91,27 @@
       <nav class="sidebar-nav" id="sidebar-nav-container">
         <!-- Dynamically rendered per role -->
       </nav>
+
+      <!-- MOBILE-ONLY CONTROL DECK (relocated from topbar so it fits a phone) -->
+      <div class="sidebar-controls" id="sidebar-controls">
+        <label class="sidebar-controls-label" for="drawer-role-select">Viewing as</label>
+        <select class="role-switcher-select drawer" id="drawer-role-select" onchange="switchCurrentRole(this.value)">
+          <option value="super_admin">👑 Super Admin</option>
+          <option value="univ_admin">🏛 College Admin</option>
+          <option value="dept_admin">🏢 Dept Admin (CSE)</option>
+          <option value="moderator">🛡 Moderator</option>
+          <option value="alumni">🎓 Alumni</option>
+        </select>
+        <div class="sidebar-controls-row">
+          <button class="drawer-btn" onclick="toggleAppTheme()" id="drawer-theme-btn">🌙 Theme</button>
+          <button class="drawer-btn" onclick="toggleSidebar(); showBroadcastModal();">📢 Broadcast</button>
+        </div>
+        <div class="offline-status online drawer" id="drawer-offline-status">
+          <span class="status-dot"></span>
+          <span class="status-text">PostgreSQL · Live</span>
+        </div>
+      </div>
+
       <div class="sidebar-user">
         <div class="user-avatar-sm" id="sidebar-user-avatar">SA</div>
         <div class="user-info">
@@ -124,7 +146,7 @@
           <span class="status-text">PostgreSQL 16 · Live</span>
         </div>
         <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleAppTheme()" title="Toggle Light / Dark Theme">🌙</button>
-        <button class="topbar-btn alert-btn" onclick="showBroadcastModal()">📢 Broadcast</button>
+        <button class="topbar-btn alert-btn" onclick="showBroadcastModal()" title="Send a broadcast">📢<span class="alert-btn-label"> Broadcast</span></button>
         <button class="topbar-btn notif-btn" onclick="showNotifications()">🔔 <span class="notif-count">7</span></button>
         <div class="topbar-avatar" id="topbar-user-avatar" onclick="showPage('profile')">SA</div>
       </div>
@@ -478,6 +500,9 @@
             <button class="chart-tab" onclick="switchPlannerTab('tasks', this)">📋 Task Kanban Board</button>
             <button class="chart-tab" onclick="switchPlannerTab('procurement', this)">🛒 Procurement &amp; Vendors</button>
             <button class="chart-tab" onclick="switchPlannerTab('volunteers', this)">🛡 Volunteers &amp; Risks</button>
+            <button class="chart-tab" onclick="switchPlannerTab('vendors', this)">🏪 Vendors</button>
+            <button class="chart-tab" onclick="switchPlannerTab('timeline', this)">🗓 Timeline</button>
+            <button class="chart-tab" onclick="switchPlannerTab('logistics', this)">🚚 Logistics</button>
             <button class="chart-tab" onclick="switchPlannerTab('marketing', this)">📢 Marketing &amp; Meetings</button>
             <button class="chart-tab" onclick="switchPlannerTab('analytics', this)">📈 Analytics &amp; Reports</button>
             <button class="chart-tab" onclick="switchPlannerTab('ai', this)">🤖 EventAI Assistant</button>
@@ -569,10 +594,11 @@
         </div>
         <!-- Analytics content panels -->
         <div id="analytics-panel-main" class="analytics-grid">
-          <div class="glass-card span-2">
-            <canvas id="analytics-chart" height="200"></canvas>
+          <div class="glass-card span-2 analytics-chart-card">
+            <div class="card-header"><h3 class="card-title">Engagement Trend</h3></div>
+            <div class="chart-frame"><canvas id="analytics-chart" height="200"></canvas></div>
           </div>
-          <div class="glass-card">
+          <div class="glass-card analytics-metrics-card">
             <div class="card-header"><h3 class="card-title">Key Metrics</h3></div>
             <div id="analytics-metrics"></div>
           </div>
@@ -1056,7 +1082,10 @@
   <div class="notif-panel hidden" id="notif-panel">
     <div class="notif-header">
       <h3>Notifications</h3>
-      <button onclick="closeNotifications()">✕</button>
+      <div class="notif-header-actions">
+        <button class="notif-readall" onclick="markAllNotificationsRead()">Mark all read</button>
+        <button onclick="closeNotifications()">✕</button>
+      </div>
     </div>
     <div id="notif-list"></div>
   </div>
