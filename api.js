@@ -26,7 +26,11 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
     const response = await fetch(url, { ...options, headers, signal: controller.signal });
     clearTimeout(timeoutId);
     // An expired or tampered token drops the client back to the login screen.
-    if (response.status === 401 && token && typeof onSessionExpired === 'function') {
+    // Auth endpoints are exempt: a 401 from /login or /change-password means
+    // "wrong credentials", not "your session died", and treating it as the
+    // latter logged the user out mid-flow.
+    const isAuthEndpoint = /\/api\/auth\//.test(url);
+    if (response.status === 401 && token && !isAuthEndpoint && typeof onSessionExpired === 'function') {
       onSessionExpired();
     }
     return response;
@@ -51,6 +55,22 @@ const API = {
       return data;
     } catch (e) {
       return { error: 'Cannot reach the server. Check your connection and try again.' };
+    }
+  },
+
+  async register(data) {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/auth/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data)
+      });
+      const body = await res.json();
+      if (!res.ok) return { error: body.error || "Registration failed" };
+      setSessionToken(body.token);
+      return body;
+    } catch (e) {
+      return { error: "Cannot reach the server. Check your connection and try again." };
     }
   },
 
@@ -265,11 +285,15 @@ const API = {
 
   async postBulkImport(data) {
     try {
+      // Large imports insert hundreds of rows over a cloud database and take
+      // far longer than the 10s default. Aborting client-side used to report a
+      // failure while the transaction had already committed server-side.
+      const timeoutMs = Math.max(120000, (data.records?.length || 0) * 800);
       const res = await fetchWithTimeout(`${API_BASE_URL}/api/bulk-import`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
-      });
+      }, timeoutMs);
       return await res.json();
     } catch (e) {
       return null;
@@ -494,4 +518,11 @@ Object.assign(API, {
 
   // Import history (admin panel audit trail)
   getImportHistoryV2: ()            => apiRequest('GET',    '/api/import-history')
+});
+
+Object.assign(API, {
+  changePassword: (currentPassword, newPassword) =>
+    apiRequest('POST', '/api/auth/change-password', { currentPassword, newPassword }),
+  getMyProfile: () => apiRequest('GET', '/api/profile/me'),
+  updateMyProfile: (data) => apiRequest('PUT', '/api/profile/me', data)
 });

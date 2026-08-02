@@ -166,6 +166,9 @@ async function handleLoginSubmit(e) {
     return;
   }
   enterAuthenticatedApp(result.user);
+
+  // Bulk-imported accounts share an initial password until it is replaced.
+  if (result.mustChangePassword) setTimeout(() => showChangePasswordModal(true), 700);
 }
 
 // Demo shortcuts still go through the real endpoint with real credentials.
@@ -3826,11 +3829,15 @@ let currentImportState = {
   step: 1,
   filename: '',
   strategy: 'temp12345',
-  dupResolution: 'skip',
+  dupResolution: 'update',   // retain data by enriching existing profiles
   totalRows: 0,
+  headers: [],        // raw CSV header cells
+  rawRows: [],        // raw CSV data cells
+  mapping: [],        // per-column system field key (or 'ignore')
   validRecords: [],
   invalidRecords: [],
-  duplicateRecords: []
+  duplicateRecords: [],
+  lastResult: null
 };
 
 function downloadSampleImportCSV() {
@@ -3942,32 +3949,83 @@ function renderBulkImportPanel() {
 function renderWizardStepContent() {
   if (currentImportState.step === 1) {
     return `
-      <div class="dropzone" onclick="simulateFileUploadProcess()">
+      <input type="file" id="import-file-input" accept=".csv,text/csv" style="display:none"
+             onchange="handleImportFileSelected(this)" />
+      <div class="dropzone" onclick="document.getElementById('import-file-input').click()">
         <div class="dropzone-icon">📄</div>
-        <div class="dropzone-title">Click or Drag &amp; Drop CSV / XLSX / XLS File Here</div>
-        <div class="dropzone-sub">Supports up to 50,000 records per file · Auto-validates 43 comprehensive fields</div>
+        <div class="dropzone-title">Click to choose a CSV file</div>
+        <div class="dropzone-sub">Headers are detected and mapped automatically. Timestamp and
+          &ldquo;Commicate with&rdquo; are excluded by default.</div>
       </div>
 
       <div class="field-grid-2" style="margin-top:16px">
         <div class="input-group">
-          <label class="input-label">Automatic Password Generation Policy</label>
+          <label class="input-label">Initial Password Policy</label>
           <select class="form-select" id="password-strategy-select" onchange="currentImportState.strategy = this.value">
-            <option value="temp12345">Static Temporary Password (12345678)</option>
-            <option value="student_id_suffix">StudentID + Secure Suffix (e.g. DIC101#2026)</option>
-            <option value="random_secure">Cryptographic Random Password (12-char)</option>
+            <option value="temp12345">Shared temporary password (12345678)</option>
           </select>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:6px">
+            Stored as a scrypt hash. Every imported account is flagged to change it on first login.
+          </div>
         </div>
         <div class="input-group">
-          <label class="input-label">Automated User Notification Channel</label>
-          <select class="form-select">
-            <option>Email Activation Notice + SMS (Default)</option>
-            <option>Email Only</option>
-            <option>Do Not Notify (Silent Import)</option>
+          <label class="input-label">If an account already exists</label>
+          <select class="form-select" onchange="currentImportState.dupResolution = this.value">
+            <option value="update">Update / enrich the existing profile (recommended)</option>
+            <option value="skip">Skip the duplicate</option>
           </select>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:6px">
+            Matched on email address, then mobile number.
+          </div>
         </div>
       </div>
 
-      <button class="btn btn-primary btn-full mt-16" onclick="simulateFileUploadProcess()">🚀 Process Sample File (12 Records)</button>
+      <button class="btn btn-outline btn-full mt-16" onclick="downloadSampleImportCSV()">📥 Download a sample template</button>
+    `;
+  }
+
+  // Column-mapping review — the administrator confirms every header before import.
+  if (currentImportState.step === 'mapping') {
+    const { headers, mapping, rawRows, totalRows, filename } = currentImportState;
+    const mappedCount = mapping.filter(m => m !== 'ignore').length;
+    const ignoredCount = mapping.filter(m => m === 'ignore').length;
+    const hasName = mapping.includes('name');
+    const hasEmail = mapping.includes('email');
+
+    return `
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px">
+        <div style="font-weight:700;font-size:14px">📄 ${escapeHtml(filename)} — ${totalRows} rows, ${headers.length} columns</div>
+        <button class="btn btn-outline btn-sm" onclick="resetImportWizard()">← Choose a different file</button>
+      </div>
+
+      <div class="validation-summary-bar mb-16">
+        <div class="vstat-card"><div class="vstat-num">${totalRows}</div><div class="vstat-label">Rows</div></div>
+        <div class="vstat-card"><div class="vstat-num" style="color:var(--teal)">${mappedCount}</div><div class="vstat-label">Mapped</div></div>
+        <div class="vstat-card"><div class="vstat-num" style="color:var(--text-muted)">${ignoredCount}</div><div class="vstat-label">Excluded</div></div>
+      </div>
+
+      ${(!hasName || !hasEmail) ? `<div class="login-error" style="margin-bottom:12px">Full Name and Email must both be mapped before importing.</div>` : ''}
+
+      <div class="mapping-list">
+        ${headers.map((h, i) => {
+          const sample = ((rawRows[0] && rawRows[0][i]) || '').trim().slice(0, 40);
+          const isIgnored = mapping[i] === 'ignore';
+          return `
+          <div class="mapping-row${isIgnored ? ' excluded' : ''}">
+            <div class="mapping-col">
+              <div class="mapping-header">${escapeHtml(h)}</div>
+              <div class="mapping-sample">${sample ? 'e.g. ' + escapeHtml(sample) : 'empty'}</div>
+            </div>
+            <div class="mapping-arrow">→</div>
+            <select class="form-select" onchange="setImportMapping(${i}, this.value)">
+              ${IMPORT_FIELDS.map(f => `<option value="${f.key}" ${mapping[i] === f.key ? 'selected' : ''}>${escapeHtml(f.label)}</option>`).join('')}
+            </select>
+          </div>`;
+        }).join('')}
+      </div>
+
+      <button class="btn btn-primary btn-full mt-16" ${(!hasName || !hasEmail) ? 'disabled' : ''}
+              onclick="validateImportRows()">✓ Confirm mapping and validate ${totalRows} rows</button>
     `;
   }
 
@@ -4087,38 +4145,16 @@ function renderWizardStepContent() {
   }
 }
 
-function simulateFileUploadProcess() {
-  currentImportState.filename = "dic_batch_2026_import.csv";
-  currentImportState.totalRows = 12;
-  currentImportState.step = 2;
 
-  currentImportState.validRecords = [
-    { row: 1, name: 'Rafiqul Islam', studentId: 'DIC-2020-101', email: 'rafiqul@gmail.com', year: '2020', dept: 'CSE', company: 'Brain Station 23' },
-    { row: 2, name: 'Nusrat Jahan Rima', studentId: 'DIC-2020-102', email: 'nusrat.rima@gmail.com', year: '2020', dept: 'SWE', company: 'Pathao' },
-    { row: 3, name: 'Mahmudul Hassan', studentId: 'DIC-2020-103', email: 'mahmudul@bkash.com', year: '2020', dept: 'CSE', company: 'bKash' },
-    { row: 4, name: 'Tania Akter', studentId: 'DIC-2020-104', email: 'tania.akter@nagad.bd', year: '2020', dept: 'BBA', company: 'Nagad' },
-    { row: 5, name: 'Shahriar Kabir', studentId: 'DIC-2020-105', email: 'skabir@chaldal.com', year: '2020', dept: 'EEE', company: 'Chaldal' },
-    { row: 6, name: 'Farhana Sultana', studentId: 'DIC-2020-106', email: 'farhana.s@sslcommerz.com', year: '2020', dept: 'CSE', company: 'SSL Wireless' },
-    { row: 7, name: 'Imtiaz Ahmed', studentId: 'DIC-2020-107', email: 'imtiaz.ahmed@grameenphone.com', year: '2020', dept: 'SWE', company: 'Grameenphone' },
-    { row: 8, name: 'Khadija Tul Kobra', studentId: 'DIC-2020-108', email: 'khadija@bracbank.com', year: '2020', dept: 'BBA', company: 'BRAC Bank' },
-    { row: 9, name: 'Zahid Hossain', studentId: 'DIC-2020-109', email: 'zahid.h@robi.com.bd', year: '2020', dept: 'CSE', company: 'Robi Axiata' }
-  ];
-
-  currentImportState.duplicateRecords = [
-    { row: 10, name: 'Fatima Khanam', studentId: 'DIC-2019-001', email: 'fatima@bkash.com', year: '2019', dept: 'CSE', company: 'bKash Ltd' }
-  ];
-
-  currentImportState.invalidRecords = [
-    { row: 11, name: 'Sabbir Rahman', studentId: '', email: 'invalid_email_format', year: '2020', dept: 'CSE', errorMsg: 'Missing Student ID & Invalid Email Format' },
-    { row: 12, name: '', studentId: 'DIC-2020-112', email: 'missing_name@dic.edu.bd', year: 'invalid_year', dept: 'BBA', errorMsg: 'Missing Full Name & Invalid Passing Year' }
-  ];
-
-  renderBulkImportPanel();
-  showToast('🔍 File Validated: 9 Valid, 1 Duplicate, 2 Errors');
-}
 
 function resetImportWizard() {
-  currentImportState.step = 1;
+  Object.assign(currentImportState, {
+    step: 1, filename: '', totalRows: 0,
+    headers: [], rawRows: [], mapping: [],
+    validRecords: [], invalidRecords: [], duplicateRecords: [], lastResult: null
+  });
+  const input = document.getElementById('import-file-input');
+  if (input) input.value = '';
   renderBulkImportPanel();
 }
 
@@ -4146,7 +4182,10 @@ function downloadImportErrorReportCSV() {
 async function executeBulkImportProcess() {
   currentImportState.step = 4;
 
-  const records = currentImportState.validRecords;
+  // Maximum retention: send the in-file duplicates as well. The server matches
+  // them to the existing account and enriches that profile instead of dropping
+  // the second submission on the floor.
+  const records = [...currentImportState.validRecords, ...currentImportState.duplicateRecords];
   const startedAt = Date.now();
 
   showToast(`⏳ Importing ${records.length} record${records.length === 1 ? '' : 's'} into PostgreSQL…`);
@@ -4155,6 +4194,7 @@ async function executeBulkImportProcess() {
     records,
     filename: currentImportState.filename,
     adminName: state.currentUser ? state.currentUser.name : 'Admin',
+    dupResolution: currentImportState.dupResolution,
     failedCount: currentImportState.invalidRecords.length,
     duplicateCount: currentImportState.duplicateRecords.length,
     processingTime: `${((Date.now() - startedAt) / 1000).toFixed(1)}s`
@@ -4167,8 +4207,13 @@ async function executeBulkImportProcess() {
     return;
   }
 
+  // Keep the server's own tallies — the client's in-file counts do not include
+  // duplicates found against existing accounts.
+  currentImportState.lastResult = result;
+
   loadImportHistory(); // re-renders the panel including the new audit row
-  showToast(`🎉 Bulk import complete — ${result.count} account${result.count === 1 ? '' : 's'} created in PostgreSQL.`);
+  showToast(`🎉 Import complete — ${result.created} created, ${result.updated} updated, ` +
+            `${result.skipped} duplicates skipped, ${result.rejected} rejected.`);
 
   // Reflect the new alumni immediately wherever they appear.
   state.directory.offset = 0;
@@ -5929,3 +5974,420 @@ async function deletePlannerItem(kind, id) {
   showToast('🗑 Deleted.');
   await loadEventPlannerWorkspace(CURRENT_PLANNER_EVENT_ID);
 }
+
+/* ============================================================
+   BULK IMPORT — REAL CSV PARSING
+   Replaces simulateFileUploadProcess(), which ignored the chosen file and
+   returned 12 hardcoded rows. This reads the actual file, parses it to
+   RFC 4180, auto-maps headers, and validates before anything is sent.
+   ============================================================ */
+
+// Canonical system fields the importer can populate. `ignore` marks columns
+// that must never reach a profile.
+const IMPORT_FIELDS = [
+  { key: 'ignore',         label: '— Do not import —' },
+  { key: 'name',           label: 'Full Name',                       required: true },
+  { key: 'email',          label: 'Email Address',                   required: true },
+  { key: 'mobile',         label: 'Mobile Number' },
+  { key: 'hscPassingYear', label: 'HSC Passing Year / Batch' },
+  { key: 'hscGroup',       label: 'HSC Group' },
+  { key: 'hscVersion',     label: 'HSC Version' },
+  { key: 'bloodGroup',     label: 'Blood Group' },
+  { key: 'presentAddress', label: 'Present Address' },
+  { key: 'occupation',     label: 'Occupation' },
+  { key: 'organization',   label: 'Current Organization / Institution' },
+  { key: 'designation',    label: 'Current Designation' },
+  { key: 'photoUrl',       label: 'Profile Photo URL' },
+  { key: 'facebook',       label: 'Facebook Profile Link' }
+];
+
+// Header patterns -> system field. Anything unmatched defaults to "do not
+// import", so a new column can never silently land in the wrong place.
+const HEADER_RULES = [
+  [/^timestamp$/i,                                   'ignore'],
+  [/^comm?[ui]nicate\s*with$/i,                      'ignore'],  // CSV header is misspelled "Commicate with"
+  [/^(full\s*)?name$/i,                              'name'],
+  [/e-?mail/i,                                       'email'],
+  [/(mobile|phone|contact\s*number)/i,               'mobile'],
+  [/hsc.*(pass|year|batch)|(^|\s)batch(\s|$)/i,      'hscPassingYear'],
+  [/^group\s*$|hsc\s*group/i,                        'hscGroup'],
+  [/version|medium/i,                                'hscVersion'],
+  [/blood/i,                                         'bloodGroup'],
+  [/(present|current)\s*address|^address$/i,         'presentAddress'],
+  [/occupation|profession/i,                         'occupation'],
+  [/institution|organization|organisation|company|workplace/i, 'organization'],
+  [/designation|job\s*title|position/i,              'designation'],
+  [/photo|image|picture/i,                           'photoUrl'],
+  [/facebook|fb\s*profile/i,                         'facebook']
+];
+
+function autoMapHeader(header) {
+  const h = (header || '').trim();
+  for (const [pattern, field] of HEADER_RULES) if (pattern.test(h)) return field;
+  return 'ignore';
+}
+
+// RFC 4180 parser: handles quoted fields, embedded commas/newlines and "" escapes.
+function parseCSVText(text) {
+  const rows = [];
+  let row = [], cur = '', quoted = false;
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);   // strip BOM
+
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (quoted) {
+      if (c === '"') {
+        if (text[i + 1] === '"') { cur += '"'; i++; }
+        else quoted = false;
+      } else cur += c;
+    } else if (c === '"') quoted = true;
+    else if (c === ',') { row.push(cur); cur = ''; }
+    else if (c === '\n') { row.push(cur); rows.push(row); row = []; cur = ''; }
+    else if (c === '\r') { /* handled by \n */ }
+    else cur += c;
+  }
+  if (cur !== '' || row.length) { row.push(cur); rows.push(row); }
+  return rows.filter(r => r.some(cell => String(cell).trim() !== ''));
+}
+
+// Mirrors the server normaliser so the preview shows what will actually be stored.
+function sanitizeEmailClient(raw) {
+  if (!raw) return null;
+  let s = String(raw).trim().toLowerCase().replace(/[\u00a0\s]+/g, " ");
+  const tokens = s.split(" ").filter(Boolean);
+  const token = tokens.find(t => t.includes("@"));
+  const looksValid = (v) => /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(v || "");
+  if (token && tokens.length > 1 && looksValid(token)) return token;
+  s = s.replace(/\s+/g, "").replace(/^mailto:/, "").replace(/[,;]+$/, "");
+  return s || null;
+}
+
+function normalizeBloodGroupClient(raw) {
+  if (!raw || !String(raw).trim()) return null;
+  let s = String(raw).trim().toUpperCase().replace(/[()'`.\s]/g, '');
+  s = s.replace(/POSSATIVE|POSITIVE|POSITIVR|POSTIVE|POS(?![A-Z])|PLUS/g, '+')
+       .replace(/NEGATIVE|NEGETIVE|NEG(?![A-Z])|MINUS/g, '-')
+       .replace(/VE$/, '')
+       .replace(/^0/, 'O')
+       .replace(/ABB/g, 'AB')
+       .replace(/\++/g, '+').replace(/-+/g, '-');
+  const letters = (s.match(/AB|A|B|O/) || [])[0];
+  if (!letters) return 'Unknown';
+  const sign = s.includes('+') ? '+' : (s.includes('-') ? '-' : null);
+  if (!sign) return 'Unknown';   // never guess a rhesus factor
+  const candidate = letters + sign;
+  return ['A+','A-','B+','B-','AB+','AB-','O+','O-'].includes(candidate) ? candidate : 'Unknown';
+}
+
+function handleImportFileSelected(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+
+  if (!/\.(csv|txt)$/i.test(file.name)) {
+    showToast('⚠ Please choose a .csv file. XLSX is not supported yet — export it to CSV first.');
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onerror = () => showToast('⚠ Could not read the file.');
+  reader.onload = () => {
+    try {
+      const rows = parseCSVText(String(reader.result));
+      if (rows.length < 2) { showToast('⚠ The file has no data rows.'); return; }
+
+      currentImportState.filename = file.name;
+      currentImportState.headers = rows[0].map(h => h.trim());
+      currentImportState.rawRows = rows.slice(1);
+      currentImportState.totalRows = rows.length - 1;
+      currentImportState.mapping = currentImportState.headers.map(autoMapHeader);
+      currentImportState.step = 'mapping';
+
+      renderBulkImportPanel();
+      showToast(`📄 Parsed "${file.name}" — ${currentImportState.totalRows} rows, ${currentImportState.headers.length} columns.`);
+    } catch (e) {
+      showToast('⚠ Could not parse the CSV: ' + e.message);
+    }
+  };
+  reader.readAsText(file);
+}
+
+function setImportMapping(colIndex, fieldKey) {
+  currentImportState.mapping[colIndex] = fieldKey;
+  renderBulkImportPanel();
+}
+
+// Applies the mapping, then validates and classifies every row.
+function validateImportRows() {
+  const { headers, rawRows, mapping } = currentImportState;
+  const valid = [], invalid = [], duplicates = [];
+  const seenEmail = new Set(), seenMobile = new Set();
+
+  rawRows.forEach((cells, i) => {
+    const rec = { row: i + 2 };   // +2: 1-based, and row 1 is the header
+    mapping.forEach((field, col) => {
+      if (field === 'ignore') return;
+      rec[field] = (cells[col] || '').trim();
+    });
+
+    // Maximum-retention policy: blank optional fields are stored as NULL and
+    // never block a row. Only a record that cannot be identified or saved at
+    // all is rejected — email is UNIQUE NOT NULL and is the login identifier.
+    rec.emailRaw = rec.email;
+    rec.email = sanitizeEmailClient(rec.email) || '';
+
+    // A non-4-digit year is dropped rather than failing the row.
+    if (rec.hscPassingYear && !/^\d{4}$/.test(rec.hscPassingYear)) {
+      rec.hscPassingYearRaw = rec.hscPassingYear;
+      rec.hscPassingYear = '';
+    }
+
+    const errors = [];
+    if (!rec.name) errors.push('Missing name — cannot identify the person');
+    if (!rec.email) errors.push('Missing email — required as the unique login identifier');
+    else if (!/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(rec.email))
+      errors.push('Email could not be recovered: "' + rec.emailRaw + '"');
+
+    if (errors.length) { invalid.push({ ...rec, errorMsg: errors.join(' · ') }); return; }
+
+    // Count blanks for the import summary.
+    rec._missing = ['mobile','hscPassingYear','hscGroup','hscVersion','bloodGroup',
+                    'presentAddress','occupation','organization','designation',
+                    'photoUrl','facebook'].filter(f => !rec[f] || !String(rec[f]).trim());
+
+    const emailKey = rec.email.toLowerCase();
+    const mobileKey = (rec.mobile || '').replace(/\D/g, '').slice(-10);
+    if (seenEmail.has(emailKey) || (mobileKey && seenMobile.has(mobileKey))) {
+      // Same person submitted twice. Keep the later row so its data can enrich
+      // the existing profile rather than being thrown away.
+      duplicates.push({ ...rec, errorMsg: 'Same person as an earlier row (merged, not discarded)' });
+      return;
+    }
+    seenEmail.add(emailKey);
+    if (mobileKey) seenMobile.add(mobileKey);
+
+    rec.bloodGroupNormalized = normalizeBloodGroupClient(rec.bloodGroup);
+    valid.push(rec);
+  });
+
+  currentImportState.validRecords = valid;
+  currentImportState.invalidRecords = invalid;
+  currentImportState.duplicateRecords = duplicates;
+  currentImportState.step = 2;
+  renderBulkImportPanel();
+  showToast(`🔍 Validated: ${valid.length} valid · ${duplicates.length} duplicates · ${invalid.length} errors`);
+}
+
+/* ============================================================
+   SIGN UP  —  the app previously offered sign-in only, so an alumnus who
+   was not bulk imported had no route into the system.
+   ============================================================ */
+
+function switchAuthMode(mode) {
+  const signin = document.getElementById('auth-panel-signin');
+  const signup = document.getElementById('auth-panel-signup');
+  const tabIn = document.getElementById('auth-tab-signin');
+  const tabUp = document.getElementById('auth-tab-signup');
+  if (!signin || !signup) return;
+
+  const isSignup = mode === 'signup';
+  signup.classList.toggle('hidden', !isSignup);
+  signin.classList.toggle('hidden', isSignup);
+  tabUp.classList.toggle('active', isSignup);
+  tabIn.classList.toggle('active', !isSignup);
+
+  showLoginError('');
+  showSignupError('');
+}
+
+function showSignupError(message) {
+  const el = document.getElementById('signup-error');
+  if (!el) return;
+  el.textContent = message;
+  el.classList.toggle('hidden', !message);
+}
+
+async function handleSignupSubmit(e) {
+  if (e) e.preventDefault();
+
+  const name = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  const confirm = document.getElementById('signup-password2').value;
+
+  showSignupError('');
+
+  if (password !== confirm) { showSignupError('The two passwords do not match.'); return; }
+  if (password.length < 8) { showSignupError('Password must be at least 8 characters.'); return; }
+  if (!document.getElementById('signup-consent').checked) {
+    showSignupError('Please accept the data processing consent to continue.');
+    return;
+  }
+
+  const btn = document.getElementById('signup-submit-btn');
+  btn.disabled = true; btn.textContent = 'Creating your account…';
+
+  const result = await API.register({
+    name, email, password,
+    hscPassingYear: document.getElementById('signup-hsc-year').value,
+    hscGroup: document.getElementById('signup-hsc-group').value,
+    mobile: document.getElementById('signup-mobile').value.trim(),
+    bloodGroup: document.getElementById('signup-blood-group').value
+  });
+
+  btn.disabled = false; btn.textContent = 'Create Account →';
+
+  if (!result || result.error) { showSignupError(result?.error || 'Registration failed.'); return; }
+
+  // Consent is logged server-side with IP and policy version (PDPA 2026).
+  await API.recordConsent({ consentType: 'data_processing', granted: true });
+
+  enterAuthenticatedApp(result.user);
+  showToast('🎓 Account created. An administrator will verify your alumni status shortly.');
+}
+
+// Prompts bulk-imported users to replace the shared initial password.
+function showChangePasswordModal(forced = false) {
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">🔑 ${forced ? 'Set a New Password' : 'Change Password'}</div>
+      ${forced ? '' : '<button class="modal-close" onclick="closeModal()">✕</button>'}
+    </div>
+    ${forced ? `<p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">
+      Your account was created by a bulk import and still uses the shared initial password.
+      Please choose your own before continuing.</p>` : ''}
+    <form onsubmit="handleChangePassword(event)">
+      <div class="input-group">
+        <label class="input-label">Current Password</label>
+        <input type="password" id="cp-current" class="form-input" autocomplete="current-password" required />
+      </div>
+      <div class="input-group">
+        <label class="input-label">New Password</label>
+        <input type="password" id="cp-new" class="form-input" autocomplete="new-password" minlength="8" required />
+      </div>
+      <div class="input-group">
+        <label class="input-label">Confirm New Password</label>
+        <input type="password" id="cp-new2" class="form-input" autocomplete="new-password" minlength="8" required />
+      </div>
+      <div class="login-error hidden" id="cp-error" role="alert"></div>
+      <button type="submit" class="btn btn-primary btn-full">Update Password</button>
+    </form>
+  `);
+}
+
+async function handleChangePassword(e) {
+  if (e) e.preventDefault();
+  const cur = document.getElementById('cp-current').value;
+  const nw = document.getElementById('cp-new').value;
+  const nw2 = document.getElementById('cp-new2').value;
+  const err = document.getElementById('cp-error');
+
+  const fail = (m) => { err.textContent = m; err.classList.remove('hidden'); };
+  if (nw !== nw2) return fail('The two passwords do not match.');
+  if (nw.length < 8) return fail('Password must be at least 8 characters.');
+
+  const res = await API.changePassword(cur, nw);
+  if (apiFailed(res)) return fail(res?.error || 'Could not update the password.');
+
+  closeModal();
+  showToast('✅ Password updated.');
+}
+
+/* ============================================================
+   PROFILE EDITOR — includes the fields added for the reunion CSV:
+   Blood Group, Occupation, Current Organization / Institution,
+   Current Designation, HSC Passing Year / Group / Version.
+   ============================================================ */
+
+const BLOOD_GROUP_OPTIONS = ['A+','A-','B+','B-','AB+','AB-','O+','O-','Unknown','Prefer not to say'];
+const OCCUPATION_OPTIONS = ['Student','Job','Business','Others'];
+const HSC_GROUP_OPTIONS = ['Science','Business Studies','Humanities'];
+const HSC_VERSION_OPTIONS = ['Bangla','English'];
+
+async function showEditProfileV2() {
+  const p = await API.getMyProfile();
+  if (apiFailed(p)) { showToast(`⚠ ${p?.error || 'Could not load your profile.'}`); return; }
+
+  const sel = (id, label, options, value, allowBlank = true) => `
+    <div class="input-group">
+      <label class="input-label">${escapeHtml(label)}</label>
+      <select id="${id}" class="form-select">
+        ${allowBlank ? `<option value="">Not specified</option>` : ''}
+        ${options.map(o => `<option ${String(value) === o ? 'selected' : ''}>${escapeHtml(o)}</option>`).join('')}
+      </select>
+    </div>`;
+
+  const txt = (id, label, value, type = 'text', placeholder = '') => `
+    <div class="input-group">
+      <label class="input-label">${escapeHtml(label)}</label>
+      <input type="${type}" id="${id}" class="form-input" placeholder="${escapeHtml(placeholder)}"
+             value="${escapeHtml(value ?? '')}" />
+    </div>`;
+
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">✏️ Edit My Profile</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <form onsubmit="handleSaveProfileV2(event)">
+      <div class="modal-section-title">Identity</div>
+      ${txt('pf-name', 'Full Name', p.full_name)}
+      ${txt('pf-mobile', 'Mobile Number', p.mobile_number, 'tel', '01XXXXXXXXX')}
+      ${sel('pf-bloodGroup', 'Blood Group', BLOOD_GROUP_OPTIONS, p.blood_group)}
+
+      <div class="modal-section-title mt-16">Academic</div>
+      <div class="field-grid-2">
+        ${txt('pf-hscPassingYear', 'HSC Passing Year / Batch', p.passing_year, 'number')}
+        ${sel('pf-hscGroup', 'HSC Group', HSC_GROUP_OPTIONS, p.hsc_group)}
+      </div>
+      ${sel('pf-hscVersion', 'HSC Version', HSC_VERSION_OPTIONS, p.hsc_version)}
+
+      <div class="modal-section-title mt-16">Professional</div>
+      ${sel('pf-occupation', 'Occupation', OCCUPATION_OPTIONS, p.occupation)}
+      ${txt('pf-organization', 'Current Organization / Institution', p.current_company, 'text', 'e.g. NZ Tex Group')}
+      ${txt('pf-designation', 'Current Designation', p.job_title, 'text', 'e.g. AGM')}
+
+      <div class="modal-section-title mt-16">Contact &amp; Links</div>
+      ${txt('pf-presentAddress', 'Present Address', p.present_address)}
+      ${txt('pf-facebook', 'Facebook Profile Link', p.facebook, 'url')}
+      ${txt('pf-linkedin', 'LinkedIn', p.linkedin, 'url')}
+
+      <div class="login-error hidden" id="pf-error" role="alert"></div>
+      <button type="submit" class="btn btn-primary btn-full mt-16">Save Profile</button>
+    </form>
+  `);
+}
+
+async function handleSaveProfileV2(e) {
+  if (e) e.preventDefault();
+  const v = (id) => document.getElementById(id)?.value ?? '';
+
+  const res = await API.updateMyProfile({
+    name: v('pf-name'),
+    mobile: v('pf-mobile'),
+    bloodGroup: v('pf-bloodGroup'),
+    hscPassingYear: v('pf-hscPassingYear'),
+    hscGroup: v('pf-hscGroup'),
+    hscVersion: v('pf-hscVersion'),
+    occupation: v('pf-occupation'),
+    organization: v('pf-organization'),
+    designation: v('pf-designation'),
+    presentAddress: v('pf-presentAddress'),
+    facebook: v('pf-facebook'),
+    linkedin: v('pf-linkedin')
+  });
+
+  if (apiFailed(res)) {
+    const err = document.getElementById('pf-error');
+    if (err) { err.textContent = res?.error || 'Could not save.'; err.classList.remove('hidden'); }
+    return;
+  }
+
+  closeModal();
+  showToast('✅ Profile updated.');
+  if (state.currentUser && v('pf-name')) state.currentUser.name = v('pf-name').trim();
+  updateUserUI();
+  if (typeof render10SectionProfile === 'function') render10SectionProfile();
+  renderAlumniGrid();
+}
+
+function showEditProfile() { return showEditProfileV2(); }

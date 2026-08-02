@@ -104,6 +104,19 @@ function requireRole(...roles) {
 const ADMIN_ROLES = ['super_admin', 'univ_admin'];
 const MODERATOR_ROLES = ['super_admin', 'univ_admin', 'dept_admin', 'moderator'];
 
+// Shared initial credential for bulk-imported accounts. Stored only as a
+// scrypt hash; every imported user is flagged must_change_password.
+const DEFAULT_IMPORT_PASSWORD = '12345678';
+
+// routes_v2 owns the hash-chained audit writer but is mounted after these
+// routes are declared, so calls are routed through this late-bound shim.
+let _writeAudit = null;
+async function writeAuditSafe(action, meta, icon) {
+  if (typeof _writeAudit === 'function') {
+    try { await _writeAudit(action, meta, icon); } catch { /* audit must never break a request */ }
+  }
+}
+
 function publicUser(row) {
   return {
     id: row.id,
@@ -172,7 +185,98 @@ app.post('/api/auth/login', async (req, res) => {
     const user = publicUser(row);
     const token = signToken({ uid: user.id, role: user.role, exp: Date.now() + SESSION_TTL_MS });
 
-    res.json({ token, user });
+    // Bulk-imported accounts share an initial password; the client prompts for
+    // a change when this is set.
+    res.json({ token, user, mustChangePassword: row.must_change_password === true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── SELF-REGISTRATION ───
+// The app previously offered sign-in only, so an alumnus who was not bulk
+// imported had no way to get an account.
+app.post('/api/auth/register', async (req, res) => {
+  const { name, email, password, hscPassingYear, hscGroup, mobile, bloodGroup } = req.body || {};
+
+  if (!name || !name.trim()) return res.status(400).json({ error: 'Full name is required' });
+  if (!isValidEmail(email)) return res.status(400).json({ error: 'A valid email address is required' });
+  if (!password || password.length < 8) {
+    return res.status(400).json({ error: 'Password must be at least 8 characters' });
+  }
+
+  const client = await db.pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const dup = await client.query('SELECT 1 FROM users WHERE LOWER(email) = LOWER($1)', [email.trim()]);
+    if (dup.rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'An account with that email already exists. Try signing in instead.' });
+    }
+
+    const clean = name.trim();
+    const initials = clean.split(/\s+/).filter(Boolean).slice(0, 2)
+      .map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'AL';
+    const year = parseInt(hscPassingYear) || null;
+    const group = normalizeHscGroup(hscGroup) || 'General';
+
+    // Self-registered accounts start unverified — an admin verifies them before
+    // they are treated as confirmed alumni.
+    const userRes = await client.query(`
+      INSERT INTO users (email, password_hash, full_name, initials, role, role_label,
+                         department, is_verified, must_change_password, created_via)
+      VALUES ($1,$2,$3,$4,'alumni','Alumni Member',$5,FALSE,FALSE,'self_signup')
+      RETURNING *
+    `, [email.trim().toLowerCase(), hashPassword(password), clean, initials, group]);
+
+    const uid = userRes.rows[0].id;
+    await client.query(`
+      INSERT INTO alumni_profiles (user_id, student_id, batch, passing_year, department,
+                                   primary_email, mobile_number, blood_group, hsc_group,
+                                   city, country)
+      VALUES ($1,$2,$3,$3,$4,$5,$6,$7,$8,'Dhaka','Bangladesh')
+    `, [uid, year ? `DIC-${year}-${uid}` : `DIC-${uid}`, year, group,
+        email.trim().toLowerCase(), (mobile || '').trim() || null,
+        normalizeBloodGroup(bloodGroup), group]);
+
+    await client.query(`
+      INSERT INTO notifications (target_role, icon, title, subtitle)
+      VALUES ('super_admin', '🎓', 'New Alumni Registration', $1)
+    `, [`${clean} signed up and is awaiting verification.`]);
+
+    await client.query('COMMIT');
+    await writeAuditSafe('Alumni Self-Registered', `${clean} <${email.trim()}> awaiting verification`, '🎓');
+
+    const user = publicUser(userRes.rows[0]);
+    const token = signToken({ uid, role: user.role, exp: Date.now() + SESSION_TTL_MS });
+    res.json({ token, user, mustChangePassword: false });
+  } catch (err) {
+    await client.query('ROLLBACK');
+    res.status(500).json({ error: err.message });
+  } finally {
+    client.release();
+  }
+});
+
+// Lets a user (especially a bulk-imported one) replace the shared initial password.
+app.post('/api/auth/change-password', requireAuth, async (req, res) => {
+  const { currentPassword, newPassword } = req.body || {};
+  if (!newPassword || newPassword.length < 8) {
+    return res.status(400).json({ error: 'New password must be at least 8 characters' });
+  }
+  try {
+    const row = await db.query('SELECT * FROM users WHERE id = $1', [req.user.uid]);
+    if (!row.rows.length) return res.status(404).json({ error: 'User not found' });
+    if (!verifyPassword(currentPassword, row.rows[0].password_hash)) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+    await db.query(
+      'UPDATE users SET password_hash = $1, must_change_password = FALSE WHERE id = $2',
+      [hashPassword(newPassword), req.user.uid]
+    );
+    await writeAuditSafe('Password Changed', `user ${req.user.uid}`, '🔑');
+    res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -308,6 +412,86 @@ app.get('/api/alumni/:id', requireAuth, async (req, res) => {
       hiring: row.hiring,
       hasProfile: row.student_id !== null
     });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ─── PROFILE SELF-SERVICE ───
+// Returns the signed-in user's own profile with every field, unmasked.
+app.get('/api/profile/me', requireAuth, async (req, res) => {
+  try {
+    const r = await db.query(`
+      SELECT u.id, u.email, u.full_name, u.initials, u.role, u.role_label,
+             u.department AS user_department, u.is_verified, u.must_change_password, u.created_via,
+             ap.*
+      FROM users u LEFT JOIN alumni_profiles ap ON ap.user_id = u.id
+      WHERE u.id = $1
+    `, [req.user.uid]);
+    if (!r.rows.length) return res.status(404).json({ error: 'Profile not found' });
+    res.json(r.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Editable profile fields. Whitelisted so a caller cannot write arbitrary
+// columns (role, verification status, etc.) by adding keys to the payload.
+const EDITABLE_PROFILE_FIELDS = {
+  bloodGroup:       'blood_group',
+  presentAddress:   'present_address',
+  permanentAddress: 'permanent_address',
+  occupation:       'occupation',
+  organization:     'current_company',   // "Current Organization / Institution"
+  designation:      'job_title',         // "Current Designation"
+  hscPassingYear:   'passing_year',
+  hscGroup:         'hsc_group',
+  hscVersion:       'hsc_version',
+  photoUrl:         'photo_url',
+  facebook:         'facebook',
+  linkedin:         'linkedin',
+  github:           'github',
+  website:          'website',
+  mobile:           'mobile_number',
+  bio:              'bio',
+  skills:           'skills',
+  city:             'city',
+  country:          'country'
+};
+
+app.put('/api/profile/me', requireAuth, async (req, res) => {
+  const sets = [], vals = [req.user.uid];
+
+  for (const [key, column] of Object.entries(EDITABLE_PROFILE_FIELDS)) {
+    if (req.body[key] === undefined) continue;
+    let value = req.body[key];
+
+    if (key === 'bloodGroup') value = normalizeBloodGroup(value);
+    else if (key === 'occupation') value = normalizeOccupation(value);
+    else if (key === 'hscGroup') value = normalizeHscGroup(value);
+    else if (key === 'hscPassingYear') value = parseInt(value) || null;
+    else if (typeof value === 'string') value = value.trim() || null;
+
+    vals.push(value);
+    sets.push(`${column} = $${vals.length}`);
+  }
+
+  if (!sets.length) return res.status(400).json({ error: 'No editable fields supplied' });
+
+  try {
+    // passing_year and batch are kept in step so directory filters stay correct.
+    if (req.body.hscPassingYear !== undefined) sets.push('batch = passing_year');
+
+    const r = await db.query(`
+      UPDATE alumni_profiles SET ${sets.join(', ')}, updated_at = CURRENT_TIMESTAMP
+      WHERE user_id = $1 RETURNING *
+    `, vals);
+    if (!r.rows.length) return res.status(404).json({ error: 'Profile not found' });
+
+    if (req.body.name && req.body.name.trim()) {
+      await db.query('UPDATE users SET full_name = $2 WHERE id = $1', [req.user.uid, req.body.name.trim()]);
+    }
+    res.json({ success: true, profile: r.rows[0] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -614,6 +798,86 @@ app.put('/api/notifications/read-all', requireAuth, async (req, res) => {
 });
 
 // ─── 8. BULK USER IMPORT ───
+/* ─── IMPORT NORMALISERS ───
+   Intake forms collect free text. The reunion CSV had 32 distinct spellings
+   for 8 real blood groups ("0+" with a zero, "A positive", "Ab+", "AbB+",
+   "O' possative"), so values are canonicalised here rather than stored raw.
+   Anything unrecognised becomes 'Unknown' — it never fails the import. */
+const BLOOD_GROUPS = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
+function normalizeBloodGroup(raw) {
+  if (!raw || !String(raw).trim()) return null;
+  let s = String(raw).trim().toUpperCase();
+
+  // Strip punctuation/whitespace and expand written-out signs.
+  s = s.replace(/[()'`.\s]/g, '');
+  s = s.replace(/POSSATIVE|POSITIVE|POSITIVR|POSTIVE|POS(?![A-Z])|PLUS/g, '+');
+  s = s.replace(/NEGATIVE|NEGETIVE|NEG(?![A-Z])|MINUS/g, '-');
+  s = s.replace(/VE$/, '');            // "A+VE" -> "A+"
+  s = s.replace(/^0/, 'O');            // digit zero typed for the letter O
+  s = s.replace(/ABB/g, 'AB');         // "AbB+" typo
+  s = s.replace(/\++/g, '+').replace(/-+/g, '-');
+
+  // Pull the group letters and the sign out of whatever is left.
+  const letters = (s.match(/AB|A|B|O/) || [])[0];
+  const sign = s.includes('+') ? '+' : (s.includes('-') ? '-' : '');
+  if (!letters) return 'Unknown';
+
+  // No rhesus sign means the value is genuinely unknown. Guessing '+' on a
+  // medical field used for emergency matching would be unsafe.
+  if (!sign) return 'Unknown';
+  const candidate = letters + sign;
+  return BLOOD_GROUPS.includes(candidate) ? candidate : 'Unknown';
+}
+
+function normalizeOccupation(raw) {
+  if (!raw || !String(raw).trim()) return null;
+  const s = String(raw).trim().toLowerCase();
+  if (s.startsWith('student')) return 'Student';
+  if (s.startsWith('job') || s.includes('service') || s.includes('employ')) return 'Job';
+  if (s.startsWith('business') || s.includes('entrepreneur')) return 'Business';
+  return 'Others';
+}
+
+function normalizeHscGroup(raw) {
+  if (!raw || !String(raw).trim()) return null;
+  const s = String(raw).trim().toLowerCase();
+  if (s.startsWith('sci')) return 'Science';
+  if (s.includes('b. studies') || s.includes('business') || s.includes('commerce')) return 'Business Studies';
+  if (s.includes('human') || s.includes('arts')) return 'Humanities';
+  return String(raw).trim();
+}
+
+function normalizeMobile(raw) {
+  if (!raw) return null;
+  const digits = String(raw).replace(/\D/g, '');
+  if (!digits) return null;
+  // Bangladeshi numbers: keep the last 10 significant digits as the match key.
+  return digits.slice(-10);
+}
+
+function isValidEmail(e) {
+  return typeof e === 'string' && /^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(e.trim());
+}
+
+// Intake forms produce sloppy addresses. Recovers the common damage rather
+// than rejecting the row: "a.tafsina@ Gmail.com" (space after @) and
+// "x@gmail.com x@gmail.com" (pasted twice) both appeared in the reunion CSV.
+function sanitizeEmail(raw) {
+  if (!raw) return null;
+  let s = String(raw).trim().toLowerCase();
+  s = s.replace(/[\u00a0\s]+/g, " ");                 // normalise whitespace
+
+  // If several tokens were pasted, keep the first that looks like an address.
+  const tokens = s.split(" ").filter(Boolean);
+  const token = tokens.find(t => t.includes("@"));
+  if (token && tokens.length > 1 && isValidEmail(token)) return token;
+
+  s = s.replace(/\s+/g, "");                           // "a@ gmail.com" -> "a@gmail.com"
+  s = s.replace(/^mailto:/, "").replace(/[,;]+$/, "");
+  return s || null;
+}
+
 app.post('/api/bulk-import', requireRole(...ADMIN_ROLES), async (req, res) => {
   const { records, filename, adminName, failedCount, duplicateCount, processingTime } = req.body;
 
@@ -621,51 +885,154 @@ app.post('/api/bulk-import', requireRole(...ADMIN_ROLES), async (req, res) => {
     return res.status(400).json({ error: 'records must be an array' });
   }
 
-  // The whole batch commits or none of it does, so a failure part-way through
-  // cannot leave orphaned users without profiles.
   const client = await db.pool.connect();
   try {
-    await client.query('BEGIN');
+    await client.query("BEGIN");
 
-    let success = 0, skipped = 0;
+    let created = 0, updated = 0, skippedDuplicate = 0, rejected = 0;
+    const rejectedRows = [];
+    let withMissingOptional = 0;
+    const missingFieldCounts = {};
+    const OPTIONAL_FIELDS = ["mobile","hscPassingYear","hscGroup","hscVersion","bloodGroup",
+                             "presentAddress","occupation","organization","designation",
+                             "photoUrl","facebook"];
+    const seenEmail = new Set(), seenMobile = new Set();
+    const strategy = (req.body.dupResolution || "skip").toLowerCase();
+    const passwordHash = hashPassword(DEFAULT_IMPORT_PASSWORD);
 
     for (const r of records) {
-      if (!r.email || !r.name) { skipped++; continue; }
+      const rowNo = r.row || 0;
+      const name = (r.name || "").trim();
+      const email = sanitizeEmail(r.email);
 
-      const userRes = await client.query(`
-        INSERT INTO users (email, full_name, initials, role, role_label, department)
-        VALUES ($1, $2, $3, 'alumni', 'Alumni Member', $4)
-        ON CONFLICT (email) DO NOTHING
-        RETURNING id
-      `, [r.email, r.name, r.name.slice(0, 2).toUpperCase(), r.dept || 'CSE']);
+      // Maximum retention: only reject when the row cannot be saved at all.
+      // users.email is UNIQUE NOT NULL and is the login identifier, so an
+      // unrecoverable address is the one genuinely fatal case. Every other
+      // blank field is stored as NULL.
+      if (!name) { rejected++; rejectedRows.push({ row: rowNo, name, email, error: "Missing name (cannot identify the person)" }); continue; }
+      if (!isValidEmail(email)) { rejected++; rejectedRows.push({ row: rowNo, name, email: r.email, error: "Email could not be recovered (required as the unique login identifier)" }); continue; }
 
-      if (userRes.rows.length === 0) { skipped++; continue; }
+      // Record blanks for reporting; they never block the import.
+      let missedAny = false;
+      for (const f of OPTIONAL_FIELDS) {
+        if (!r[f] || !String(r[f]).trim()) {
+          missingFieldCounts[f] = (missingFieldCounts[f] || 0) + 1;
+          missedAny = true;
+        }
+      }
+      if (missedAny) withMissingOptional++;
 
-      const year = parseInt(r.year) || new Date().getFullYear();
-      await client.query(`
-        INSERT INTO alumni_profiles (user_id, student_id, batch, passing_year, department,
-                                     primary_email, current_company, job_title, city, country)
-        VALUES ($1,$2,$3,$3,$4,$5,$6,$7,$8,$9)
-        ON CONFLICT (student_id) DO NOTHING
-      `, [userRes.rows[0].id, r.studentId || `DIC-${year}-${userRes.rows[0].id}`, year,
-          r.dept || 'CSE', r.email, r.company || null, r.role || null,
-          r.city || 'Dhaka', r.country || 'Bangladesh']);
-      success++;
+      const mobileKey = normalizeMobile(r.mobile);
+
+      // Same person appearing twice in the file. Under the "update" strategy
+      // the later submission is allowed through so it can enrich the profile
+      // created by the first — people resubmit the form to correct or complete
+      // their entry, and discarding that loses real data.
+      const isBatchDuplicate = seenEmail.has(email) || (mobileKey && seenMobile.has(mobileKey));
+      if (isBatchDuplicate && strategy === "skip") { skippedDuplicate++; continue; }
+      seenEmail.add(email);
+      if (mobileKey) seenMobile.add(mobileKey);
+
+      // Duplicates against existing accounts — email first, then mobile.
+      const existing = await client.query(
+        `SELECT u.id FROM users u
+         LEFT JOIN alumni_profiles ap ON ap.user_id = u.id
+         WHERE LOWER(u.email) = $1
+            OR ($2::text IS NOT NULL AND RIGHT(REGEXP_REPLACE(COALESCE(ap.mobile_number,''), '\\D', '', 'g'), 10) = $2)
+         LIMIT 1`,
+        [email, mobileKey]
+      );
+
+      const year = parseInt(r.hscPassingYear) || null;
+      const profileVals = [
+        year,                                   // batch + passing_year
+        normalizeBloodGroup(r.bloodGroup),
+        (r.presentAddress || "").trim() || null,
+        normalizeOccupation(r.occupation),
+        (r.organization || "").trim() || null,  // Current Organization / Institution
+        (r.designation || "").trim() || null,   // Current Designation
+        normalizeHscGroup(r.hscGroup),
+        (r.hscVersion || "").trim() || null,
+        (r.photoUrl || "").trim() || null,
+        (r.facebook || "").trim() || null,
+        (r.mobile || "").trim() || null
+      ];
+
+      if (existing.rows.length > 0) {
+        if (strategy === "skip") { skippedDuplicate++; continue; }
+        // Non-null values from this row overwrite; blanks leave the stored
+        // value intact (COALESCE below), so nothing is lost either way.
+        // update / merge: refresh the profile, never touch the password.
+        const uid = existing.rows[0].id;
+        await client.query(
+          `UPDATE alumni_profiles SET
+             batch = COALESCE($2, batch), passing_year = COALESCE($2, passing_year),
+             blood_group = COALESCE($3, blood_group), present_address = COALESCE($4, present_address),
+             occupation = COALESCE($5, occupation), current_company = COALESCE($6, current_company),
+             job_title = COALESCE($7, job_title), hsc_group = COALESCE($8, hsc_group),
+             hsc_version = COALESCE($9, hsc_version), photo_url = COALESCE($10, photo_url),
+             facebook = COALESCE($11, facebook), mobile_number = COALESCE($12, mobile_number),
+             updated_at = CURRENT_TIMESTAMP
+           WHERE user_id = $1`,
+          [uid, ...profileVals]
+        );
+        updated++;
+        continue;
+      }
+
+      // New account. The shared initial password is hashed with scrypt before
+      // insertion and flagged so the user is asked to change it on first login.
+      const initials = name.split(/\s+/).filter(Boolean).slice(0, 2)
+        .map(w => w[0]).join("").toUpperCase().slice(0, 2) || "AL";
+
+      const userRes = await client.query(
+        `INSERT INTO users (email, password_hash, full_name, initials, role, role_label,
+                            department, is_verified, must_change_password, created_via)
+         VALUES ($1,$2,$3,$4,'alumni','Alumni Member',$5,TRUE,TRUE,'bulk_import')
+         ON CONFLICT (email) DO NOTHING RETURNING id`,
+        [email, passwordHash, name, initials, normalizeHscGroup(r.hscGroup) || "General"]
+      );
+      if (userRes.rows.length === 0) { skippedDuplicate++; continue; }
+      const uid = userRes.rows[0].id;
+
+      await client.query(
+        `INSERT INTO alumni_profiles
+           (user_id, student_id, batch, passing_year, department, primary_email,
+            blood_group, present_address, occupation, current_company, job_title,
+            hsc_group, hsc_version, photo_url, facebook, mobile_number, city, country)
+         VALUES ($1,$2,$3,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,'Dhaka','Bangladesh')`,
+        [uid, year ? `DIC-${year}-${uid}` : `DIC-${uid}`, year,
+         normalizeHscGroup(r.hscGroup) || "General", email,
+         profileVals[1], profileVals[2], profileVals[3], profileVals[4], profileVals[5],
+         profileVals[6], profileVals[7], profileVals[8], profileVals[9], profileVals[10]]
+      );
+      created++;
     }
 
-    await client.query(`
-      INSERT INTO import_history (batch_code, filename, total_records, success_count,
-                                  failed_count, duplicate_count, admin_name, processing_time)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-    `, [`BATCH-${new Date().getFullYear()}-${Date.now().toString().slice(-5)}`,
-        filename || 'import.csv', records.length, success,
-        parseInt(failedCount) || 0, parseInt(duplicateCount) || skipped,
-        adminName || 'Admin', processingTime || '—']);
+    await client.query(
+      `INSERT INTO import_history (batch_code, filename, total_records, success_count,
+                                   failed_count, duplicate_count, admin_name, processing_time)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+      [`BATCH-${new Date().getFullYear()}-${Date.now().toString().slice(-5)}`,
+       filename || "import.csv", records.length, created,
+       rejected, skippedDuplicate, adminName || "Admin", processingTime || "—"]
+    );
 
-    await client.query('COMMIT');
-    res.json({ success: true, count: success, skipped });
+    await client.query("COMMIT");
+
+    await writeAuditSafe("Bulk Import Completed",
+      `${filename || "import.csv"}: ${created} created, ${updated} updated, ${skippedDuplicate} duplicates, ${rejected} rejected`);
+
+    res.json({
+      success: true,
+      total: records.length,
+      count: created, created, updated,
+      skipped: skippedDuplicate, duplicates: skippedDuplicate,
+      rejected, rejectedRows: rejectedRows.slice(0, 100),
+      withMissingOptional, missingFieldCounts
+    });
   } catch (err) {
-    await client.query('ROLLBACK');
+    await client.query("ROLLBACK");
     res.status(500).json({ error: err.message });
   } finally {
     client.release();
@@ -843,6 +1210,7 @@ const guards = { requireAuth, requireRole, ADMIN_ROLES, MODERATOR_ROLES };
 // v2: events, ticketing, jobs, campaigns/donations, custom fields,
 // mentorship, connections, polls, broadcasts, audit log.
 const v2 = require('./routes_v2')(app, guards);
+_writeAudit = v2.writeAudit;   // late-bind the audit writer declared above
 
 // Event Management Planner (Phase 6).
 require('./routes_planner')(app, { ...guards, writeAudit: v2.writeAudit });

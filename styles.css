@@ -4161,3 +4161,48 @@ textarea.form-input { resize: vertical; min-height: 100px; }
     padding: 0 10px;
   }
 }
+
+/* ─── BULK IMPORT: COLUMN MAPPING ─── */
+.mapping-list { display: flex; flex-direction: column; gap: 8px; max-height: 52vh; overflow-y: auto; padding-right: 4px; }
+.mapping-row {
+  display: grid;
+  grid-template-columns: 1fr 24px 1.1fr;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+}
+.mapping-row.excluded { opacity: 0.55; border-style: dashed; }
+.mapping-col { min-width: 0; }
+.mapping-header { font-weight: 700; font-size: 13px; overflow-wrap: anywhere; }
+.mapping-sample { font-size: 12px; color: var(--text-muted); overflow-wrap: anywhere; margin-top: 2px; }
+.mapping-arrow { text-align: center; color: var(--text-muted); }
+.mapping-row .form-select { min-height: 40px; font-size: 13px; }
+
+@media (max-width: 900px) {
+  .mapping-row { grid-template-columns: 1fr; gap: 8px; padding: 14px; }
+  .mapping-arrow { display: none; }
+  .mapping-row .form-select { min-height: 48px; font-size: 16px; }
+  .mapping-list { max-height: none; }
+}
+
+/* ─── SIGN-UP / SIGN-IN TOGGLE ─── */
+.auth-tabs { display: flex; gap: 8px; margin-bottom: 18px; }
+.auth-tab {
+  flex: 1;
+  min-height: 44px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: 'Inter', sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.auth-tab.active { background: var(--primary-glow); border-color: var(--primary); color: var(--primary-light); }
+.auth-hint { font-size: 12px; color: var(--text-muted); margin-top: 10px; text-align: center; line-height: 1.5; }
+@media (max-width: 900px) { .auth-tab { min-height: 48px; } }

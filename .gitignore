@@ -4,3 +4,8 @@ node_modules/
 .vercel
 .env
 *.env
+
+# Alumni data exports — never commit personal data
+*.csv
+!sample_alumni_import_template.csv
+_tmp_*
