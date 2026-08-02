@@ -4,13 +4,31 @@
    ============================================================ */
 
 const API_BASE_URL = window.location.origin;
+const TOKEN_KEY = 'dic_session_token';
 
+// ─── SESSION TOKEN STORAGE ───
+function getSessionToken() {
+  try { return localStorage.getItem(TOKEN_KEY); } catch { return null; }
+}
+function setSessionToken(token) {
+  try { token ? localStorage.setItem(TOKEN_KEY, token) : localStorage.removeItem(TOKEN_KEY); } catch { /* private mode */ }
+}
+
+// Every request carries the bearer token when one exists, so the server can
+// resolve the caller's identity and role instead of trusting the request body.
 async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const token = getSessionToken();
+  const headers = { ...(options.headers || {}) };
+  if (token) headers['Authorization'] = `Bearer ${token}`;
   try {
-    const response = await fetch(url, { ...options, signal: controller.signal });
+    const response = await fetch(url, { ...options, headers, signal: controller.signal });
     clearTimeout(timeoutId);
+    // An expired or tampered token drops the client back to the login screen.
+    if (response.status === 401 && token && typeof onSessionExpired === 'function') {
+      onSessionExpired();
+    }
     return response;
   } catch (err) {
     clearTimeout(timeoutId);
@@ -19,6 +37,39 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
 }
 
 const API = {
+  // ─── AUTHENTICATION ───
+  async login(email, password) {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (!res.ok) return { error: data.error || 'Login failed' };
+      setSessionToken(data.token);
+      return data;
+    } catch (e) {
+      return { error: 'Cannot reach the server. Check your connection and try again.' };
+    }
+  },
+
+  async me() {
+    if (!getSessionToken()) return null;
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/auth/me`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.user;
+    } catch (e) {
+      return null;
+    }
+  },
+
+  logout() {
+    setSessionToken(null);
+  },
+
   async health() {
     try {
       const res = await fetchWithTimeout(`${API_BASE_URL}/api/health`);
@@ -28,13 +79,25 @@ const API = {
     }
   },
 
-  async getAlumni(search = '') {
+  // Returns { alumni, total, limit, offset } or null when the request fails.
+  async getAlumni({ search = '', dept = '', batch = '', domain = '', mentor = false,
+                    sort = 'name', limit = 12, offset = 0 } = {}) {
     try {
-      const res = await fetchWithTimeout(`${API_BASE_URL}/api/alumni?search=${encodeURIComponent(search)}`);
+      const qs = new URLSearchParams();
+      if (search) qs.set('search', search);
+      if (dept) qs.set('dept', dept);
+      if (batch) qs.set('batch', batch);
+      if (domain) qs.set('domain', domain);
+      if (mentor) qs.set('mentor', 'true');
+      qs.set('sort', sort);
+      qs.set('limit', limit);
+      qs.set('offset', offset);
+
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/alumni?${qs}`);
       if (!res.ok) throw new Error('API Error');
       return await res.json();
     } catch (e) {
-      return null; // Fallback to local data
+      return null;
     }
   },
 
@@ -71,12 +134,11 @@ const API = {
     }
   },
 
-  async joinChapter(chapterId, userId) {
+  // The membership user is resolved from the session token server-side.
+  async joinChapter(chapterId) {
     try {
       const res = await fetchWithTimeout(`${API_BASE_URL}/api/chapters/${chapterId}/join`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId })
+        method: 'POST'
       });
       return await res.json();
     } catch (e) {
@@ -149,9 +211,51 @@ const API = {
     }
   },
 
+  // Scope is derived from the session token server-side.
   async getNotifications() {
     try {
       const res = await fetchWithTimeout(`${API_BASE_URL}/api/notifications`);
+      if (!res.ok) throw new Error('API Error');
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async markNotificationRead(id) {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/notifications/${id}/read`, { method: 'PUT' });
+      if (!res.ok) throw new Error('API Error');
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async markAllNotificationsRead() {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/notifications/read-all`, { method: 'PUT' });
+      if (!res.ok) throw new Error('API Error');
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async moderateProposal(id, action) {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/moderation/proposal/${id}/${action}`, {
+        method: 'POST'
+      });
+      return await res.json();
+    } catch (e) {
+      return null;
+    }
+  },
+
+  async getImportHistory() {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/import-history`);
       if (!res.ok) throw new Error('API Error');
       return await res.json();
     } catch (e) {
@@ -274,3 +378,120 @@ const API = {
     }
   }
 };
+
+/* ============================================================
+   API v2 — events/ticketing, jobs, campaigns/donations, custom fields,
+   mentorship, polls, broadcasts, planner and compliance.
+
+   These share one request helper instead of repeating the same
+   try/catch/JSON block per endpoint. On failure they return
+   { error: '…' } so callers can show the real reason rather than
+   silently falling back to placeholder data.
+   ============================================================ */
+
+async function apiRequest(method, path, body) {
+  try {
+    const res = await fetchWithTimeout(`${API_BASE_URL}${path}`, {
+      method,
+      headers: body ? { 'Content-Type': 'application/json' } : {},
+      body: body ? JSON.stringify(body) : undefined
+    });
+    const text = await res.text();
+    let data;
+    try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+    if (!res.ok) {
+      return { error: (data && data.error) || `Request failed (${res.status})`, status: res.status, data };
+    }
+    return data;
+  } catch (e) {
+    return { error: 'Cannot reach the server. Check your connection.', offline: true };
+  }
+}
+
+// True when a helper returned a failure envelope rather than data.
+function apiFailed(result) {
+  return !result || (typeof result === 'object' && !Array.isArray(result) && 'error' in result);
+}
+
+Object.assign(API, {
+  // ─── EVENTS & TICKETING ───
+  getEvents:        (status)        => apiRequest('GET',    `/api/events${status ? `?status=${encodeURIComponent(status)}` : ''}`),
+  createEvent:      (d)             => apiRequest('POST',   '/api/events', d),
+  updateEvent:      (id, d)         => apiRequest('PUT',    `/api/events/${id}`, d),
+  deleteEvent:      (id)            => apiRequest('DELETE', `/api/events/${id}`),
+  registerForEvent: (id, d)         => apiRequest('POST',   `/api/events/${id}/register`, d || {}),
+  cancelRegistration:(id)           => apiRequest('DELETE', `/api/events/${id}/register`),
+  getMyTicket:      (id)            => apiRequest('GET',    `/api/events/${id}/my-ticket`),
+  getAttendees:     (id)            => apiRequest('GET',    `/api/events/${id}/attendees`),
+  checkInTicket:    (ticketCode)    => apiRequest('POST',   '/api/events/checkin', { ticketCode }),
+
+  // ─── JOBS ───
+  getJobs:          (q = {})        => apiRequest('GET',    `/api/jobs?${new URLSearchParams(q)}`),
+  createJob:        (d)             => apiRequest('POST',   '/api/jobs', d),
+  updateJob:        (id, d)         => apiRequest('PUT',    `/api/jobs/${id}`, d),
+  deleteJob:        (id)            => apiRequest('DELETE', `/api/jobs/${id}`),
+  applyToJob:       (id, d)         => apiRequest('POST',   `/api/jobs/${id}/apply`, d || {}),
+  getJobApplicants: (id)            => apiRequest('GET',    `/api/jobs/${id}/applicants`),
+  requestReferral:  (id, message)   => apiRequest('POST',   `/api/jobs/${id}/refer`, { message }),
+
+  // ─── CAMPAIGNS & DONATIONS ───
+  getCampaigns:     ()              => apiRequest('GET',    '/api/campaigns'),
+  createCampaign:   (d)             => apiRequest('POST',   '/api/campaigns', d),
+  updateCampaign:   (id, d)         => apiRequest('PUT',    `/api/campaigns/${id}`, d),
+  deleteCampaign:   (id)            => apiRequest('DELETE', `/api/campaigns/${id}`),
+  createDonation:   (d)             => apiRequest('POST',   '/api/donations', d),
+  confirmDonation:  (id, d)         => apiRequest('POST',   `/api/donations/${id}/confirm`, d || { success: true }),
+  getMyDonations:   ()              => apiRequest('GET',    '/api/donations/mine'),
+  getDonorLeaderboard: ()           => apiRequest('GET',    '/api/donations/leaderboard'),
+
+  // ─── CUSTOM FIELDS ───
+  getCustomFields:  ()              => apiRequest('GET',    '/api/custom-fields'),
+  createCustomField:(d)             => apiRequest('POST',   '/api/custom-fields', d),
+  deleteCustomFieldApi: (id)        => apiRequest('DELETE', `/api/custom-fields/${id}`),
+
+  // ─── MENTORSHIP ───
+  getMentorships:   ()              => apiRequest('GET',    '/api/mentorships'),
+  getMentorSuggestions: ()          => apiRequest('GET',    '/api/mentorships/suggestions'),
+  requestMentorship:(d)             => apiRequest('POST',   '/api/mentorships', d),
+  respondMentorship:(id, action)    => apiRequest('PUT',    `/api/mentorships/${id}/${action}`),
+
+  // ─── CONNECTIONS ───
+  getConnections:   ()              => apiRequest('GET',    '/api/connections'),
+  connectWith:      (userId)        => apiRequest('POST',   `/api/connections/${userId}`),
+
+  // ─── POLLS ───
+  getActivePoll:    ()              => apiRequest('GET',    '/api/polls/active'),
+  votePoll:         (id, optionIndex) => apiRequest('POST', `/api/polls/${id}/vote`, { optionIndex }),
+
+  // ─── BROADCASTS & AUDIT ───
+  getBroadcasts:    ()              => apiRequest('GET',    '/api/broadcasts'),
+  sendBroadcastApi: (d)             => apiRequest('POST',   '/api/broadcasts', d),
+  getAuditLogs:     ()              => apiRequest('GET',    '/api/audit-logs'),
+
+  // ─── EVENT PLANNER ───
+  getPlannerWorkspace: (eventId = 1) => apiRequest('GET',   `/api/planner/workspace/${eventId}`),
+  getPlannerAnalytics: (eventId = 1) => apiRequest('GET',   `/api/planner/analytics/${eventId}`),
+  getPlannerList:   (kind, eventId = 1) => apiRequest('GET', `/api/planner/${kind}?eventId=${eventId}`),
+  createPlannerItem:(kind, d)       => apiRequest('POST',   `/api/planner/${kind}`, d),
+  updatePlannerItem:(kind, id, d)   => apiRequest('PUT',    `/api/planner/${kind}/${id}`, d),
+  deletePlannerItem:(kind, id)      => apiRequest('DELETE', `/api/planner/${kind}/${id}`),
+  getProposals:     ()              => apiRequest('GET',    '/api/planner/proposals'),
+  setProposalStatus:(id, status)    => apiRequest('PUT',    `/api/planner/proposals/${id}/status`, { status }),
+  plannerReportUrl: (eventId = 1, type = 'full') => `${API_BASE_URL}/api/planner/report/${eventId}?type=${type}`,
+
+  // ─── COMPLIANCE ───
+  recordConsent:    (d)             => apiRequest('POST',   '/api/consent', d),
+  getConsentHistory:()              => apiRequest('GET',    '/api/consent'),
+  getVault:         ()              => apiRequest('GET',    '/api/vault'),
+  storeVaultField:  (d)             => apiRequest('POST',   '/api/vault', d),
+  revealVaultField: (id, reason)    => apiRequest('POST',   `/api/vault/${id}/reveal`, { reason }),
+  getVaultAccessLogs:()             => apiRequest('GET',    '/api/vault/access-logs'),
+  getComplianceStatus:()            => apiRequest('GET',    '/api/compliance/status'),
+  getDeletionRequest:()             => apiRequest('GET',    '/api/dsar/delete'),
+  requestDeletion:  (reason)        => apiRequest('POST',   '/api/dsar/delete', { reason }),
+  cancelDeletion:   ()              => apiRequest('DELETE', '/api/dsar/delete'),
+  dsarExportUrl:    (format = 'json') => `${API_BASE_URL}/api/dsar/export?format=${format}`,
+
+  // Import history (admin panel audit trail)
+  getImportHistoryV2: ()            => apiRequest('GET',    '/api/import-history')
+});

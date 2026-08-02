@@ -676,6 +676,57 @@ body::before {
 .logout-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; padding: 4px; border-radius: 4px; transition: var(--transition); }
 .logout-btn:hover { color: var(--red); }
 
+/* ─── SIDEBAR CONTROL DECK (mobile only — see ≤900px block) ─── */
+.sidebar-controls {
+  display: none;
+  padding: 14px 16px;
+  margin-top: auto;
+  border-top: 1px solid var(--border-glass);
+}
+.sidebar-controls-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+.role-switcher-select.drawer {
+  width: 100%;
+  min-height: 48px;
+  font-size: 14px;
+  padding: 0 12px;
+}
+.sidebar-controls-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+.drawer-btn {
+  flex: 1;
+  min-height: 48px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: 'Inter', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: var(--transition);
+  touch-action: manipulation;
+}
+.drawer-btn:active { transform: scale(0.97); }
+.drawer-btn:hover { border-color: var(--primary); color: var(--primary-light); }
+.offline-status.drawer {
+  margin-top: 10px;
+  justify-content: center;
+  padding: 8px 12px;
+  font-size: 12px;
+}
+.offline-status.drawer .status-text { display: inline; }
+
 /* ─── TOPBAR (DAFFODIL BRAND HEADER #0B3897) ─── */
 .topbar {
   position: sticky;
@@ -691,6 +742,10 @@ body::before {
   padding: 0 24px;
   height: var(--topbar-h);
   color: #FFFFFF;
+  /* Grid items default to min-width:auto, which sizes the app-layout column to
+     this bar's min-content width (~593px) and blows the whole shell out on
+     phones. Pinning to 0 lets the column follow the viewport instead. */
+  min-width: 0;
 }
 .topbar-brand-logo {
   display: flex;
@@ -723,7 +778,20 @@ body::before {
 .topbar-search-input:focus { border-color: var(--primary); background: rgba(108,99,255,0.06); }
 .topbar-search-input::placeholder { color: var(--text-muted); }
 
-.topbar-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.topbar-actions { display: flex; align-items: center; gap: 10px; margin-left: auto; min-width: 0; }
+
+/* Between the mobile breakpoint and full desktop the action cluster (~535px)
+   plus the brand no longer fits beside the 280px sidebar, and spills past the
+   viewport. Compact the labels through that band instead of overflowing. */
+@media (min-width: 901px) and (max-width: 1200px) {
+  .topbar { gap: 10px; padding: 0 16px; }
+  .topbar-search { min-width: 0; }
+  .offline-status .status-text { display: none; }
+  .offline-status { padding: 6px 8px; }
+  .alert-btn .alert-btn-label { display: none; }
+  .topbar-btn { padding: 6px 10px; }
+  .role-switcher-select { max-width: 130px; }
+}
 .offline-status {
   display: flex;
   align-items: center;
@@ -777,6 +845,7 @@ body::before {
   overflow-y: auto;
   padding: 28px 32px;
   background: transparent;
+  min-width: 0;
 }
 .page { display: none; }
 .page.active { display: block; animation: fadeIn 0.3s ease; }
@@ -1830,18 +1899,48 @@ textarea.form-input { resize: vertical; min-height: 100px; }
     padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
   }
 
-  /* ── Topbar ── */
+  /* ── Topbar ──
+     Phone topbar carries only: hamburger · brand · notifications · avatar.
+     The role switcher, theme toggle, broadcast and DB status move into the
+     sidebar drawer (.sidebar-controls) so nothing is lost, and the bar stops
+     forcing the app shell wider than the viewport. */
   .topbar {
     padding: 0 12px;
     gap: 8px;
   }
-  .topbar-search { max-width: 180px; }
-  .topbar-search-input { font-size: 13px; padding: 6px 10px 6px 32px; }
-  .topbar-actions { gap: 6px; }
-  .offline-status .status-text { display: none; }
-  .offline-status { padding: 6px 8px; }
-  .topbar-btn { padding: 6px 8px; font-size: 11px; }
-  .role-switcher-select { font-size: 11px; padding: 4px 8px; }
+  .topbar-search { display: none; }
+  .topbar-brand-logo {
+    min-width: 0;
+    flex: 0 1 auto;
+    overflow: hidden;
+    padding-right: 8px;
+  }
+  .topbar-brand-logo img, .topbar-brand-logo svg {
+    height: 28px;
+    max-width: 108px;
+  }
+  .topbar-actions {
+    gap: 6px;
+    min-width: 0;
+    flex: 0 0 auto;
+  }
+  /* Relocated to the drawer on mobile */
+  .topbar-actions .role-switcher-select,
+  .topbar-actions #offline-status,
+  .topbar-actions .theme-toggle-btn,
+  .topbar-actions .alert-btn { display: none; }
+
+  .topbar-btn {
+    padding: 0 10px;
+    font-size: 12px;
+    min-height: 40px;
+    min-width: 44px;
+    justify-content: center;
+  }
+  .topbar-avatar { width: 44px; height: 44px; flex: 0 0 auto; }
+
+  /* ── Sidebar drawer control deck ── */
+  .sidebar-controls { display: block; }
 
   /* ── Page Header ── */
   .page-header {
@@ -2297,7 +2396,7 @@ textarea.form-input { resize: vertical; min-height: 100px; }
   .topbar-btn span:not(.notif-count):not(.bnav-icon) {
     display: none;
   }
-  .role-switcher-select { max-width: 110px; font-size: 10px; padding: 4px 6px; }
+  .topbar-actions .role-switcher-select { max-width: 110px; font-size: 10px; padding: 4px 6px; }
 
   /* ── Page Title ── */
   .page-title { font-size: 20px; }
@@ -2623,7 +2722,7 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 
   /* ── Topbar ── */
   .topbar { padding: 0 8px; gap: 4px; }
-  .role-switcher-select { max-width: 90px; font-size: 9px; }
+  .topbar-actions .role-switcher-select { max-width: 90px; font-size: 9px; }
 
   /* ── Cards ── */
   .glass-card { padding: 10px; border-radius: 10px; }
@@ -3501,3 +3600,564 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 .sponsor-tier-card.bronze-tier { border-left-color: #cd7f32; }
 
 
+
+/* ─── SHARED LOADING / EMPTY / ERROR STATES ─── */
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 0.45; }
+  50% { opacity: 0.85; }
+}
+.skeleton-card {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md, 14px);
+  padding: 18px;
+  margin-bottom: 12px;
+  animation: skeletonPulse 1.4s ease-in-out infinite;
+}
+.skeleton-line {
+  height: 12px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, rgba(255,255,255,0.05), rgba(255,255,255,0.12), rgba(255,255,255,0.05));
+  margin-bottom: 10px;
+}
+.skeleton-line:last-child { margin-bottom: 0; }
+.skeleton-line-lg { height: 18px; width: 65%; }
+.skeleton-line-sm { width: 40%; }
+
+.state-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 24px;
+  border: 1px dashed var(--border-glass);
+  border-radius: var(--radius-md, 14px);
+  background: var(--bg-glass);
+}
+.state-icon { font-size: 34px; margin-bottom: 12px; line-height: 1; }
+.state-title { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+.state-subtitle { font-size: 13px; color: var(--text-secondary); margin-top: 6px; max-width: 42ch; }
+.state-retry { margin-top: 16px; min-height: 44px; padding: 0 20px; }
+.state-error { border-color: rgba(248,113,113,0.35); background: rgba(248,113,113,0.06); }
+.state-error .state-title { color: var(--red, #F87171); }
+
+.notif-item { cursor: pointer; transition: var(--transition); }
+.notif-item:hover { background: var(--bg-glass); }
+.notif-item.unread { background: rgba(108,99,255,0.06); }
+
+@media (max-width: 900px) {
+  .state-panel { padding: 32px 18px; }
+  .state-icon { font-size: 30px; }
+}
+
+.notif-header-actions { display: flex; align-items: center; gap: 8px; }
+.notif-readall {
+  background: none;
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 10px;
+  min-height: 36px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+.notif-readall:hover { border-color: var(--primary); color: var(--primary-light); }
+@media (max-width: 900px) { .notif-readall { min-height: 44px; } }
+
+/* ─── LOGIN ERROR BANNER ─── */
+.login-error {
+  background: rgba(248,113,113,0.1);
+  border: 1px solid rgba(248,113,113,0.35);
+  border-radius: var(--radius-sm);
+  color: var(--red, #F87171);
+  font-size: 13px;
+  font-weight: 600;
+  padding: 12px 14px;
+  margin-bottom: 14px;
+  text-align: center;
+}
+.login-error.hidden { display: none; }
+#login-submit-btn:disabled { opacity: 0.6; cursor: progress; }
+
+.field-unset { color: var(--text-muted); font-style: italic; font-weight: 400; }
+
+/* ─── v2 COMPONENTS (vault, broadcasts, custom fields, tickets, polls) ─── */
+.vault-banner {
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.vault-banner.ok   { background: rgba(52,211,153,0.1); border: 1px solid rgba(52,211,153,0.3); color: var(--green, #34D399); }
+.vault-banner.warn { background: rgba(248,113,113,0.1); border: 1px solid rgba(248,113,113,0.35); color: var(--red, #F87171); }
+
+.vault-row, .custom-field-row, .broadcast-entry {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+.vault-icon { font-size: 20px; flex-shrink: 0; }
+.custom-field-form {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+}
+
+/* Poll: mark the option the viewer chose */
+.poll-option-btn.voted { border-color: var(--teal); }
+.poll-option-btn.voted .poll-option-text { font-weight: 800; color: var(--teal); }
+
+/* Mentor match score pill */
+.match-score-badge {
+  background: rgba(0,168,89,0.15);
+  border: 1px solid rgba(0,168,89,0.3);
+  color: var(--teal);
+  border-radius: 99px;
+  font-size: 11px;
+  font-weight: 800;
+  padding: 3px 9px;
+  flex-shrink: 0;
+}
+
+/* Event card action row */
+.event-card-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.event-card-actions .btn { flex: 1; min-width: 0; }
+
+/* Danger button (account deletion) */
+.btn-danger {
+  background: rgba(248,113,113,0.12);
+  border: 1px solid rgba(248,113,113,0.4);
+  color: var(--red, #F87171);
+}
+.btn-danger:hover { background: rgba(248,113,113,0.2); }
+
+.mt-8 { margin-top: 8px; }
+
+/* Compliance card states — the pill reflects real system state */
+.compliance-card.at_risk { border-color: rgba(248,113,113,0.35); }
+.compliance-status.at_risk { background: rgba(248,113,113,0.15); color: var(--red, #F87171); }
+.compliance-status.pending { background: rgba(255,140,66,0.15); color: var(--amber, #FF8C42); }
+
+/* ─── MOBILE: v2 components ─── */
+@media (max-width: 900px) {
+  .vault-row, .custom-field-row, .broadcast-entry {
+    flex-wrap: wrap;
+    padding: 14px;
+    gap: 10px;
+  }
+  .broadcast-entry > div:last-child { text-align: left; width: 100%; }
+  .vault-row .btn, .custom-field-row .btn { min-height: 44px; }
+  .event-card-actions { flex-direction: column; }
+  .event-card-actions .btn { width: 100%; min-height: 46px; }
+  .custom-field-form { padding: 14px; }
+  .amount-grid { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .amount-btn { min-height: 48px; font-size: 14px; }
+  .gateway-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .gateway-option { min-height: 68px; }
+  .otp-box { width: 46px; height: 52px; font-size: 20px; }
+  .poll-option-btn { min-height: 48px; }
+  .job-card { flex-direction: column; align-items: stretch; }
+  .job-right { align-items: stretch; margin-top: 12px; }
+  .job-right .apply-btn, .job-right .referral-btn { min-height: 46px; width: 100%; }
+  .mentorship-connection, .pending-request, .suggested-mentor-card {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .pending-request .btn, .suggested-mentor-card .btn { min-height: 44px; flex: 1; }
+  .donor-row { padding: 12px 10px; }
+}
+
+/* ─── PLANNER TABLES → MOBILE CARDS (Phase 7) ─── */
+.planner-table { display: flex; flex-direction: column; gap: 2px; }
+.planner-table-head,
+.planner-table-row {
+  display: grid;
+  grid-template-columns: repeat(var(--planner-cols, 7), minmax(0, 1fr));
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+}
+.planner-table-head {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-glass);
+}
+.planner-table-row {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+}
+.planner-table-row > div { min-width: 0; overflow-wrap: anywhere; }
+
+/* Timeline */
+.timeline-track { display: flex; flex-direction: column; gap: 4px; }
+.timeline-item { display: flex; gap: 14px; padding: 4px 0; }
+.timeline-dot {
+  width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; margin-top: 16px;
+  background: var(--bg-surface); border: 3px solid var(--border-glass);
+}
+.timeline-item.done .timeline-dot { border-color: var(--teal); background: var(--teal); }
+.timeline-item.in_progress .timeline-dot { border-color: var(--primary); }
+.timeline-item.delayed .timeline-dot { border-color: var(--amber, #FF8C42); }
+.timeline-body {
+  flex: 1; min-width: 0;
+  background: var(--bg-glass); border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm); padding: 14px;
+}
+.timeline-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap; }
+.timeline-desc { font-size: 12px; color: var(--text-secondary); margin-top: 4px; }
+.timeline-meta { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+/* Analytics blocks */
+.analytics-block {
+  background: var(--bg-glass); border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm); padding: 16px;
+}
+.analytics-block-title { font-size: 13px; font-weight: 800; margin-bottom: 10px; }
+.analytics-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 13px; padding: 6px 0; border-bottom: 1px solid var(--border-glass);
+}
+.analytics-row:last-child { border-bottom: none; }
+.analytics-row span { color: var(--text-secondary); }
+
+@media (max-width: 900px) {
+  /* Each row becomes a labelled card; the header row is dropped. */
+  .planner-table-head { display: none; }
+  .planner-table { gap: 10px; }
+  .planner-table-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+    padding: 14px;
+  }
+  .planner-table-row > div[data-label]:not([data-label=""])::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 10px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    margin-bottom: 2px;
+  }
+  .timeline-item { gap: 10px; }
+  .timeline-body { padding: 12px; }
+  .analytics-block { padding: 14px; }
+  .planner-metrics-ribbon { grid-template-columns: repeat(2, 1fr) !important; gap: 8px; }
+}
+
+/* ============================================================
+   PHASE 7 — MOBILE UX PASS
+   Applies platform touch-target minimums (44px, 48px for primary
+   actions) and a 12px floor on body text across every page.
+   ============================================================ */
+@media (max-width: 900px) {
+
+  /* ── Touch targets ──
+     Chips, tabs, pills and small selects were 27–40px tall. */
+  .chip,
+  .chart-tab,
+  .profile-hub-tab,
+  .analytics-tabs .chart-tab,
+  .admin-tabs .chart-tab,
+  .events-tabs .chart-tab,
+  .api-key-btn,
+  .voice-btn,
+  .form-select.sm,
+  .btn.btn-sm,
+  .filter-chip,
+  .segment-chip {
+    min-height: 44px;
+    padding-top: 0;
+    padding-bottom: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    touch-action: manipulation;
+  }
+
+  .chip, .filter-chip, .segment-chip { padding-left: 14px; padding-right: 14px; }
+  .chart-tab, .profile-hub-tab { padding-left: 16px; padding-right: 16px; }
+  .api-key-btn { padding: 0 12px; font-size: 12px; }
+  .voice-btn { width: 44px; }
+
+  /* Primary actions get the full 48px from the PRD. */
+  .btn.btn-primary, .btn.btn-full, .donate-btn, .apply-btn,
+  .connect-btn, .mentor-req-btn, .referral-btn, .drawer-btn {
+    min-height: 48px;
+  }
+
+  /* Form controls are thumb-sized and use a 16px font so iOS does not
+     zoom the viewport on focus. */
+  .form-input, .form-select, input[type="text"], input[type="email"],
+  input[type="password"], input[type="number"], input[type="date"],
+  input[type="time"], input[type="url"], input[type="tel"], textarea, select {
+    min-height: 48px;
+    font-size: 16px;
+  }
+  textarea.form-input { min-height: 96px; padding-top: 12px; }
+  input[type="checkbox"], input[type="radio"] { width: 22px; height: 22px; }
+
+  /* ── Typography floor ──
+     Nothing below 12px; secondary metadata sits at 12px, not 9–10px. */
+  body { font-size: 15px; }
+  .job-meta-item, .event-meta, .news-meta, .audit-meta, .donor-tier,
+  .alumni-card-location, .chapter-count, .pmetric-lab, .compliance-desc,
+  .notif-item-time, .field-label, .state-subtitle, .timeline-meta,
+  .spotlight-sub, .progress-goal, .card-badge, .job-tag, .alumni-tag,
+  .verify-pill, .expiry-badge, .match-score-badge, .gateway-pill {
+    font-size: 12px !important;
+    line-height: 1.45;
+  }
+  .page-subtitle, .card-title, .modal-section-title { line-height: 1.4; }
+  .alumni-card-name, .job-title, .event-title, .news-title, .campaign-name {
+    font-size: 16px;
+    line-height: 1.35;
+  }
+
+  /* ── Spacing & hierarchy ── */
+  .glass-card { padding: 16px; border-radius: 14px; }
+  .card-header { flex-wrap: wrap; gap: 10px; margin-bottom: 14px; }
+  .card-header .btn { width: 100%; }
+  .modal-content, .modal-box { padding: 18px; }
+  .field-grid-2 { grid-template-columns: 1fr; gap: 0; }
+  .planner-metrics-ribbon { gap: 8px; }
+
+  /* Horizontal tab strips scroll inside themselves, never the page. */
+  .analytics-tabs, .admin-tabs, .events-tabs, .profile-hub-tabs, .chip-row, .filter-chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: 4px;
+    scroll-snap-type: x proximity;
+  }
+  .analytics-tabs::-webkit-scrollbar, .admin-tabs::-webkit-scrollbar,
+  .events-tabs::-webkit-scrollbar, .profile-hub-tabs::-webkit-scrollbar,
+  .chip-row::-webkit-scrollbar, .filter-chips::-webkit-scrollbar { display: none; }
+  .analytics-tabs > *, .admin-tabs > *, .events-tabs > *,
+  .profile-hub-tabs > *, .chip-row > *, .filter-chips > * {
+    flex: 0 0 auto;
+    scroll-snap-align: start;
+  }
+
+  /* ── RBAC matrix: table → one card per role (Phase 7) ── */
+  .table-scroll { overflow-x: visible; }
+  /* An earlier mobile rule pins min-width:600px, which pushed the permission
+     values off-screen once the rows became cards. */
+  .rbac-table { width: 100%; min-width: 0; max-width: 100%; display: block; border-collapse: separate; }
+  .rbac-table thead { display: none; }
+  .rbac-table tbody { display: flex; flex-direction: column; gap: 10px; }
+  .rbac-table tr {
+    display: block;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+  }
+  .rbac-table td {
+    display: flex;
+    white-space: normal;
+    min-width: 0;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    border: none;
+    padding: 7px 0;
+    font-size: 13px;
+    text-align: right;
+  }
+  .rbac-table td + td { border-top: 1px solid var(--border-glass); }
+  .rbac-table td::before {
+    content: attr(data-label);
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted);
+    text-align: left;
+    flex-shrink: 0;
+  }
+  /* First cell is the row heading, not a label/value pair. */
+  .rbac-table td:first-child {
+    justify-content: flex-start;
+    font-weight: 800;
+    font-size: 15px;
+    text-align: left;
+    padding-bottom: 10px;
+  }
+  .rbac-table td:first-child::before { content: none; }
+
+  /* Modals become bottom sheets — reachable in the thumb zone. */
+  .modal-overlay { align-items: flex-end; }
+  .modal, .modal-content, .modal-box {
+    width: 100%;
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: 20px 20px 0 0;
+    overflow-y: auto;
+  }
+  .modal-close { min-width: 44px; min-height: 44px; }
+}
+
+/* Very small phones */
+@media (max-width: 380px) {
+  .planner-metrics-ribbon { grid-template-columns: 1fr !important; }
+  .amount-grid { grid-template-columns: repeat(2, 1fr); }
+  .glass-card { padding: 14px; }
+}
+
+/* Many templates set font sizes inline (font-size:9px/10px/11px). Only an
+   !important rule in the stylesheet can raise those on mobile, so match the
+   inline declarations directly and lift them to the 12px floor. */
+@media (max-width: 900px) {
+  [style*="font-size:9px"],  [style*="font-size: 9px"],
+  [style*="font-size:10px"], [style*="font-size: 10px"],
+  [style*="font-size:11px"], [style*="font-size: 11px"] {
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+  }
+  [style*="font-size:12px"], [style*="font-size: 12px"] { line-height: 1.45 !important; }
+
+  .wallet-btn { min-height: 44px; padding: 0 14px; }
+}
+
+/* Remaining class-based sub-11px sizes lifted to the mobile 12px floor.
+   Icon-only badges (counts, check marks, nav labels) keep their size because
+   they carry no reading text. */
+@media (max-width: 900px) {
+  .alumni-tag, .api-endpoint-method, .api-log-path, .api-log-time, .api-method,
+  .audit-log-hash, .badge-desc, .badge-title, .brand-tag,
+  .campaign-live-indicator, .campaign-tag, .card-badge,
+  .career-registry-history, .career-update-badge, .channel-badge,
+  .chapter-type, .cipher-box, .consent-version, .criterion-label,
+  .demo-role-btn, .event-status, .expiry-badge, .field-label, .gateway-pill,
+  .gateway-sub, .id-verified-badge, .job-tag, .job-type-badge, .kpi-label,
+  .kpi-trend, .map-stat-lab, .mentorship-type-badge, .mini-kpi-label,
+  .moderated-badge, .news-category, .pmetric-lab, .priority-tag,
+  .privacy-badge, .receipt-stat-label, .scope-tag, .sync-queue-type,
+  .tenant-status, .timeline-period, .tl-latency, .webhook-event-tag,
+  .webhook-status, .webhook-url, .wizard-step-item {
+    font-size: 12px !important;
+    line-height: 1.45;
+  }
+  /* Tag-style pills need a little more room once the text grows. */
+  .alumni-tag, .job-tag, .scope-tag, .webhook-event-tag, .card-badge,
+  .chapter-type, .priority-tag, .gateway-pill { padding: 4px 9px; }
+}
+
+/* ============================================================
+   MOBILE: EXECUTIVE ANALYTICS REDESIGN
+   The analytics grid stayed a 2fr/1fr desktop split on phones, so the
+   chart rendered in a ~137px column (canvas 106px wide, 584px tall) and
+   was unreadable. On mobile the page becomes a single vertical stack:
+   KPI metrics first, then a properly proportioned chart.
+   ============================================================ */
+@media (max-width: 900px) {
+
+  .analytics-grid,
+  #analytics-panel-main,
+  #analytics-panel-mentorship,
+  #analytics-panel-eventROI {
+    grid-template-columns: 1fr !important;
+    gap: 14px;
+  }
+  /* Column spans are meaningless in a single-column stack. */
+  .span-2, .span-3 { grid-column: auto !important; }
+
+  /* Key Metrics reads before the chart on a phone — the numbers are the
+     answer, the chart is the supporting detail. */
+  .analytics-metrics-card { order: -1; }
+
+  /* Chart gets a fixed, readable height instead of stretching to fill an
+     unconstrained parent (Chart.js runs with maintainAspectRatio:false). */
+  .analytics-grid canvas,
+  #analytics-chart,
+  #dashboard-chart,
+  .chart-container canvas {
+    height: 260px !important;
+    max-height: 260px !important;
+    width: 100% !important;
+  }
+  .analytics-chart-card { padding: 14px 12px; }
+
+  /* Metric rows become scannable cards with room to breathe. */
+  #analytics-metrics { gap: 0; }
+  .analytics-metric-item {
+    padding: 14px 0;
+    gap: 4px;
+  }
+  .analytics-metric-item .metric-label,
+  .analytics-metric-item > :first-child { font-size: 12px !important; letter-spacing: 0.04em; }
+  .analytics-metric-item .metric-value,
+  .analytics-metric-item > :nth-child(2) { font-size: 26px !important; line-height: 1.1; }
+
+  /* Export buttons stack full width and stay thumb-sized. */
+  #page-analytics .page-header-actions { display: flex; gap: 8px; width: 100%; }
+  #page-analytics .page-header-actions .btn { flex: 1; min-height: 48px; }
+
+  .geo-heatmap { padding: 10px 0; }
+
+  /* ── Remaining desktop grids that never got a mobile override ── */
+  .career-tracker-layout { grid-template-columns: 1fr !important; gap: 14px; }
+  .server-health-grid    { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; }
+  .alumni-badges-grid    { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; }
+  .import-wizard-steps   { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; }
+  .branding-color-grid   { grid-template-columns: 1fr !important; }
+  .sync-overview-grid    { grid-template-columns: repeat(2, 1fr) !important; gap: 10px; }
+  .segment-builder       { grid-template-columns: 1fr !important; gap: 10px; }
+}
+
+@media (max-width: 400px) {
+  .server-health-grid, .alumni-badges-grid,
+  .import-wizard-steps, .sync-overview-grid { grid-template-columns: 1fr !important; }
+  .analytics-grid canvas, #analytics-chart { height: 220px !important; max-height: 220px !important; }
+}
+
+/* Chart frame gives Chart.js a bounded box to fill. Without it the canvas
+   stretches to whatever height the card happens to have, because the charts
+   run with maintainAspectRatio:false. */
+.chart-frame { position: relative; width: 100%; height: 320px; }
+.chart-frame canvas { width: 100% !important; height: 100% !important; }
+@media (max-width: 900px) { .chart-frame { height: 260px; } }
+@media (max-width: 400px) { .chart-frame { height: 220px; } }
+
+/* Catch-all touch-target floor. Earlier rules named individual classes and
+   missed the verification-queue actions (.approve-btn / .review-btn rendered
+   at 25px) — mis-taps there approve or reject a real profile. */
+@media (max-width: 900px) {
+  #pages button,
+  #pages a[onclick],
+  #pages [role="button"] {
+    min-height: 44px;
+    touch-action: manipulation;
+  }
+  /* Small inline actions still get a comfortable target without stretching
+     their visual box awkwardly. */
+  .approve-btn, .review-btn, .reject-btn, .connect-btn, .mentor-req-btn,
+  .apply-btn, .referral-btn, .donate-btn, .api-key-btn, .kanban-move-btn {
+    min-height: 44px;
+    padding: 0 14px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* Icon-only buttons stay square rather than becoming wide slabs. */
+  .modal-close, .logout-btn, .sidebar-close, .btn-ghost.icon-only {
+    min-width: 44px;
+    padding: 0 10px;
+  }
+}
