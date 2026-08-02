@@ -105,6 +105,7 @@ let state = {
   selectedAmount: null,
   displayedAlumni: 12,
   analyticsChart: null,
+  connectedAlumni: {},
 };
 
 // ─── AUTHENTICATION & DEMO LOGIN HANDLERS ───────────────────
@@ -240,8 +241,33 @@ function logout() {
   if (sisAnim) sisAnim.style.display = 'none';
 }
 
+function toggleAppTheme() {
+  const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', newTheme);
+  localStorage.setItem('dic_theme', newTheme);
+  
+  const toggleBtn = document.getElementById('theme-toggle-btn');
+  if (toggleBtn) {
+    toggleBtn.innerHTML = newTheme === 'dark' ? '🌙' : '☀️';
+    toggleBtn.setAttribute('title', newTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode');
+  }
+  showToast(newTheme === 'dark' ? '🌙 Dark Mode Activated' : '☀️ Light Mode Activated');
+}
+
+function initAppTheme() {
+  const savedTheme = localStorage.getItem('dic_theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  const toggleBtn = document.getElementById('theme-toggle-btn');
+  if (toggleBtn) {
+    toggleBtn.innerHTML = savedTheme === 'dark' ? '🌙' : '☀️';
+    toggleBtn.setAttribute('title', savedTheme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode');
+  }
+}
+
 // ─── APP INITIALIZATION & ROLE-BASED DASHBOARDS ──────────────
 function initApp() {
+  initAppTheme();
   updateUserUI();
   renderSidebarNav(state.currentUser.role);
   renderDashboard();
@@ -853,7 +879,10 @@ function renderAlumniGrid(filter = '') {
         ${a.mentor ? '<span class="alumni-tag mentor-tag">🤝 Mentor</span>' : ''}
       </div>
       <div class="alumni-card-actions">
-        <button class="connect-btn" onclick="event.stopPropagation(); connectAlumni('${a.name}')">+ Connect</button>
+        ${(() => {
+          const isConn = state.connectedAlumni && state.connectedAlumni[a.name];
+          return `<button class="connect-btn ${isConn ? 'connected' : ''}" onclick="event.stopPropagation(); connectAlumni('${a.name}', this)" ${isConn ? 'disabled style="background:rgba(0,212,170,0.15);color:var(--teal);border-color:rgba(0,212,170,0.4)"' : ''}>${isConn ? '✓ Connected' : '+ Connect'}</button>`;
+        })()}
         ${a.mentor ? `<button class="mentor-req-btn" onclick="event.stopPropagation(); showMentorModal('${a.name}')">🤝 Request Mentorship</button>` : ''}
       </div>
     </div>
@@ -888,7 +917,39 @@ function toggleChip(el, filter) {
   }
 }
 
+function connectAlumni(name, btn) {
+  if (!state.connectedAlumni) state.connectedAlumni = {};
+  if (state.connectedAlumni[name]) {
+    showToast('ℹ️ Connection request already sent to ' + name);
+    return;
+  }
+  state.connectedAlumni[name] = true;
+  
+  if (btn) {
+    btn.innerHTML = '✓ Connected';
+    btn.classList.add('connected');
+    btn.setAttribute('disabled', 'true');
+    btn.style.background = 'rgba(0,212,170,0.15)';
+    btn.style.color = 'var(--teal)';
+    btn.style.borderColor = 'rgba(0,212,170,0.4)';
+  } else {
+    document.querySelectorAll('.connect-btn').forEach(b => {
+      if (b.getAttribute('onclick') && b.getAttribute('onclick').includes(name)) {
+        b.innerHTML = '✓ Connected';
+        b.classList.add('connected');
+        b.setAttribute('disabled', 'true');
+        b.style.background = 'rgba(0,212,170,0.15)';
+        b.style.color = 'var(--teal)';
+        b.style.borderColor = 'rgba(0,212,170,0.4)';
+      }
+    });
+  }
+  
+  showToast('🤝 Connection request sent to ' + name + '!');
+}
+
 function renderAlumniCard(a) {
+  const isConn = state.connectedAlumni && state.connectedAlumni[a.name];
   return `
     <div class="alumni-card">
       <div class="alumni-card-top">
@@ -904,8 +965,8 @@ function renderAlumniCard(a) {
       </div>
       <div class="alumni-tags">${a.skills.map(s => `<span class="alumni-tag">${s}</span>`).join('')}${a.mentor ? '<span class="alumni-tag mentor-tag">🤝 Mentor</span>' : ''}</div>
       <div class="alumni-card-actions">
-        <button class="connect-btn" onclick="connectAlumni('${a.name}')">+ Connect</button>
-        ${a.mentor ? `<button class="mentor-req-btn" onclick="showMentorModal('${a.name}')">🤝 Request</button>` : ''}
+        <button class="connect-btn ${isConn ? 'connected' : ''}" onclick="event.stopPropagation(); connectAlumni('${a.name}', this)" ${isConn ? 'disabled style="background:rgba(0,212,170,0.15);color:var(--teal);border-color:rgba(0,212,170,0.4)"' : ''}>${isConn ? '✓ Connected' : '+ Connect'}</button>
+        ${a.mentor ? `<button class="mentor-req-btn" onclick="event.stopPropagation(); showMentorModal('${a.name}')">🤝 Request</button>` : ''}
       </div>
     </div>`;
 }
@@ -1904,40 +1965,49 @@ async function renderChapters() {
   // Sync with PostgreSQL API if available
   if (typeof API !== 'undefined') {
     const chaptersFromApi = await API.getChapters();
-    if (chaptersFromApi && Array.isArray(chaptersFromApi)) {
-      MOCK_CHAPTERS = chaptersFromApi.map(c => ({
+    if (chaptersFromApi && Array.isArray(chaptersFromApi) && chaptersFromApi.length > 0) {
+      const apiMapped = chaptersFromApi.map(c => ({
         id: c.id,
         name: c.name,
         type: c.type,
-        icon: c.icon,
-        members: c.members_count || 100,
-        events: c.events_count || 5,
-        parent: c.parent_id
+        icon: c.icon || '🏫',
+        members: c.members_count || 1,
+        events: c.events_count || 0,
+        parent: (c.parent_id === null || c.parent_id === undefined || c.parent_id === 'null') ? null : c.parent_id
       }));
+
+      // Preserve local newly added chapters that haven't been fetched yet
+      MOCK_CHAPTERS.forEach(localChap => {
+        if (!apiMapped.some(ac => ac.id === localChap.id || ac.name === localChap.name)) {
+          apiMapped.push(localChap);
+        }
+      });
+
+      MOCK_CHAPTERS = apiMapped;
     }
   }
 
-  const roots = MOCK_CHAPTERS.filter(c => c.parent === null || c.parent === undefined);
-  const children = (parentId) => MOCK_CHAPTERS.filter(c => c.parent === parentId);
+  const roots = MOCK_CHAPTERS.filter(c => c.parent === null || c.parent === undefined || c.parent === 'null' || !c.parent);
+  const children = (parentId) => MOCK_CHAPTERS.filter(c => c.parent == parentId && c.parent !== null && c.parent !== undefined);
 
   tree.innerHTML = roots.map(c => `
     <div class="chapter-node" onclick="selectChapter(${c.id})">
       <span class="chapter-icon">${c.icon}</span>
       <span class="chapter-name">${c.name}</span>
       <span class="chapter-type ${c.type}">${c.type}</span>
-      <span class="chapter-count">${c.members ? c.members.toLocaleString() : '100'}</span>
+      <span class="chapter-count">${c.members ? c.members.toLocaleString() : '1'}</span>
     </div>
     ${children(c.id).map(sub => `
       <div class="chapter-node chapter-indent" onclick="selectChapter(${sub.id})">
         <span class="chapter-icon">${sub.icon}</span>
         <span class="chapter-name">${sub.name}</span>
         <span class="chapter-type ${sub.type}">${sub.type}</span>
-        <span class="chapter-count">${sub.members ? sub.members.toLocaleString() : '50'}</span>
+        <span class="chapter-count">${sub.members ? sub.members.toLocaleString() : '1'}</span>
       </div>
     `).join('')}
   `).join('');
 
-  if (MOCK_CHAPTERS.length > 0) selectChapter(MOCK_CHAPTERS[0].id);
+  if (MOCK_CHAPTERS.length > 0) selectChapter(MOCK_CHAPTERS[MOCK_CHAPTERS.length - 1].id);
 }
 
 function selectChapter(id) {
@@ -2618,24 +2688,36 @@ async function handleCreateChapterSubmit(e) {
   if (!name) return;
 
   const userRole = state.currentUser ? state.currentUser.role : 'alumni';
-  
+  let newChapObj = null;
+
   if (typeof API !== 'undefined') {
     const res = await API.submitChapter({ name, type, icon, description, createdByRole: userRole });
     if (res && res.chapter) {
-      if (res.status === 'approved') {
-        MOCK_CHAPTERS.push({ id: res.chapter.id, name, type, icon, members: 1, events: 0, parent: null });
-        showToast(`✅ Chapter "${name}" created and published!`);
-      } else {
-        showToast(`⏳ Chapter "${name}" submitted for Super Admin review!`);
-      }
+      newChapObj = {
+        id: res.chapter.id,
+        name: res.chapter.name || name,
+        type: res.chapter.type || type,
+        icon: res.chapter.icon || icon,
+        members: 1,
+        events: 0,
+        parent: null
+      };
     }
-  } else {
-    showToast(`⏳ Chapter "${name}" submitted for review!`);
   }
 
+  if (!newChapObj) {
+    newChapObj = { id: Date.now(), name, type, icon, members: 1, events: 0, parent: null };
+  }
+
+  // Add to local state array
+  const exists = MOCK_CHAPTERS.find(c => c.id === newChapObj.id);
+  if (!exists) MOCK_CHAPTERS.push(newChapObj);
+
+  showToast(`✅ Chapter "${name}" created and published!`);
+
   closeModal();
-  renderChapters();
-  if (typeof renderModerationPanel === 'function') renderModerationPanel();
+  await renderChapters();
+  selectChapter(newChapObj.id);
 }
 
 function showCreateNewsModal() {

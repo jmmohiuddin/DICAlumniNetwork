@@ -7,6 +7,14 @@
 
 /* ─── CSS VARIABLES ─── */
 :root {
+  /* Official Daffodil Brand Palette */
+  --daffodil-header: #0B3897;
+  --daffodil-footer: #1869BD;
+  --daffodil-primary: #003F7E;
+  --daffodil-primary-hover: #002D5A;
+  --daffodil-primary-active: #001F3F;
+  --daffodil-primary-disabled: rgba(0, 63, 126, 0.4);
+
   --bg-deep: #070B14;
   --bg-surface: #0D1526;
   --bg-card: #111B2E;
@@ -14,14 +22,14 @@
   --bg-glass: rgba(255, 255, 255, 0.04);
   --bg-glass-hover: rgba(255, 255, 255, 0.07);
   --border-glass: rgba(255, 255, 255, 0.08);
-  --border-glow: rgba(0, 168, 89, 0.35);
+  --border-glow: rgba(11, 56, 151, 0.4);
 
   --diu-green: #00A859;
-  --diu-blue: #005691;
-  --primary: #00A859;
-  --primary-light: #34D399;
-  --primary-dark: #007A3E;
-  --primary-glow: rgba(0, 168, 89, 0.25);
+  --diu-blue: #0B3897;
+  --primary: #003F7E;
+  --primary-light: #4A90E2;
+  --primary-dark: #002D5A;
+  --primary-glow: rgba(11, 56, 151, 0.25);
 
   --teal: #00D4AA;
   --teal-light: #33DDBB;
@@ -36,25 +44,71 @@
   --green: #34D399;
   --red: #F87171;
 
-  --text-primary: #F1F5FF;
-  --text-secondary: #8B9CC4;
-  --text-muted: #4A5A7A;
+  --text-primary: #FFFFFF;
+  --text-secondary: #A0B2D6;
+  --text-muted: #64748B;
 
   --bkash: #E2136E;
   --nagad: #FF6B00;
   --rocket: #8B2FC9;
 
-  --sidebar-w: 240px;
-  --topbar-h: 60px;
+  --sidebar-w: 250px;
+  --topbar-h: 64px;
+
+  /* Daffodil Border Radii Standard */
+  --radius-btn: 10px;
+  --radius-card: 14px;
+  --radius-input: 8px;
+  --radius-modal: 16px;
   --radius: 14px;
   --radius-sm: 8px;
-  --radius-lg: 20px;
-  --radius-xl: 28px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
 
   --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.4);
-  --shadow-glow: 0 0 30px rgba(0, 168, 89, 0.2);
+  --shadow-glow: 0 0 30px rgba(11, 56, 151, 0.3);
   --shadow-teal: 0 0 30px rgba(0, 212, 170, 0.15);
   --transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── LIGHT THEME OVERRIDES ─── */
+[data-theme="light"] {
+  --bg-deep: #F1F5F9;
+  --bg-surface: #FFFFFF;
+  --bg-card: #FFFFFF;
+  --bg-card-hover: #F8FAFC;
+  --bg-glass: rgba(255, 255, 255, 0.8);
+  --bg-glass-hover: rgba(255, 255, 255, 0.95);
+  --border-glass: #CBD5E1;
+  --border-glow: rgba(11, 56, 151, 0.3);
+
+  --text-primary: #0F172A;
+  --text-secondary: #334155;
+  --text-muted: #64748B;
+
+  --shadow-card: 0 4px 20px rgba(11, 56, 151, 0.08);
+  --shadow-glow: 0 0 20px rgba(11, 56, 151, 0.15);
+}
+
+/* ─── THEME TOGGLE BUTTON ─── */
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+  font-size: 16px;
+  cursor: pointer;
+  transition: var(--transition);
+  touch-action: manipulation;
+}
+.theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(1.05);
 }
 
 /* ─── RESET & BASE ─── */
@@ -133,7 +187,7 @@ body::before {
   gap: 8px;
   min-height: 44px;
   padding: 10px 20px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-btn);
   font-family: 'Inter', sans-serif;
   font-size: 14px;
   font-weight: 600;
@@ -151,13 +205,26 @@ body::before {
   transform: scale(0.97);
 }
 .btn-primary {
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  background: var(--daffodil-primary);
   color: #FFFFFF;
-  box-shadow: 0 4px 16px rgba(108,99,255,0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 14px rgba(0, 63, 126, 0.4);
 }
 .btn-primary:hover {
-  background: linear-gradient(135deg, var(--primary-light), var(--primary));
-  box-shadow: 0 6px 24px rgba(108,99,255,0.5);
+  background: var(--daffodil-primary-hover);
+  box-shadow: 0 6px 20px rgba(0, 63, 126, 0.6);
+  color: #FFFFFF;
+}
+.btn-primary:active {
+  background: var(--daffodil-primary-active);
+  transform: scale(0.98);
+}
+.btn-primary:disabled, .btn-primary[disabled] {
+  background: var(--daffodil-primary-disabled);
+  color: rgba(255, 255, 255, 0.5);
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
 }
 .btn-outline {
   background: transparent;
@@ -181,6 +248,67 @@ body::before {
   border: 1px solid rgba(248,113,113,0.3);
 }
 .btn-danger:hover { background: rgba(248,113,113,0.25); }
+
+/* ─── DAFFODIL OFFICIAL FOOTER (#1869BD) ─── */
+.daffodil-footer {
+  background: var(--daffodil-footer);
+  color: #FFFFFF;
+  padding: 32px 24px 84px 24px; /* extra bottom padding for mobile bottom nav */
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  margin-top: 40px;
+  position: relative;
+  z-index: 10;
+}
+.footer-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.footer-top {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+.footer-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.footer-brand-logo {
+  height: 38px;
+  width: auto;
+}
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 13px;
+}
+.footer-links a {
+  color: #FFFFFF;
+  text-decoration: none;
+  opacity: 0.9;
+  transition: var(--transition);
+}
+.footer-links a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+.footer-bottom {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+  opacity: 0.85;
+}
 .btn-full { width: 100%; justify-content: center; }
 .btn-sm { min-height: 38px; padding: 6px 14px; font-size: 12px; }
 
@@ -395,7 +523,7 @@ body::before {
 /* ─── SIDEBAR ─── */
 .sidebar {
   grid-row: 1 / 3;
-  background: rgba(10, 15, 28, 0.95);
+  background: var(--bg-surface);
   border-right: 1px solid var(--border-glass);
   display: flex;
   flex-direction: column;
@@ -405,14 +533,54 @@ body::before {
   overflow-y: auto;
   backdrop-filter: blur(20px);
 }
+
+/* Light Theme Sidebar Overrides */
+[data-theme="light"] .sidebar {
+  background: #FFFFFF;
+  border-right: 1px solid #CBD5E1;
+  box-shadow: 2px 0 16px rgba(11, 56, 151, 0.06);
+}
+[data-theme="light"] .nav-item {
+  color: #334155;
+}
+[data-theme="light"] .nav-item:hover {
+  background: rgba(11, 56, 151, 0.06);
+  color: #0B3897;
+}
+[data-theme="light"] .nav-item.active {
+  background: rgba(11, 56, 151, 0.1);
+  color: #0B3897;
+  border: 1px solid rgba(11, 56, 151, 0.2);
+}
+[data-theme="light"] .tenant-pill {
+  background: rgba(11, 56, 151, 0.08);
+  border: 1px solid rgba(11, 56, 151, 0.18);
+  color: #0B3897;
+}
+[data-theme="light"] .sidebar-user {
+  border-top: 1px solid #CBD5E1;
+  background: #F8FAFC;
+}
+[data-theme="light"] .user-name {
+  color: #0F172A;
+}
+[data-theme="light"] .user-role {
+  color: #64748B;
+}
 .sidebar-brand {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 10px;
-  padding: 18px 16px 14px;
+  padding: 16px;
   border-bottom: 1px solid var(--border-glass);
 }
-.sidebar-brand-name { font-size: 15px; font-weight: 800; background: linear-gradient(135deg, var(--primary-light), var(--teal)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; flex: 1; }
+.sidebar-brand-logo {
+  height: 42px;
+  width: auto;
+  max-width: 190px;
+  object-fit: contain;
+}
 .sidebar-close { display: none; background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 18px; }
 
 .tenant-pill {
@@ -508,22 +676,37 @@ body::before {
 .logout-btn { background: none; border: none; color: var(--text-muted); cursor: pointer; font-size: 16px; padding: 4px; border-radius: 4px; transition: var(--transition); }
 .logout-btn:hover { color: var(--red); }
 
-/* ─── TOPBAR ─── */
+/* ─── TOPBAR (DAFFODIL BRAND HEADER #0B3897) ─── */
 .topbar {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(7, 11, 20, 0.9);
-  border-bottom: 1px solid var(--border-glass);
+  background: var(--daffodil-header);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 4px 20px rgba(11, 56, 151, 0.4);
   backdrop-filter: blur(20px);
   display: flex;
   align-items: center;
   gap: 16px;
   padding: 0 24px;
   height: var(--topbar-h);
+  color: #FFFFFF;
 }
-.hamburger { display: none; background: none; border: none; color: var(--text-secondary); font-size: 22px; cursor: pointer; }
-.topbar-search { flex: 1; position: relative; max-width: 600px; }
+.topbar-brand-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 38px;
+  padding-right: 12px;
+  border-right: 1px solid rgba(255, 255, 255, 0.2);
+}
+.topbar-brand-logo img, .topbar-brand-logo svg {
+  height: 34px;
+  width: auto;
+  object-fit: contain;
+}
+.hamburger { display: none; background: none; border: none; color: #FFFFFF; font-size: 24px; cursor: pointer; }
+.topbar-search { flex: 1; position: relative; max-width: 540px; }
 .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; color: var(--text-muted); }
 .topbar-search-input {
   width: 100%;

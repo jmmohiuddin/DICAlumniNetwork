@@ -5,7 +5,7 @@
 
 const API_BASE_URL = window.location.origin;
 
-async function fetchWithTimeout(url, options = {}, timeoutMs = 1500) {
+async function fetchWithTimeout(url, options = {}, timeoutMs = 10000) {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
   try {

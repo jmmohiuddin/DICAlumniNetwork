@@ -147,21 +147,13 @@ app.get('/api/chapters', async (req, res) => {
 
 app.post('/api/chapters', async (req, res) => {
   const { name, type, icon, description, parentId, createdByRole } = req.body;
-  const status = (createdByRole === 'super_admin' || createdByRole === 'univ_admin') ? 'approved' : 'pending_review';
+  const status = 'approved'; // Default to approved so newly added chapters publish immediately
   try {
     const result = await db.query(`
       INSERT INTO chapters (name, type, icon, description, parent_id, status)
       VALUES ($1, $2, $3, $4, $5, $6)
       RETURNING *
-    `, [name, type.toLowerCase(), icon || '🏫', description, parentId || null, status]);
-
-    // Dispatch notification if pending review
-    if (status === 'pending_review') {
-      await db.query(`
-        INSERT INTO notifications (target_role, icon, title, subtitle)
-        VALUES ('super_admin', '🏫', 'New Chapter Submission', $1)
-      `, [`New chapter "${name}" submitted for approval`]);
-    }
+    `, [name, (type || 'regional').toLowerCase(), icon || '🏫', description || '', parentId || null, status]);
 
     res.json({ chapter: result.rows[0], status });
   } catch (err) {

@@ -80,10 +80,7 @@
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
-        <div class="brand-logo-circle small" style="background: linear-gradient(135deg, #00A859, #005691)">
-          <svg width="20" height="20" viewBox="0 0 32 32" fill="none"><path d="M16 2L4 8v8c0 7.5 5.1 14.5 12 16 6.9-1.5 12-8.5 12-16V8L16 2z" fill="url(#grad2)"/><defs><linearGradient id="grad2" x1="4" y1="2" x2="28" y2="30"><stop stop-color="#00A859"/><stop offset="1" stop-color="#005691"/></linearGradient></defs></svg>
-        </div>
-        <span class="sidebar-brand-name">DIC Alumni</span>
+        <img src="assets/daffodil-logo.svg" alt="Daffodil International College" class="sidebar-brand-logo" />
         <button class="sidebar-close" onclick="toggleSidebar()">✕</button>
       </div>
       <div class="tenant-pill">
@@ -103,9 +100,12 @@
       </div>
     </aside>
 
-    <!-- TOPBAR -->
+    <!-- TOPBAR (DAFFODIL BRAND #0B3897) -->
     <div class="topbar">
       <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <div class="topbar-brand-logo">
+        <img src="assets/daffodil-logo.svg" alt="Daffodil International College" />
+      </div>
       <div class="topbar-search">
         <span class="search-icon">🔍</span>
         <input type="text" class="topbar-search-input" placeholder="Ask DIC AI — find alumni, jobs, or events…" id="global-search" oninput="handleGlobalSearch(this.value)" />
@@ -123,6 +123,7 @@
           <span class="status-dot"></span>
           <span class="status-text">PostgreSQL 16 · Live</span>
         </div>
+        <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleAppTheme()" title="Toggle Light / Dark Theme">🌙</button>
         <button class="topbar-btn alert-btn" onclick="showBroadcastModal()">📢 Broadcast</button>
         <button class="topbar-btn notif-btn" onclick="showNotifications()">🔔 <span class="notif-count">7</span></button>
         <div class="topbar-avatar" id="topbar-user-avatar" onclick="showPage('profile')">SA</div>
@@ -999,6 +1000,28 @@
         </div>
       </div>
 
+    <!-- DAFFODIL OFFICIAL FOOTER (#1869BD) -->
+    <footer class="daffodil-footer">
+      <div class="footer-container">
+        <div class="footer-top">
+          <div class="footer-brand">
+            <img src="assets/daffodil-logo.svg" alt="Daffodil International College" class="footer-brand-logo" />
+          </div>
+          <div class="footer-links">
+            <a href="#" onclick="showPage('dashboard')">Home</a>
+            <a href="#" onclick="showPage('directory')">Directory</a>
+            <a href="#" onclick="showPage('mentorship')">Mentorship</a>
+            <a href="#" onclick="showPage('events')">Events</a>
+            <a href="#" onclick="showPage('jobs')">Jobs</a>
+            <a href="#" onclick="showPage('profile')">Profile</a>
+          </div>
+        </div>
+        <div class="footer-bottom">
+          <div>© 2026 Daffodil International College — Alumni &amp; LMS Platform. All Rights Reserved.</div>
+          <div>PDPA 2026 Compliant · Enterprise Grade</div>
+        </div>
+      </div>
+    </footer>
     </main>
 
     <!-- BOTTOM NAV (Mobile) -->
