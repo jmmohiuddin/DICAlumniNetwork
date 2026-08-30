@@ -77,10 +77,59 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
+// Legacy data (nav items, chapters, jobs, notifications…) still stores a single
+// emoji character per icon field. This maps that character to a Lucide icon
+// name so those fields can render as real icons without ever reflecting
+// arbitrary text into innerHTML — unmapped input silently falls back.
+const EMOJI_ICON_MAP = {
+  '🎓':'graduation-cap', '👥':'users', '👤':'user', '🔒':'lock', '🔓':'unlock',
+  '🔐':'lock-keyhole', '⚠':'triangle-alert', '✅':'circle-check-big', '✓':'check',
+  '✕':'x', '✗':'x', '❌':'circle-x', '🤝':'handshake', '🗑':'trash-2', '🛡':'shield',
+  '➕':'plus', '🎫':'ticket', '🎟':'ticket', '📋':'clipboard-list', '🔍':'search',
+  '📥':'download', '⬇':'download', '📍':'map-pin', '📌':'pin', '✎':'pen-line',
+  '✏':'pen-line', '✐':'pen-line', '📝':'file-text', '🌐':'globe', '🏫':'school',
+  '👑':'crown', '⚡':'zap', '🏢':'building-2', '🏛':'landmark', '🚀':'rocket',
+  '💰':'circle-dollar-sign', '📱':'smartphone', '📲':'smartphone', '🎉':'party-popper',
+  '📊':'bar-chart-3', '📈':'trending-up', '💼':'briefcase', '📜':'scroll-text',
+  '🌙':'moon', '🔔':'bell', '🏆':'trophy', '⚙':'settings', '🔄':'refresh-cw',
+  '🗳':'vote', '🟢':'circle', '🟡':'circle', '🔴':'circle', '🌟':'sparkle',
+  '⭐':'star', '✦':'sparkle', '✨':'sparkles', '🏪':'store', '📅':'calendar',
+  '🗓':'calendar-check', '🚚':'truck', '⬡':'hexagon', '📦':'package', '🎨':'palette',
+  '🛒':'shopping-cart', '🍎':'wallet', '☀':'sun', '📭':'inbox', '💚':'heart',
+  '❤':'heart', '💳':'credit-card', '🔑':'key', '🧩':'puzzle', '☰':'menu',
+  '🎙':'mic', '🔤':'languages', '💻':'laptop', '🎪':'layout-grid', '👋':'hand',
+  '📚':'book-open', '📷':'camera', '⛔':'ban', '📣':'megaphone', '📢':'megaphone',
+  '📰':'newspaper', '🚗':'car', '📡':'satellite', '🪪':'id-card', '📁':'folder',
+  '💾':'save', '🎯':'target', '💎':'gem', '💬':'message-circle', '✉':'mail',
+  '★':'star', '☆':'star', '🚦':'gauge', '🤖':'bot', '📄':'file-text',
+  '↻':'refresh-cw', '↩':'undo-2', '⇅':'repeat', '↑':'trending-up',
+  '◉':'users', '◈':'calendar-days', '◎':'id-card', '▦':'layout-dashboard',
+  '⏻':'log-out', '⏳':'hourglass', '⏱':'timer', '●':'circle-dot', '○':'circle',
+  '◀':'chevron-left', '▲':'chevron-up', '▼':'chevron-down', '⏭':'skip-forward',
+  '⊞':'layout-dashboard', '⟁':'webhook', '⊕':'map', '⟳':'users-round', 'ℹ':'info',
+  '🇬🇧':'flag', '🇺🇸':'flag',
+};
+
+function emojiIcon(rawEmoji, fallbackIconName) {
+  // v5 writes Lucide names directly into icon columns; older rows still hold
+  // an emoji glyph, so both are accepted and both render as an icon.
+  const looksLikeIconName = typeof rawEmoji === 'string' && /^[a-z][a-z0-9-]*$/.test(rawEmoji);
+  const name = EMOJI_ICON_MAP[rawEmoji] || (looksLikeIconName ? rawEmoji : null)
+             || fallbackIconName || 'circle';
+  return `<i data-lucide="${name}" class="ui-icon" aria-hidden="true"></i>`;
+}
+
 function formatDate(value) {
   if (!value) return '';
+  const s = String(value);
+  // Date-only values are formatted from their parts; see evDate().
+  const plain = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (plain) {
+    const M = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return plain[3] + ' ' + M[Number(plain[2]) - 1] + ' ' + plain[1];
+  }
   const d = new Date(value);
-  if (isNaN(d)) return String(value);
+  if (isNaN(d)) return s;
   return d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
@@ -123,10 +172,10 @@ function renderEmptyState(icon, title, subtitle = '') {
 function renderErrorState(message, retryFn) {
   return `
     <div class="state-panel state-error">
-      <div class="state-icon">⚠️</div>
+      <div class="state-icon"><i data-lucide="triangle-alert" class="ui-icon"></i></div>
       <div class="state-title">${escapeHtml(message)}</div>
       <div class="state-subtitle">The server or database did not respond.</div>
-      ${retryFn ? `<button class="btn btn-secondary state-retry" onclick="${retryFn}">↻ Retry</button>` : ''}
+      ${retryFn ? `<button class="btn btn-secondary state-retry" onclick="${retryFn}"><i data-lucide="refresh-cw" class="ui-icon"></i> Retry</button>` : ''}
     </div>
   `;
 }
@@ -257,7 +306,7 @@ function renderSidebarNav(role) {
     { id: 'directory', icon: '◉', label: 'Alumni Directory', roles: ['alumni', 'moderator', 'dept_admin', 'univ_admin', 'super_admin'] },
     { id: 'mentorship', icon: '⟳', label: 'Mentorship Hub', badge: '3', roles: ['alumni', 'moderator', 'univ_admin', 'super_admin'] },
     { id: 'donations', icon: '❤', label: 'Donations & Funds', roles: ['alumni', 'univ_admin', 'super_admin'] },
-    { id: 'events', icon: '◈', label: 'Events & Tickets', roles: ['alumni', 'dept_admin', 'univ_admin', 'super_admin'] },
+    { id: 'events', icon: 'calendar-days', label: 'Events & Tickets', roles: ['alumni', 'moderator', 'dept_admin', 'univ_admin', 'super_admin'] },
     { id: 'jobs', icon: '✦', label: 'Job Board', badge: '5', badgeNew: true, roles: ['alumni', 'dept_admin', 'univ_admin', 'super_admin'] },
     { id: 'analytics', icon: '▦', label: 'Executive Analytics', roles: ['dept_admin', 'univ_admin', 'super_admin'] },
     { id: 'career', icon: '📈', label: 'Career Progression', roles: ['alumni', 'super_admin'] },
@@ -274,7 +323,7 @@ function renderSidebarNav(role) {
   container.innerHTML = allowed.map(item => `
     ${item.isDivider ? '<div class="nav-divider"></div>' : ''}
     <a class="nav-item ${item.id === state.currentPage ? 'active' : ''}" onclick="showPage('${item.id}')" id="nav-${item.id}">
-      <span class="nav-icon">${item.icon}</span>
+      <span class="nav-icon">${emojiIcon(item.icon, 'circle')}</span>
       <span class="nav-label">${item.label}</span>
       ${item.badge ? `<span class="nav-badge ${item.badgeNew ? 'new' : ''}" ${item.badgeTeal ? 'style="background:var(--teal);color:var(--bg-deep)"' : ''}>${item.badge}</span>` : ''}
     </a>
@@ -329,42 +378,8 @@ function logout() {
   if (sisAnim) sisAnim.style.display = 'none';
 }
 
-function toggleAppTheme() {
-  const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', newTheme);
-  localStorage.setItem('dic_theme', newTheme);
-  
-  applyThemeToggleLabels(newTheme);
-  showToast(newTheme === 'dark' ? '🌙 Dark Mode Activated' : '☀️ Light Mode Activated');
-}
-
-// Keeps the topbar (desktop) and drawer (mobile) theme buttons in sync.
-function applyThemeToggleLabels(theme) {
-  const title = theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
-  const icon = theme === 'dark' ? '🌙' : '☀️';
-
-  const topbarBtn = document.getElementById('theme-toggle-btn');
-  if (topbarBtn) {
-    topbarBtn.innerHTML = icon;
-    topbarBtn.setAttribute('title', title);
-  }
-  const drawerBtn = document.getElementById('drawer-theme-btn');
-  if (drawerBtn) {
-    drawerBtn.innerHTML = `${icon} Theme`;
-    drawerBtn.setAttribute('title', title);
-  }
-}
-
-function initAppTheme() {
-  const savedTheme = localStorage.getItem('dic_theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', savedTheme);
-  applyThemeToggleLabels(savedTheme);
-}
-
 // ─── APP INITIALIZATION & ROLE-BASED DASHBOARDS ──────────────
 function initApp() {
-  initAppTheme();
   updateUserUI();
   renderSidebarNav(state.currentUser.role);
   renderDashboard();
@@ -374,7 +389,7 @@ function initApp() {
   renderMentorships();
   renderCampaignsEnhanced();
   if (typeof startCampaignTicker === 'function') startCampaignTicker();
-  renderEvents();
+  renderEventsPage();
   renderJobsEnhanced();
   renderChapters();
   renderNewsFeed();
@@ -416,10 +431,10 @@ function renderAlumniDashboard(page) {
   page.innerHTML = `
     <div class="page-header">
       <div>
-        <h1 class="page-title">Welcome back, ${u.name}! 👋</h1>
+        <h1 class="page-title">Welcome back, ${u.name}! <i data-lucide="hand" class="ui-icon"></i></h1>
         <p class="page-subtitle">Daffodil International College · ${u.dept}</p>
       </div>
-      <button class="btn btn-primary" onclick="showPage('profile')">◎ View Digital ID</button>
+      <button class="btn btn-primary" onclick="showPage('profile')"><i data-lucide="id-card" class="ui-icon"></i> View Digital ID</button>
     </div>
 
     <!-- PROFILE COMPLETENESS -->
@@ -430,46 +445,46 @@ function renderAlumniDashboard(page) {
         <div class="pc-sub">85% complete — Gold Tier Alumni Status</div>
       </div>
       <div class="pc-score-ring">
-        <div class="pc-ring-val" style="color:var(--teal)">85%</div>
+        <div class="pc-ring-val" style="color:var(--daffodil-primary)">85%</div>
       </div>
     </div>
 
     <div class="dashboard-split">
       <div class="dashboard-left">
         <div class="glass-card">
-          <div class="card-header"><h3 class="card-title">🤝 Recommended DIC Alumni Connections</h3></div>
+          <div class="card-header"><h3 class="card-title"><i data-lucide="handshake" class="ui-icon"></i> Recommended DIC Alumni Connections</h3></div>
           <div id="dash-alumni-grid" class="alumni-grid"></div>
         </div>
         <div class="glass-card mt-16">
-          <div class="card-header"><h3 class="card-title">📅 Upcoming DIC Events</h3></div>
+          <div class="card-header"><h3 class="card-title"><i data-lucide="calendar" class="ui-icon"></i> Upcoming DIC Events</h3></div>
           <div id="dash-events-grid" class="events-grid"></div>
         </div>
       </div>
       <div class="dashboard-right">
         <div class="glass-card">
-          <div class="card-header"><h3 class="card-title">🏆 Top Donors Leaderboard</h3><span class="card-badge amber">FY 2026</span></div>
+          <div class="card-header"><h3 class="card-title"><i data-lucide="trophy" class="ui-icon"></i> Top Donors Leaderboard</h3><span class="card-badge amber">FY 2026</span></div>
           <div id="donor-leaderboard"></div>
         </div>
         <div class="glass-card mt-16">
-          <div class="card-header"><h3 class="card-title">🗳 DIC Live Poll</h3></div>
+          <div class="card-header"><h3 class="card-title"><i data-lucide="vote" class="ui-icon"></i> DIC Live Poll</h3></div>
           <div id="dash-active-poll"></div>
         </div>
       </div>
     </div>
   `;
   renderAlumniGrid();
-  renderEvents();
+  renderEventsPage();
   renderDonorLeaderboard();
   renderActivePoll();
 }
 
-// 🛡 2. MODERATOR DASHBOARD
+// <i data-lucide="shield" class="ui-icon"></i> 2. MODERATOR DASHBOARD
 function renderModeratorDashboard(page) {
   const u = state.currentUser;
   page.innerHTML = `
     <div class="page-header">
       <div>
-        <h1 class="page-title">🛡 Community Moderation Center</h1>
+        <h1 class="page-title"><i data-lucide="shield" class="ui-icon"></i> Community Moderation Center</h1>
         <p class="page-subtitle">DIC Community Safety &amp; Approvals Control Panel</p>
       </div>
       <span class="card-badge teal">14 Pending Reviews</span>
@@ -485,13 +500,13 @@ function renderModeratorDashboard(page) {
     <div class="dashboard-split">
       <div class="dashboard-left">
         <div class="glass-card">
-          <div class="card-header"><h3 class="card-title">🔍 Pending Alumni Verification Queue</h3></div>
+          <div class="card-header"><h3 class="card-title"><i data-lucide="search" class="ui-icon"></i> Pending Alumni Verification Queue</h3></div>
           <div id="verification-queue"></div>
         </div>
       </div>
       <div class="dashboard-right">
         <div class="glass-card">
-          <div class="card-header"><h3 class="card-title">⚠️ Flagged Content Queue</h3></div>
+          <div class="card-header"><h3 class="card-title"><i data-lucide="triangle-alert" class="ui-icon"></i> Flagged Content Queue</h3></div>
           <div style="font-size:12px;color:var(--text-secondary)">
             <div style="padding:10px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:6px;margin-bottom:8px">
               <div style="font-weight:700;color:var(--amber)">Reported Discussion Post #482</div>
@@ -515,7 +530,7 @@ function renderDeptAdminDashboard(page) {
   page.innerHTML = `
     <div class="page-header">
       <div>
-        <h1 class="page-title">🏢 Department Admin Center</h1>
+        <h1 class="page-title"><i data-lucide="building-2" class="ui-icon"></i> Department Admin Center</h1>
         <p class="page-subtitle">Daffodil International College · ${u.dept}</p>
       </div>
       <select class="form-select sm" style="width:auto" onchange="showToast('Filtering for department: ' + this.value)">
@@ -536,13 +551,13 @@ function renderDeptAdminDashboard(page) {
     <div class="dashboard-split">
       <div class="dashboard-left">
         <div class="glass-card">
-          <div class="card-header"><h3 class="card-title">📈 CSE Alumni Placement Funnel</h3></div>
+          <div class="card-header"><h3 class="card-title"><i data-lucide="trending-up" class="ui-icon"></i> CSE Alumni Placement Funnel</h3></div>
           <canvas id="dashboard-chart" height="180"></canvas>
         </div>
       </div>
       <div class="dashboard-right">
         <div class="glass-card">
-          <div class="card-header"><h3 class="card-title">📋 CSE Verification Queue</h3></div>
+          <div class="card-header"><h3 class="card-title"><i data-lucide="clipboard-list" class="ui-icon"></i> CSE Verification Queue</h3></div>
           <div id="verification-queue"></div>
         </div>
       </div>
@@ -552,27 +567,27 @@ function renderDeptAdminDashboard(page) {
   setTimeout(initDashboardChart, 100);
 }
 
-// 🏛 4. COLLEGE ADMIN DASHBOARD
+// <i data-lucide="landmark" class="ui-icon"></i> 4. COLLEGE ADMIN DASHBOARD
 function renderUnivAdminDashboard(page) {
   const u = state.currentUser;
   page.innerHTML = `
     <div class="page-header">
       <div>
-        <h1 class="page-title">🏛 DIC Executive Command Center</h1>
+        <h1 class="page-title"><i data-lucide="landmark" class="ui-icon"></i> DIC Executive Command Center</h1>
         <p class="page-subtitle">Daffodil International College · FY 2026 Q3 Overview</p>
       </div>
       <div class="page-header-actions">
-        <button class="btn btn-primary" onclick="showBroadcastModal()">📢 College Broadcast</button>
+        <button class="btn btn-primary" onclick="showBroadcastModal()"><i data-lucide="megaphone" class="ui-icon"></i> College Broadcast</button>
       </div>
     </div>
 
     <div class="kpi-grid">
       <div class="kpi-card indigo">
-        <div class="kpi-icon">👥</div>
+        <div class="kpi-icon"><i data-lucide="users" class="ui-icon"></i></div>
         <div class="kpi-body">
           <div class="kpi-value" id="kpi-alumni">38,420</div>
           <div class="kpi-label">Total DIC Verified Alumni</div>
-          <div class="kpi-trend up">↑ 9.2% this quarter</div>
+          <div class="kpi-trend up"><i data-lucide="trending-up" class="ui-icon"></i> 9.2% this quarter</div>
         </div>
       </div>
       <div class="kpi-card teal">
@@ -580,19 +595,19 @@ function renderUnivAdminDashboard(page) {
         <div class="kpi-body">
           <div class="kpi-value" id="kpi-funds">৳45.2L</div>
           <div class="kpi-label">Funds Collected</div>
-          <div class="kpi-trend up">↑ 14.8% YoY</div>
+          <div class="kpi-trend up"><i data-lucide="trending-up" class="ui-icon"></i> 14.8% YoY</div>
         </div>
       </div>
       <div class="kpi-card amber">
-        <div class="kpi-icon">🤝</div>
+        <div class="kpi-icon"><i data-lucide="handshake" class="ui-icon"></i></div>
         <div class="kpi-body">
           <div class="kpi-value" id="kpi-mentors">3,800</div>
           <div class="kpi-label">Mentorship Connections</div>
-          <div class="kpi-trend up">↑ 83% completion</div>
+          <div class="kpi-trend up"><i data-lucide="trending-up" class="ui-icon"></i> 83% completion</div>
         </div>
       </div>
       <div class="kpi-card purple">
-        <div class="kpi-icon">🎫</div>
+        <div class="kpi-icon"><i data-lucide="ticket" class="ui-icon"></i></div>
         <div class="kpi-body">
           <div class="kpi-value" id="kpi-events">89%</div>
           <div class="kpi-label">Graduate Placement</div>
@@ -604,13 +619,13 @@ function renderUnivAdminDashboard(page) {
     <div class="dashboard-split mt-16">
       <div class="dashboard-left">
         <div class="glass-card">
-          <div class="card-header"><h3 class="card-title">📈 DIC 12-Month Alumni Engagement Trends</h3></div>
+          <div class="card-header"><h3 class="card-title"><i data-lucide="trending-up" class="ui-icon"></i> DIC 12-Month Alumni Engagement Trends</h3></div>
           <canvas id="dashboard-chart" height="180"></canvas>
         </div>
       </div>
       <div class="dashboard-right">
         <div class="glass-card">
-          <div class="card-header"><h3 class="card-title">🏆 Top Benefactors</h3></div>
+          <div class="card-header"><h3 class="card-title"><i data-lucide="trophy" class="ui-icon"></i> Top Benefactors</h3></div>
           <div id="donor-leaderboard"></div>
         </div>
       </div>
@@ -626,7 +641,7 @@ function renderSuperAdminDashboard(page) {
   page.innerHTML = `
     <div class="page-header">
       <div>
-        <h1 class="page-title">👑 DIC Super Admin Control Panel</h1>
+        <h1 class="page-title"><i data-lucide="crown" class="ui-icon"></i> DIC Super Admin Control Panel</h1>
         <p class="page-subtitle">Full Platform Infrastructure · Security · Server Health · Integrations</p>
       </div>
       <span class="card-badge teal">System Health: 100% Operational</span>
@@ -643,13 +658,13 @@ function renderSuperAdminDashboard(page) {
     <div class="dashboard-split">
       <div class="dashboard-left">
         <div class="glass-card">
-          <div class="card-header"><h3 class="card-title">📜 Immutable System Security Audit Trail</h3><button class="btn btn-outline btn-sm" onclick="showPage('admin')">View Full Audit Log →</button></div>
+          <div class="card-header"><h3 class="card-title"><i data-lucide="scroll-text" class="ui-icon"></i> Immutable System Security Audit Trail</h3><button class="btn btn-outline btn-sm" onclick="showPage('admin')">View Full Audit Log →</button></div>
           <div id="audit-log"></div>
         </div>
       </div>
       <div class="dashboard-right">
         <div class="glass-card">
-          <div class="card-header"><h3 class="card-title">⚙ Platform Feature Flags</h3></div>
+          <div class="card-header"><h3 class="card-title"><i data-lucide="settings" class="ui-icon"></i> Platform Feature Flags</h3></div>
           <div style="display:flex;flex-direction:column;gap:10px;font-size:12px">
             <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:var(--bg-glass);border-radius:6px">
               <span>OAuth2 Developer Gateway</span>
@@ -706,7 +721,7 @@ function showPage(page) {
   if (page === 'directory') renderAlumniGrid();
   if (page === 'mentorship') renderMentorships();
   if (page === 'donations') renderCampaignsEnhanced();
-  if (page === 'events') renderEvents('upcoming');
+  if (page === 'events') renderEventsPage();
   if (page === 'jobs') renderJobsEnhanced();
   if (page === 'career' && typeof renderCareerTracker === 'function') renderCareerTracker();
   if (page === 'apidev' && typeof renderAPIPage === 'function') renderAPIPage();
@@ -785,7 +800,7 @@ const CHART_DATA = {
     labels: ['Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
     data: [1240, 1380, 1520, 1690, 1820, 2100, 2340, 2580, 2820, 3100, 3540, 4120],
     label: 'Active Alumni',
-    color: '#6C63FF',
+    color: '#0B3897',
   },
   donations: {
     labels: ['Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul'],
@@ -867,12 +882,12 @@ function initAnalyticsChart() {
         {
           label: 'Active Alumni',
           data: [2100, 2340, 2580, 2820, 3100, 3540, 4120, null, null, null, null, null],
-          borderColor: '#6C63FF',
-          backgroundColor: '#6C63FF18',
+          borderColor: '#0B3897',
+          backgroundColor: '#0B389718',
           borderWidth: 2.5,
           fill: false,
           tension: 0.4,
-          pointBackgroundColor: '#6C63FF',
+          pointBackgroundColor: '#0B3897',
           pointRadius: 4,
         },
         {
@@ -897,7 +912,7 @@ function initAnalyticsChart() {
           // Compact swatches so the legend sits on one line at 375px instead of
           // consuming two rows of chart height.
           labels: {
-            color: '#8B9CC4',
+            color: '#334155',
             font: { family: 'Inter', size: 12 },
             padding: window.innerWidth < 900 ? 12 : 20,
             boxWidth: window.innerWidth < 900 ? 12 : 40,
@@ -911,14 +926,14 @@ function initAnalyticsChart() {
           borderColor: 'rgba(255,255,255,0.1)',
           borderWidth: 1,
           titleColor: '#F1F5FF',
-          bodyColor: '#8B9CC4',
+          bodyColor: '#C7D2E8',
           padding: 12,
           cornerRadius: 10,
         }
       },
       scales: {
-        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4A5A7A', font: { size: 11, family: 'Inter' } } },
-        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#4A5A7A', font: { size: 11, family: 'Inter' } } }
+        x: { grid: { color: 'rgba(11, 56, 151, 0.08)' }, ticks: { color: '#64748B', font: { size: 11, family: 'Inter' } } },
+        y: { grid: { color: 'rgba(11, 56, 151, 0.08)' }, ticks: { color: '#64748B', font: { size: 11, family: 'Inter' } } }
       }
     }
   });
@@ -941,7 +956,7 @@ function renderVerificationQueue() {
         <div class="queue-sub">${item.details}</div>
       </div>
       <div class="queue-actions">
-        <button class="approve-btn" onclick="approveAlumni('${item.name}')">✓ Approve</button>
+        <button class="approve-btn" onclick="approveAlumni('${item.name}')"><i data-lucide="check" class="ui-icon"></i> Approve</button>
         <button class="review-btn">Review</button>
       </div>
     </div>
@@ -981,7 +996,7 @@ async function renderAlumniGrid({ append = false } = {}) {
   const { alumni, total } = result;
 
   if (total === 0) {
-    container.innerHTML = renderEmptyState('🔍', 'No profiles match your search',
+    container.innerHTML = renderEmptyState('<i data-lucide="search" class="ui-icon"></i>', 'No profiles match your search',
       'Try a different name, company, skill, batch year or location.');
     if (countEl) countEl.textContent = 'Showing 0 profiles';
     if (loadMoreWrap) loadMoreWrap.style.display = 'none';
@@ -1045,7 +1060,7 @@ function connectAlumni(name, btn) {
   state.connectedAlumni[name] = true;
   
   if (btn) {
-    btn.innerHTML = '✓ Connected';
+    btn.innerHTML = '<i data-lucide="check" class="ui-icon"></i> Connected';
     btn.classList.add('connected');
     btn.setAttribute('disabled', 'true');
     btn.style.background = 'rgba(0,212,170,0.15)';
@@ -1054,7 +1069,7 @@ function connectAlumni(name, btn) {
   } else {
     document.querySelectorAll('.connect-btn').forEach(b => {
       if (b.getAttribute('onclick') && b.getAttribute('onclick').includes(name)) {
-        b.innerHTML = '✓ Connected';
+        b.innerHTML = '<i data-lucide="check" class="ui-icon"></i> Connected';
         b.classList.add('connected');
         b.setAttribute('disabled', 'true');
         b.style.background = 'rgba(0,212,170,0.15)';
@@ -1081,23 +1096,23 @@ function renderAlumniCard(a) {
       <div class="alumni-card-top">
         <div class="alumni-avatar ${a.verified ? 'verified-ring' : ''}" style="background: linear-gradient(135deg, ${color}40, ${color}20);">
           <span style="color:${color}">${escapeHtml(a.initials)}</span>
-          ${a.verified ? '<div class="verified-badge-icon">✓</div>' : ''}
+          ${a.verified ? '<div class="verified-badge-icon"><i data-lucide="check" class="ui-icon"></i></div>' : ''}
         </div>
         <div class="alumni-card-info">
           <div class="alumni-card-name">${escapeHtml(a.name)}</div>
           <div class="alumni-card-role">${escapeHtml(subtitle)}</div>
-          <div class="alumni-card-location">📍 ${escapeHtml(a.location || 'Location not set')}${a.batch ? ` · Batch ${a.batch}` : ''}</div>
+          <div class="alumni-card-location"><i data-lucide="map-pin" class="ui-icon"></i> ${escapeHtml(a.location || 'Location not set')}${a.batch ? ` · Batch ${a.batch}` : ''}</div>
         </div>
       </div>
       <div class="alumni-tags">
         ${(a.skills || []).map(s => `<span class="alumni-tag">${escapeHtml(s)}</span>`).join('')}
-        ${a.mentor ? '<span class="alumni-tag mentor-tag">🤝 Mentor</span>' : ''}
+        ${a.mentor ? '<span class="alumni-tag mentor-tag"><i data-lucide="handshake" class="ui-icon"></i> Mentor</span>' : ''}
       </div>
       <div class="alumni-card-actions">
         <button class="connect-btn ${isConn ? 'connected' : ''}"
                 onclick="event.stopPropagation(); connectAlumni('${nameAttr}', this)"
-                ${isConn ? 'disabled' : ''}>${isConn ? '✓ Connected' : '+ Connect'}</button>
-        ${a.mentor ? `<button class="mentor-req-btn" onclick="event.stopPropagation(); showMentorModal('${nameAttr}', ${a.id})">🤝 Request Mentorship</button>` : ''}
+                ${isConn ? 'disabled' : ''}>${isConn ? '<i data-lucide="check" class="ui-icon"></i> Connected' : '+ Connect'}</button>
+        ${a.mentor ? `<button class="mentor-req-btn" onclick="event.stopPropagation(); showMentorModal('${nameAttr}', ${a.id})"><i data-lucide="handshake" class="ui-icon"></i> Request Mentorship</button>` : ''}
       </div>
     </div>`;
 }
@@ -1117,7 +1132,7 @@ async function viewAlumniProfile(id) {
     showModal(`
       <div class="modal-header">
         <div class="modal-title">Profile unavailable</div>
-        <button class="modal-close" onclick="closeModal()">✕</button>
+        <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
       </div>
       ${renderErrorState('Could not load this alumni profile.', `closeModal(); viewAlumniProfile(${parseInt(id)})`)}
     `);
@@ -1136,14 +1151,14 @@ async function viewAlumniProfile(id) {
       <div style="display:flex;align-items:center;gap:12px">
         <div class="alumni-avatar verified-ring" style="width:52px;height:52px;font-size:18px;background:var(--teal)">
           <span>${profile.initials || profile.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</span>
-          <div class="verified-badge-icon">✓</div>
+          <div class="verified-badge-icon"><i data-lucide="check" class="ui-icon"></i></div>
         </div>
         <div style="flex:1">
           <div class="onboarding-title" style="font-size:18px">${profile.name}</div>
           <div class="onboarding-sub">${[profile.jobTitle, profile.company].filter(Boolean).join(" · ") || "Profile incomplete"}</div>
-          <div style="font-size:11px;color:var(--teal);margin-top:2px">🎓 ${val(profile.degree)}${profile.batch ? ` (Batch ${profile.batch})` : ""} · ${val(profile.department)}</div>
+          <div style="font-size:11px;color:var(--teal);margin-top:2px"><i data-lucide="graduation-cap" class="ui-icon"></i> ${val(profile.degree)}${profile.batch ? ` (Batch ${profile.batch})` : ""} · ${val(profile.department)}</div>
         </div>
-        <button class="modal-close" onclick="closeModal()">✕</button>
+        <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
       </div>
     </div>
 
@@ -1151,7 +1166,7 @@ async function viewAlumniProfile(id) {
       <!-- AI MENTORSHIP VECTOR MATCH BADGE (REQ-04) -->
       <div style="background:linear-gradient(135deg, rgba(0,168,89,0.15), rgba(0,86,145,0.15));border:1px solid rgba(0,168,89,0.3);border-radius:var(--radius-sm);padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:22px">🤖</span>
+          <span style="font-size:22px"><i data-lucide="bot" class="ui-icon"></i></span>
           <div>
             <div style="font-weight:700;font-size:13px;color:var(--teal)">${matchScore}% AI Mentorship Career Vector Match</div>
             <div style="font-size:11px;color:var(--text-secondary)">Evaluated against Industry (25%), Skill Gap (20%), and Campus Involvement</div>
@@ -1162,23 +1177,23 @@ async function viewAlumniProfile(id) {
 
       <!-- VERIFICATION BADGES -->
       <div class="verification-badges-grid">
-        ${profile.studentId ? `<span class="verify-pill">✓ Student ID ${escapeHtml(profile.studentId)}</span>` : ""}
-        ${profile.email ? `<span class="verify-pill">✓ Email Verified (${escapeHtml(profile.email)})</span>` : ""}
-        <span class="verify-pill">✓ DIC Alumni Board Verified</span>
+        ${profile.studentId ? `<span class="verify-pill"><i data-lucide="check" class="ui-icon"></i> Student ID ${escapeHtml(profile.studentId)}</span>` : ""}
+        ${profile.email ? `<span class="verify-pill"><i data-lucide="check" class="ui-icon"></i> Email Verified (${escapeHtml(profile.email)})</span>` : ""}
+        <span class="verify-pill"><i data-lucide="check" class="ui-icon"></i> DIC Alumni Board Verified</span>
       </div>
 
       <!-- ABOUT BIO -->
       <div class="profile-section-card">
-        <div class="profile-section-title" style="font-size:13px;font-weight:700;color:var(--teal)">📌 About &amp; Biography</div>
+        <div class="profile-section-title" style="font-size:13px;font-weight:700;color:var(--teal)"><i data-lucide="pin" class="ui-icon"></i> About &amp; Biography</div>
         <div style="font-size:13px;color:var(--text-primary);margin-top:6px">${val(profile.bio)}</div>
       </div>
 
       <!-- CAREER & LOCATION -->
       <div class="profile-section-card">
-        <div class="profile-section-title" style="font-size:13px;font-weight:700;color:var(--teal)">💼 Professional &amp; Location Details</div>
+        <div class="profile-section-title" style="font-size:13px;font-weight:700;color:var(--teal)"><i data-lucide="briefcase" class="ui-icon"></i> Professional &amp; Location Details</div>
         <div class="field-grid-2" style="margin-top:8px">
           <div><div class="field-label">Current Role &amp; Employer</div><div class="field-val">${profile.jobTitle || profile.company ? escapeHtml([profile.jobTitle, profile.company].filter(Boolean).join(" at ")) : unset}</div></div>
-          <div><div class="field-label">Geographical Location</div><div class="field-val">📍 ${val(profile.location)}</div></div>
+          <div><div class="field-label">Geographical Location</div><div class="field-val"><i data-lucide="map-pin" class="ui-icon"></i> ${val(profile.location)}</div></div>
           <div><div class="field-label">Primary Email</div><div class="field-val">${val(profile.email)}</div></div>
           <div><div class="field-label">Mobile Number</div><div class="field-val">${val(profile.mobile)}</div></div>
         </div>
@@ -1186,7 +1201,7 @@ async function viewAlumniProfile(id) {
 
       <!-- SKILLS -->
       <div class="profile-section-card">
-        <div class="profile-section-title" style="font-size:13px;font-weight:700;color:var(--teal)">⚡ Core Expertise &amp; Skills</div>
+        <div class="profile-section-title" style="font-size:13px;font-weight:700;color:var(--teal)"><i data-lucide="zap" class="ui-icon"></i> Core Expertise &amp; Skills</div>
         <div class="alumni-tags" style="margin-top:8px">
           ${(profile.skills && profile.skills.length) ? profile.skills.map(s => `<span class="alumni-tag">${escapeHtml(s)}</span>`).join('') : unset}
         </div>
@@ -1194,14 +1209,14 @@ async function viewAlumniProfile(id) {
 
       <!-- PRD UTILITIES (DIGITAL PASS & DSAR EXPORT) -->
       <div style="display:flex;gap:8px">
-        <button class="btn btn-outline btn-sm" style="flex:1" onclick="showToast('🎟 Generated DIC Wallet Pass (Apple/Google PKPass)')">🎟 Download Digital Pass</button>
-        <button class="btn btn-outline btn-sm" style="flex:1" onclick="exportProfileDSAR('${profile.name}')">📥 Export Data (DSAR JSON)</button>
+        <button class="btn btn-outline btn-sm" style="flex:1" onclick="showToast('🎟 Generated DIC Wallet Pass (Apple/Google PKPass)')"><i data-lucide="ticket" class="ui-icon"></i> Download Digital Pass</button>
+        <button class="btn btn-outline btn-sm" style="flex:1" onclick="exportProfileDSAR('${profile.name}')"><i data-lucide="download" class="ui-icon"></i> Export Data (DSAR JSON)</button>
       </div>
 
       <!-- ACTION BUTTONS -->
       <div class="field-grid-2" style="margin-top:10px">
         <button class="btn btn-primary btn-full" onclick="closeModal(); connectAlumni('${profile.name}')">+ Connect</button>
-        <button class="btn btn-outline btn-full" onclick="closeModal(); showMentorModal('${escapeHtml(profile.name).replace(/'/g, '&#39;')}', ${profile.id})">🤝 Request Mentorship</button>
+        <button class="btn btn-outline btn-full" onclick="closeModal(); showMentorModal('${escapeHtml(profile.name).replace(/'/g, '&#39;')}', ${profile.id})"><i data-lucide="handshake" class="ui-icon"></i> Request Mentorship</button>
       </div>
     </div>
   `);
@@ -1230,15 +1245,15 @@ async function renderMentorships() {
         const initials = isMentor ? m.mentee_initials : m.mentor_initials;
         return `
         <div class="mentorship-connection">
-          <div class="alumni-avatar" style="width:44px;height:44px;background:linear-gradient(135deg,rgba(108,99,255,0.3),rgba(0,212,170,0.3));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;">${escapeHtml(initials || '??')}</div>
+          <div class="alumni-avatar" style="width:44px;height:44px;background:linear-gradient(135deg,rgba(11,56,151,0.3),rgba(0,212,170,0.3));border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;">${escapeHtml(initials || '??')}</div>
           <div style="flex:1;min-width:0">
             <div style="font-weight:700;font-size:14px">${escapeHtml(other)}</div>
             <div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(m.subject)}</div>
           </div>
-          <span class="mentorship-type-badge ${isMentor ? 'mentor' : 'mentee'}">${isMentor ? '🎓 Mentoring' : '📚 Learning'}</span>
+          <span class="mentorship-type-badge ${isMentor ? 'mentor' : 'mentee'}">${isMentor ? '<i data-lucide="graduation-cap" class="ui-icon"></i> Mentoring' : '<i data-lucide="book-open" class="ui-icon"></i> Learning'}</span>
           <button class="btn btn-ghost btn-sm" onclick="respondToMentorship(${m.id}, 'complete')">Complete</button>
         </div>`;
-      }).join('') : renderEmptyState('🤝', 'No active mentorships', 'Accepted mentorship connections will appear here.');
+      }).join('') : renderEmptyState('<i data-lucide="handshake" class="ui-icon"></i>', 'No active mentorships', 'Accepted mentorship connections will appear here.');
     }
   }
 
@@ -1246,7 +1261,7 @@ async function renderMentorships() {
     if (apiFailed(data)) {
       pending.innerHTML = '';
     } else if (data.incoming.length === 0) {
-      pending.innerHTML = renderEmptyState('📭', 'No pending requests');
+      pending.innerHTML = renderEmptyState('<i data-lucide="inbox" class="ui-icon"></i>', 'No pending requests');
     } else {
       pending.innerHTML = data.incoming.map(r => {
         const daysLeft = Math.max(0, Math.ceil((new Date(r.expires_at) - Date.now()) / 86400000));
@@ -1257,7 +1272,7 @@ async function renderMentorships() {
             <div style="font-weight:600;font-size:13px">${escapeHtml(r.mentee_name)}</div>
             <div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(r.subject)}</div>
           </div>
-          <span class="expiry-badge">⏱ ${daysLeft}d left</span>
+          <span class="expiry-badge"><i data-lucide="timer" class="ui-icon"></i> ${daysLeft}d left</span>
           <button class="btn btn-sm btn-primary" onclick="respondToMentorship(${r.id}, 'accept')">Accept</button>
           <button class="btn btn-sm btn-ghost" onclick="respondToMentorship(${r.id}, 'decline')">Decline</button>
         </div>`;
@@ -1269,7 +1284,7 @@ async function renderMentorships() {
     if (apiFailed(suggestions)) {
       suggested.innerHTML = renderErrorState('Could not load mentor suggestions.', 'renderMentorships()');
     } else if (suggestions.length === 0) {
-      suggested.innerHTML = renderEmptyState('✨', 'No mentor matches yet');
+      suggested.innerHTML = renderEmptyState('<i data-lucide="sparkles" class="ui-icon"></i>', 'No mentor matches yet');
     } else {
       suggested.innerHTML = suggestions.map(m => `
         <div class="suggested-mentor-card">
@@ -1290,728 +1305,34 @@ async function renderMentorships() {
 // ─── EVENTS & TICKETING (REQ-06) ───
 // Reads from PostgreSQL, shows the signed-in user's ticket state, and drives
 // registration / cancellation / QR check-in through the real endpoints.
-async function renderEvents(filter = 'upcoming') {
-  const containers = renderTargets('events-grid');
-  if (!containers.length) return;
-  const container = { set innerHTML(v) { containers.forEach(c => c.innerHTML = v); } };
-
-  if (filter === 'checkin') {
-    container.innerHTML = `
-      <div class="glass-card" style="grid-column:1/-1;padding:28px">
-        <div style="text-align:center;font-size:44px;margin-bottom:12px">📷</div>
-        <div style="text-align:center;font-size:19px;font-weight:800;margin-bottom:6px">QR Check-In Scanner</div>
-        <div style="text-align:center;color:var(--text-secondary);margin-bottom:20px">Scan or type an attendee ticket code to check them in.</div>
-        <form onsubmit="handleCheckIn(event)" style="max-width:420px;margin:0 auto">
-          <div class="input-group">
-            <label class="input-label">Ticket Code</label>
-            <input type="text" id="checkin-code" class="form-input" placeholder="DIC-TKT-XXXXX-XXXXXX" autocomplete="off" required />
-          </div>
-          <button type="submit" class="btn btn-primary btn-full">✓ Check In Attendee</button>
-        </form>
-        <div id="checkin-result" style="max-width:420px;margin:16px auto 0"></div>
-      </div>`;
-    return;
-  }
-
-  container.innerHTML = renderSkeletonCards(3, 'event');
-  const events = await API.getEvents();
-
-  if (apiFailed(events)) {
-    container.innerHTML = renderErrorState(events?.error || 'Could not load events.', `renderEvents('${filter}')`);
-    return;
-  }
-
-  const list = events.filter(e => filter === 'past' ? e.status === 'past' : e.status !== 'past');
-
-  if (list.length === 0) {
-    container.innerHTML = renderEmptyState('📅',
-      filter === 'past' ? 'No past events' : 'No upcoming events',
-      filter === 'past' ? 'Completed events will be archived here.' : 'New events will appear here once published.');
-    return;
-  }
-
-  const canManage = state.currentUser && ['super_admin', 'univ_admin', 'dept_admin', 'moderator'].includes(state.currentUser.role);
-
-  container.innerHTML = list.map(e => {
-    const registered = e.registered_live ?? e.registered_count ?? 0;
-    const pct = e.capacity ? Math.min(100, Math.round((registered / e.capacity) * 100)) : 0;
-    const full = registered >= e.capacity;
-    return `
-    <div class="event-card">
-      <div class="event-card-banner" style="background: linear-gradient(135deg, rgba(108,99,255,0.15), rgba(0,212,170,0.1))">
-        ${escapeHtml(e.emoji || '🎓')}
-        <span class="event-status ${full ? 'sold-out' : e.status}">${full ? '🔴 Full' : '🟢 Open'}</span>
-      </div>
-      <div class="event-card-body">
-        <div style="font-size:10px;font-weight:700;color:var(--primary-light);margin-bottom:4px;text-transform:uppercase">${escapeHtml(e.type || 'Event')}</div>
-        <div class="event-title">${escapeHtml(e.title)}</div>
-        <div class="event-meta">📅 ${escapeHtml(e.event_date || 'TBA')}${e.event_time ? ` · ${escapeHtml(e.event_time)}` : ''}</div>
-        <div class="event-meta">📍 ${escapeHtml(e.venue)}</div>
-        <div class="event-capacity-track"><div class="event-capacity-fill" style="width:${pct}%"></div></div>
-        <div class="event-capacity-meta">
-          <span>${registered.toLocaleString()} / ${Number(e.capacity).toLocaleString()} registered</span>
-          <span>${escapeHtml(e.price || 'Free')}</span>
-        </div>
-        <div class="event-card-actions">
-          ${e.is_registered
-            ? `<button class="btn btn-outline btn-sm" onclick="viewMyTicket(${e.id})">🎫 View Ticket</button>
-               <button class="btn btn-ghost btn-sm" onclick="cancelTicket(${e.id}, '${escapeHtml(e.title).replace(/'/g, '&#39;')}')">Cancel</button>`
-            : `<button class="btn btn-primary btn-sm" onclick="registerForEvent(${e.id}, '${escapeHtml(e.title).replace(/'/g, '&#39;')}', ${full})">${full ? '⏳ Join Waitlist' : '🎫 Get Ticket'}</button>`}
-          ${canManage ? `<button class="btn btn-ghost btn-sm" onclick="showAttendeesModal(${e.id})">👥 Attendees</button>` : ''}
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function filterEvents(filter, btn) {
-  document.querySelectorAll('#public-events-view .events-tabs .chart-tab').forEach(t => t.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  renderEvents(filter);
-}
-
-// ─── EVENT MANAGEMENT PLANNER WORKSPACE ENGINE ───
-let CURRENT_PLANNER_DATA = null;
-let CURRENT_PLANNER_EVENT_ID = 1;
-let ACTIVE_PLANNER_TAB = 'overview';
-
-function switchEventWorkspaceMode(mode, btn) {
-  document.querySelectorAll('.events-tabs .chart-tab').forEach(t => t.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-
-  const plannerView = document.getElementById('planner-workspace-view');
-  const publicView = document.getElementById('public-events-view');
-
-  if (mode === 'planner') {
-    if (plannerView) plannerView.classList.remove('hidden');
-    if (publicView) publicView.classList.add('hidden');
-    loadEventPlannerWorkspace(1);
-  } else {
-    if (plannerView) plannerView.classList.add('hidden');
-    if (publicView) publicView.classList.remove('hidden');
-    renderEvents('upcoming');
-  }
-}
-
-async function loadEventPlannerWorkspace(eventId = 1) {
-  const container = document.getElementById("planner-tab-content");
-  if (container) container.innerHTML = renderSkeletonCards(3, "planner");
-
-  // One bundled call returns all thirteen planner sections from PostgreSQL.
-  // This previously fell back to ~80 lines of hardcoded sample data whenever
-  // the request failed, which made an outage look like a populated workspace.
-  const data = await API.getPlannerWorkspace(eventId);
-
-  if (apiFailed(data)) {
-    if (container) container.innerHTML = renderErrorState(data?.error || "Could not load the planner workspace.", "loadEventPlannerWorkspace(" + eventId + ")");
-    return;
-  }
-
-  CURRENT_PLANNER_DATA = data;
-  CURRENT_PLANNER_EVENT_ID = eventId;
-  renderPlannerTabContent(ACTIVE_PLANNER_TAB);
-}
-
-function switchPlannerTab(tabName, btn) {
-  ACTIVE_PLANNER_TAB = tabName;
-  document.querySelectorAll('#planner-workspace-view .analytics-tabs .chart-tab').forEach(t => t.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  renderPlannerTabContent(tabName);
-}
-
-function renderPlannerTabContent(tab) {
-  const container = document.getElementById('planner-tab-content');
-  if (!container || !CURRENT_PLANNER_DATA) return;
-
-  // Modules added in Phase 6 render through their own function.
-  if (['vendors', 'timeline', 'logistics'].includes(tab)) {
-    renderPlannerExtraTab(tab);
-    return;
-  }
-
-  const p = CURRENT_PLANNER_DATA.proposal;
-  const b = CURRENT_PLANNER_DATA.budgets;
-  const s = CURRENT_PLANNER_DATA.sponsors;
-  const t = CURRENT_PLANNER_DATA.tasks;
-  const c = CURRENT_PLANNER_DATA.committees || [];
-  const vendors = CURRENT_PLANNER_DATA.vendors || [];
-  const timeline = CURRENT_PLANNER_DATA.timeline || [];
-  const logistics = CURRENT_PLANNER_DATA.logistics || [];
-  const marketing = CURRENT_PLANNER_DATA.marketing || [];
-  const meetings = CURRENT_PLANNER_DATA.meetings || [];
-
-  // Calculate Metrics
-  const totalEstBudget = b.reduce((acc, curr) => acc + Number(curr.estimated_cost), 0);
-  const totalActBudget = b.reduce((acc, curr) => acc + Number(curr.actual_cost), 0);
-  const totalSponsorRev = s.reduce((acc, curr) => acc + Number(curr.contribution_amount), 0);
-  const completedTasks = t.filter(x => x.status === 'completed').length;
-
-  if (tab === 'overview') {
-    container.innerHTML = `
-      <div class="planner-metrics-ribbon">
-        <div class="pmetric-card">
-          <div class="pmetric-val">৳${(totalEstBudget/100000).toFixed(2)}L</div>
-          <div class="pmetric-lab">Estimated Budget</div>
-        </div>
-        <div class="pmetric-card">
-          <div class="pmetric-val" style="color:var(--teal)">৳${(totalSponsorRev/100000).toFixed(2)}L</div>
-          <div class="pmetric-lab">Sponsor Revenue</div>
-        </div>
-        <div class="pmetric-card">
-          <div class="pmetric-val" style="color:var(--amber)">${completedTasks}/${t.length}</div>
-          <div class="pmetric-lab">Tasks Completed</div>
-        </div>
-        <div class="pmetric-card">
-          <div class="pmetric-val">${p.expected_attendance}</div>
-          <div class="pmetric-lab">Expected Pax</div>
-        </div>
-      </div>
-
-      <div class="dashboard-split">
-        <div class="glass-card">
-          <div class="card-header">
-            <h3 class="card-title">🚀 Proposal Charter &amp; Executive Summary</h3>
-            <span class="card-badge teal">APPROVED</span>
-          </div>
-          <div style="font-size:14px;font-weight:700;margin-bottom:8px">${p.name}</div>
-          <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:14px">${p.description}</p>
-          <div class="field-grid-2">
-            <div><div class="field-label">Target Audience</div><div class="field-val">${p.target_audience}</div></div>
-            <div><div class="field-label">Venue &amp; Date</div><div class="field-val">📍 ${p.venue} · 📅 ${p.event_date}</div></div>
-            <div><div class="field-label">Event Organizer</div><div class="field-val">${p.organizer_name}</div></div>
-            <div><div class="field-label">Department</div><div class="field-val">${p.department}</div></div>
-          </div>
-        </div>
-
-        <div class="glass-card">
-          <div class="card-header"><h3 class="card-title">👥 Event Committees</h3></div>
-          <div style="display:flex;flex-direction:column;gap:10px">
-            ${c.map(comm => `
-              <div style="padding:10px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
-                <div style="font-weight:700;font-size:13px;color:var(--teal)">${comm.name}</div>
-                <div style="font-size:12px;color:var(--text-secondary)">Lead: ${comm.leader_name} · ${comm.members_count} Members</div>
-                <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Budget Limit: ৳${(comm.budget_allocated/1000).toFixed(0)}k</div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      </div>`;
-  } else if (tab === 'budget') {
-    container.innerHTML = `
-      <div class="glass-card mb-16">
-        <div class="card-header">
-          <h3 class="card-title">💰 Budget Planning &amp; Variance Calculator</h3>
-          <button class="btn btn-sm btn-primary" onclick="showAddBudgetModal()">+ Add Expense</button>
-        </div>
-        <div class="planner-metrics-ribbon mb-16">
-          <div class="pmetric-card">
-            <div class="pmetric-val">৳${totalEstBudget.toLocaleString()}</div>
-            <div class="pmetric-lab">Total Estimated</div>
-          </div>
-          <div class="pmetric-card">
-            <div class="pmetric-val" style="color:var(--amber)">৳${totalActBudget.toLocaleString()}</div>
-            <div class="pmetric-lab">Actual Spent</div>
-          </div>
-          <div class="pmetric-card">
-            <div class="pmetric-val" style="color:var(--teal)">৳${(totalEstBudget - totalActBudget).toLocaleString()}</div>
-            <div class="pmetric-lab">Remaining Budget</div>
-          </div>
-          <div class="pmetric-card">
-            <div class="pmetric-val" style="color:var(--teal)">🟢 HEALTHY</div>
-            <div class="pmetric-lab">Budget Variance</div>
-          </div>
-        </div>
-
-        <table style="width:100%;border-collapse:collapse;font-size:13px">
-          <thead>
-            <tr style="border-bottom:1px solid var(--border-glass);text-align:left;color:var(--text-secondary)">
-              <th style="padding:8px">Category</th>
-              <th style="padding:8px">Vendor Name</th>
-              <th style="padding:8px">Estimated</th>
-              <th style="padding:8px">Actual Cost</th>
-              <th style="padding:8px">Variance</th>
-              <th style="padding:8px">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${b.map(item => `
-              <tr style="border-bottom:1px solid var(--border-glass)">
-                <td style="padding:8px;font-weight:600">${item.category}</td>
-                <td style="padding:8px;color:var(--text-secondary)">${item.vendor_name}</td>
-                <td style="padding:8px">৳${Number(item.estimated_cost).toLocaleString()}</td>
-                <td style="padding:8px;font-weight:700">৳${Number(item.actual_cost).toLocaleString()}</td>
-                <td style="padding:8px;color:${item.estimated_cost >= item.actual_cost ? 'var(--teal)' : 'var(--red)'}">
-                  ৳${(item.estimated_cost - item.actual_cost).toLocaleString()}
-                </td>
-                <td style="padding:8px"><span class="card-badge teal">${item.payment_status.toUpperCase()}</span></td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>`;
-  } else if (tab === 'sponsors') {
-    container.innerHTML = `
-      <div class="glass-card">
-        <div class="card-header">
-          <h3 class="card-title">🤝 Sponsor CRM &amp; Deal Pipeline</h3>
-          <button class="btn btn-sm btn-primary" onclick="showAddSponsorModal()">+ Add Sponsor</button>
-        </div>
-        <div class="campaigns-grid" style="margin-top:12px">
-          ${s.map(sp => `
-            <div class="glass-card sponsor-tier-card ${sp.package_tier}-tier">
-              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                <span class="priority-tag critical" style="text-transform:uppercase;background:var(--primary-glow)">${sp.package_tier} SPONSOR</span>
-                <span class="card-badge teal">${sp.pipeline_status.toUpperCase()}</span>
-              </div>
-              <div style="font-size:16px;font-weight:800">${sp.company}</div>
-              <div style="font-size:12px;color:var(--text-secondary)">👤 ${sp.contact_person}</div>
-              <div style="font-size:18px;font-weight:800;color:var(--teal);margin:8px 0">৳${Number(sp.contribution_amount).toLocaleString()}</div>
-              <div style="font-size:11px;color:var(--text-muted)">📋 ${sp.deliverables}</div>
-            </div>
-          `).join('')}
-        </div>
-      </div>`;
-  } else if (tab === 'tasks') {
-    const todoTasks = t.filter(x => x.status === 'todo');
-    const inProgTasks = t.filter(x => x.status === 'in_progress');
-    const blockedTasks = t.filter(x => x.status === 'blocked');
-    const doneTasks = t.filter(x => x.status === 'completed');
-
-    container.innerHTML = `
-      <div class="glass-card">
-        <div class="card-header">
-          <h3 class="card-title">📋 Task Management Kanban Board</h3>
-          <button class="btn btn-sm btn-primary" onclick="showAddTaskModal()">+ New Task</button>
-        </div>
-
-        <div class="kanban-board-grid">
-          <div class="kanban-column">
-            <div class="kanban-column-header"><span>📌 TO DO</span><span class="card-badge">${todoTasks.length}</span></div>
-            ${renderKanbanCards(todoTasks)}
-          </div>
-          <div class="kanban-column">
-            <div class="kanban-column-header"><span>⚡ IN PROGRESS</span><span class="card-badge teal">${inProgTasks.length}</span></div>
-            ${renderKanbanCards(inProgTasks)}
-          </div>
-          <div class="kanban-column">
-            <div class="kanban-column-header"><span>⛔ BLOCKED</span><span class="card-badge red">${blockedTasks.length}</span></div>
-            ${renderKanbanCards(blockedTasks)}
-          </div>
-          <div class="kanban-column">
-            <div class="kanban-column-header"><span>✅ COMPLETED</span><span class="card-badge indigo">${doneTasks.length}</span></div>
-            ${renderKanbanCards(doneTasks)}
-          </div>
-        </div>
-      </div>`;
-  } else if (tab === 'procurement') {
-    container.innerHTML = `
-      <div class="glass-card">
-        <div class="card-header"><h3 class="card-title">🛒 Procurement &amp; Vendor Shopping List</h3></div>
-        <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:10px">
-          <thead>
-            <tr style="border-bottom:1px solid var(--border-glass);text-align:left;color:var(--text-secondary)">
-              <th style="padding:8px">Item</th>
-              <th style="padding:8px">Category</th>
-              <th style="padding:8px">Qty</th>
-              <th style="padding:8px">Estimated Price</th>
-              <th style="padding:8px">Actual Price</th>
-              <th style="padding:8px">Vendor</th>
-              <th style="padding:8px">Delivery Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${CURRENT_PLANNER_DATA.procurement.map(item => `
-              <tr style="border-bottom:1px solid var(--border-glass)">
-                <td style="padding:8px;font-weight:700">${item.item_name}</td>
-                <td style="padding:8px">${item.category}</td>
-                <td style="padding:8px">${item.quantity}</td>
-                <td style="padding:8px">৳${Number(item.estimated_price).toLocaleString()}</td>
-                <td style="padding:8px">৳${Number(item.actual_price).toLocaleString()}</td>
-                <td style="padding:8px;color:var(--text-secondary)">${item.vendor_name}</td>
-                <td style="padding:8px"><span class="card-badge teal">${item.delivery_status.toUpperCase()}</span></td>
-              </tr>
-            `).join('')}
-          </tbody>
-        </table>
-      </div>`;
-  } else if (tab === 'volunteers') {
-    container.innerHTML = `
-      <div class="field-grid-2" style="gap:16px">
-        <div class="glass-card">
-          <div class="card-header"><h3 class="card-title">🛡 Volunteer Roster &amp; Shifts</h3></div>
-          <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
-            ${CURRENT_PLANNER_DATA.volunteers.map(v => `
-              <div style="padding:10px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
-                <div style="font-weight:700;font-size:13px">${v.volunteer_name}</div>
-                <div style="font-size:12px;color:var(--text-secondary)">${v.assigned_committee} · ⏱ ${v.shift_time}</div>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
-                  <span class="card-badge teal">${v.attendance_status.toUpperCase()}</span>
-                  <span style="font-size:11px;color:var(--teal)">🎓 Certificate Ready</span>
-                </div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-
-        <div class="glass-card">
-          <div class="card-header"><h3 class="card-title">⚠️ Security Risk Register &amp; Contingency</h3></div>
-          <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
-            ${CURRENT_PLANNER_DATA.risks.map(r => `
-              <div style="padding:10px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
-                <div style="display:flex;justify-content:space-between;align-items:center">
-                  <span style="font-weight:700;font-size:13px">${r.risk_title}</span>
-                  <span class="priority-tag critical">${r.severity.toUpperCase()}</span>
-                </div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">🛡 Contingency: ${r.contingency_plan}</div>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      </div>`;
-  } else if (tab === 'marketing') {
-    container.innerHTML = `
-      <div class="glass-card">
-        <div class="card-header">
-          <h3 class="card-title">📢 Marketing Campaigns</h3>
-          ${plannerToolbar('marketing', 'Campaign')}
-        </div>
-        ${plannerTable(
-          ['Channel', 'Campaign', 'Audience', 'Budget', 'Reach', 'Conversions', 'Status', ''],
-          marketing,
-          m => [
-            escapeHtml(m.channel),
-            `<strong>${escapeHtml(m.campaign_name)}</strong>`,
-            escapeHtml(m.audience || '—'),
-            `৳${Number(m.budget).toLocaleString()}`,
-            Number(m.reach).toLocaleString(),
-            `${Number(m.conversions).toLocaleString()}${Number(m.reach) ? ` (${((m.conversions / m.reach) * 100).toFixed(1)}%)` : ''}`,
-            `<span class="card-badge ${m.status === 'live' ? 'teal' : m.status === 'completed' ? '' : 'amber'}">${escapeHtml(m.status)}</span>`,
-            `<button class="btn btn-sm btn-ghost" onclick="deletePlannerItem('marketing', ${m.id})">🗑</button>`
-          ],
-          '📢', 'No marketing campaigns planned yet')}
-        <button class="btn btn-sm btn-outline mt-14" onclick="showBroadcastModal()">📣 Send a broadcast now</button>
-      </div>
-
-      <div class="glass-card mt-16">
-        <div class="card-header">
-          <h3 class="card-title">📝 Committee Meetings &amp; Minutes</h3>
-          ${plannerToolbar('meetings', 'Meeting')}
-        </div>
-        ${plannerTable(
-          ['Meeting', 'Date', 'Location', 'Attendees', 'Status', ''],
-          meetings,
-          mt => [
-            `<strong>${escapeHtml(mt.title)}</strong>${mt.agenda ? `<div style="font-size:11px;color:var(--text-muted)">${escapeHtml(mt.agenda)}</div>` : ''}`,
-            `${escapeHtml(formatDate(mt.meeting_date))}${mt.meeting_time ? ` · ${escapeHtml(mt.meeting_time)}` : ''}`,
-            escapeHtml(mt.location || '—'),
-            escapeHtml(mt.attendees || '—'),
-            `<span class="card-badge ${mt.status === 'held' ? 'teal' : 'amber'}">${escapeHtml(mt.status)}</span>`,
-            `<button class="btn btn-sm btn-ghost" onclick="deletePlannerItem('meetings', ${mt.id})">🗑</button>`
-          ],
-          '📝', 'No meetings scheduled yet')}
-      </div>`;
-  } else if (tab === 'analytics') {
-    container.innerHTML = renderSkeletonCards(2, 'analytics');
-    renderPlannerAnalytics();
-    return;
-  } else if (tab === 'ai') {
-    container.innerHTML = `
-      <div class="glass-card">
-        <div class="card-header"><h3 class="card-title">🤖 EventAI Planner Assistant &amp; Budget Predictor</h3></div>
-        <div class="field-grid-2 mb-16">
-          <div class="input-group">
-            <label class="input-label">Expected Attendee Count (Pax)</label>
-            <input type="number" id="ai-pax-input" class="form-input" value="1500" />
-          </div>
-          <div class="input-group">
-            <label class="input-label">Event Category</label>
-            <select id="ai-category-select" class="form-select">
-              <option value="Reunion & Gala">Reunion &amp; Gala</option>
-              <option value="Tech Festival">Tech Festival &amp; Hackathon</option>
-              <option value="Career Fair">Career &amp; Job Fair</option>
-            </select>
-          </div>
-        </div>
-        <button class="btn btn-primary" onclick="runEventAIEstimate()">🤖 Generate AI Plan &amp; Budget</button>
-
-        <div id="ai-results-container" class="mt-16"></div>
-      </div>`;
-  }
-}
-
-function renderKanbanCards(taskList) {
-  if (taskList.length === 0) return `<div style="font-size:12px;color:var(--text-muted);text-align:center;padding:20px">No tasks in this column</div>`;
-
-  return taskList.map(task => `
-    <div class="kanban-card">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <span class="priority-tag ${task.priority}">${task.priority}</span>
-        <span style="font-size:10px;color:var(--text-muted)">📅 ${task.deadline}</span>
-      </div>
-      <div style="font-size:13px;font-weight:700;margin-bottom:4px">${task.title}</div>
-      <div style="font-size:11px;color:var(--text-secondary)">👤 Assigned: ${task.assigned_to}</div>
-      <div style="display:flex;gap:4px;margin-top:8px">
-        ${task.status !== 'todo' ? `<button class="btn btn-xs btn-outline" onclick="moveTaskStatus(${task.id}, 'todo')">◀ To Do</button>` : ''}
-        ${task.status !== 'in_progress' ? `<button class="btn btn-xs btn-outline" onclick="moveTaskStatus(${task.id}, 'in_progress')">⚡ In Prog</button>` : ''}
-        ${task.status !== 'completed' ? `<button class="btn btn-xs btn-primary" onclick="moveTaskStatus(${task.id}, 'completed')">✓ Done</button>` : ''}
-      </div>
-    </div>
-  `).join('');
-}
-
-async function moveTaskStatus(taskId, newStatus) {
-  showToast(`⚡ Updating task #${taskId} status to ${newStatus}…`);
-  await API.updateTaskStatus(taskId, newStatus);
-  if (CURRENT_PLANNER_DATA && CURRENT_PLANNER_DATA.tasks) {
-    const t = CURRENT_PLANNER_DATA.tasks.find(x => x.id === taskId);
-    if (t) t.status = newStatus;
-  }
-  renderPlannerTabContent('tasks');
-}
-
-async function runEventAIEstimate() {
-  const pax = document.getElementById('ai-pax-input').value || 1500;
-  const category = document.getElementById('ai-category-select').value;
-
-  showToast('🤖 EventAI Engine computing budget & risk matrix…');
-  const res = await API.getEventAIEstimate({ attendance: pax, eventType: category });
-
-  const container = document.getElementById('ai-results-container');
-  if (container && res) {
-    container.innerHTML = `
-      <div class="glass-card" style="border-color:var(--teal)">
-        <div style="font-size:16px;font-weight:800;color:var(--teal);margin-bottom:8px">✨ EventAI Recommendation Summary</div>
-        <div class="field-grid-2 mb-16">
-          <div><div class="field-label">Recommended Total Budget</div><div class="field-val" style="font-size:18px;color:var(--teal);font-weight:800">৳${res.recommendedBudget.toLocaleString()}</div></div>
-          <div><div class="field-label">Catering (Food 40%)</div><div class="field-val">৳${res.breakdown.food.toLocaleString()}</div></div>
-          <div><div class="field-label">Venue &amp; Hall (25%)</div><div class="field-val">৳${res.breakdown.venue.toLocaleString()}</div></div>
-          <div><div class="field-label">Stage &amp; Tech (15%)</div><div class="field-val">৳${res.breakdown.stageTech.toLocaleString()}</div></div>
-        </div>
-
-        <div style="font-weight:700;font-size:13px;margin-bottom:6px">📅 Suggested Milestone Timeline</div>
-        <div style="display:flex;flex-direction:column;gap:6px">
-          ${res.suggestedTimeline.map(item => `
-            <div style="font-size:12px;padding:6px 10px;background:var(--bg-glass);border-radius:4px"><strong>${item.week}:</strong> ${item.milestone}</div>
-          `).join('')}
-        </div>
-      </div>`;
-  }
-}
 
 
 
-function showCreateProposalModal() {
-  showModal(`
-    <div class="modal-header">
-      <h2 class="modal-title">➕ Create Event Proposal</h2>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <form onsubmit="handleCreateProposalSubmit(event)">
-      <div class="input-group">
-        <label class="input-label">Event Name</label>
-        <input type="text" id="prop-name" class="form-input" placeholder="DIC Tech Festival 2026" required />
-      </div>
-      <div class="input-group">
-        <label class="input-label">Executive Description</label>
-        <textarea id="prop-desc" class="form-input" rows="3" placeholder="Overview of objectives and target audience…" required></textarea>
-      </div>
-      <div class="field-grid-2">
-        <div class="input-group">
-          <label class="input-label">Venue</label>
-          <input type="text" id="prop-venue" class="form-input" value="DIC Main Auditorium" required />
-        </div>
-        <div class="input-group">
-          <label class="input-label">Expected Pax</label>
-          <input type="number" id="prop-pax" class="form-input" value="1000" required />
-        </div>
-      </div>
-      <button type="submit" class="btn btn-primary btn-full mt-16">Submit Proposal for Approval</button>
-    </form>
-  `);
-}
 
-async function handleCreateProposalSubmit(e) {
-  e.preventDefault();
-  const name = document.getElementById('prop-name').value;
-  const description = document.getElementById('prop-desc').value;
-  const venue = document.getElementById('prop-venue').value;
-  const expectedAttendance = document.getElementById('prop-pax').value;
+// Every event gets its own planner (tasks, budget, etc). The dropdown is how
+// an organizer switches between the events they've created — without it the
+// workspace could only ever show event #1.
 
-  showToast('➕ Submitting Event Proposal to DIC Executive Board…');
-  await API.submitEventProposal({ name, description, venue, expectedAttendance });
-  closeModal();
-  showToast('✅ Event Proposal Approved & Added to Planner Workspace!');
-  loadEventPlannerWorkspace(1);
-}
 
-function showAddBudgetModal() {
-  showModal(`
-    <div class="modal-header">
-      <h2 class="modal-title">💰 Add Expense Item</h2>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <form onsubmit="handleAddBudgetSubmit(event)">
-      <div class="input-group">
-        <label class="input-label">Category</label>
-        <input type="text" id="b-cat" class="form-input" placeholder="Stage & Audio Setup" required />
-      </div>
-      <div class="field-grid-2">
-        <div class="input-group">
-          <label class="input-label">Estimated Cost (৳)</label>
-          <input type="number" id="b-est" class="form-input" placeholder="150000" required />
-        </div>
-        <div class="input-group">
-          <label class="input-label">Actual Cost (৳)</label>
-          <input type="number" id="b-act" class="form-input" placeholder="140000" required />
-        </div>
-      </div>
-      <div class="input-group">
-        <label class="input-label">Vendor Name</label>
-        <input type="text" id="b-vendor" class="form-input" placeholder="Dhaka Event Tech Ltd" required />
-      </div>
-      <button type="submit" class="btn btn-primary btn-full mt-16">Save Expense Item</button>
-    </form>
-  `);
-}
+// The lightweight workspace for casual events (e.g. an Iftar party): just the
+// event basics and "who's doing what", none of the budget/sponsor/vendor
+// machinery a small get-together doesn't need.
 
-async function handleAddBudgetSubmit(e) {
-  e.preventDefault();
-  const category = document.getElementById('b-cat').value;
-  const estimatedCost = parseFloat(document.getElementById('b-est').value) || 0;
-  const actualCost = parseFloat(document.getElementById('b-act').value) || 0;
-  const vendorName = document.getElementById('b-vendor').value;
 
-  showToast('💰 Adding expense item to event budget…');
-  const newBudget = await API.addEventBudget({ eventId: 1, category, estimatedCost, actualCost, vendorName });
-  if (CURRENT_PLANNER_DATA && CURRENT_PLANNER_DATA.budgets) {
-    CURRENT_PLANNER_DATA.budgets.push(newBudget || { id: Date.now(), category, estimated_cost: estimatedCost, actual_cost: actualCost, vendor_name: vendorName, payment_status: 'paid' });
-  }
-  closeModal();
-  showToast('✅ Expense item saved successfully!');
-  renderPlannerTabContent('budget');
-}
 
-function showAddSponsorModal() {
-  showModal(`
-    <div class="modal-header">
-      <h2 class="modal-title">🤝 Add Sponsor CRM Record</h2>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <form onsubmit="handleAddSponsorSubmit(event)">
-      <div class="input-group">
-        <label class="input-label">Company Name</label>
-        <input type="text" id="s-company" class="form-input" placeholder="Brain Station 23" required />
-      </div>
-      <div class="field-grid-2">
-        <div class="input-group">
-          <label class="input-label">Contact Person</label>
-          <input type="text" id="s-contact" class="form-input" placeholder="Tanvir Ahmed" required />
-        </div>
-        <div class="input-group">
-          <label class="input-label">Package Tier</label>
-          <select id="s-tier" class="form-select">
-            <option value="title">Title Sponsor</option>
-            <option value="gold" selected>Gold Sponsor</option>
-            <option value="silver">Silver Sponsor</option>
-            <option value="bronze">Bronze Sponsor</option>
-          </select>
-        </div>
-      </div>
-      <div class="field-grid-2">
-        <div class="input-group">
-          <label class="input-label">Contribution Amount (৳)</label>
-          <input type="number" id="s-amount" class="form-input" placeholder="300000" required />
-        </div>
-        <div class="input-group">
-          <label class="input-label">Pipeline Status</label>
-          <select id="s-status" class="form-select">
-            <option value="proposed">Proposed</option>
-            <option value="agreed">Agreed</option>
-            <option value="received" selected>Payment Received</option>
-          </select>
-        </div>
-      </div>
-      <button type="submit" class="btn btn-primary btn-full mt-16">Add Sponsor Record</button>
-    </form>
-  `);
-}
 
-async function handleAddSponsorSubmit(e) {
-  e.preventDefault();
-  const company = document.getElementById('s-company').value;
-  const contactPerson = document.getElementById('s-contact').value;
-  const packageTier = document.getElementById('s-tier').value;
-  const contributionAmount = parseFloat(document.getElementById('s-amount').value) || 0;
-  const pipelineStatus = document.getElementById('s-status').value;
 
-  showToast('🤝 Saving sponsor CRM deal…');
-  const newSponsor = await API.addEventSponsor({ eventId: 1, company, contactPerson, packageTier, contributionAmount, pipelineStatus });
-  if (CURRENT_PLANNER_DATA && CURRENT_PLANNER_DATA.sponsors) {
-    CURRENT_PLANNER_DATA.sponsors.push(newSponsor || { id: Date.now(), company, contact_person: contactPerson, package_tier: packageTier, contribution_amount: contributionAmount, pipeline_status: pipelineStatus, deliverables: 'Standard branding package' });
-  }
-  closeModal();
-  showToast('✅ Sponsor deal saved successfully!');
-  renderPlannerTabContent('sponsors');
-}
 
-function showAddTaskModal() {
-  showModal(`
-    <div class="modal-header">
-      <h2 class="modal-title">📋 Create Kanban Task</h2>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <form onsubmit="handleAddTaskSubmit(event)">
-      <div class="input-group">
-        <label class="input-label">Task Title</label>
-        <input type="text" id="t-title" class="form-input" placeholder="Book main auditorium & stage lights" required />
-      </div>
-      <div class="field-grid-2">
-        <div class="input-group">
-          <label class="input-label">Assigned Committee</label>
-          <input type="text" id="t-comm" class="form-input" value="Logistics & Stage" required />
-        </div>
-        <div class="input-group">
-          <label class="input-label">Assigned Person</label>
-          <input type="text" id="t-assign" class="form-input" placeholder="Rafiqul Islam" required />
-        </div>
-      </div>
-      <div class="field-grid-2">
-        <div class="input-group">
-          <label class="input-label">Priority</label>
-          <select id="t-priority" class="form-select">
-            <option value="critical">Critical</option>
-            <option value="high" selected>High</option>
-            <option value="medium">Medium</option>
-            <option value="low">Low</option>
-          </select>
-        </div>
-        <div class="input-group">
-          <label class="input-label">Deadline</label>
-          <input type="text" id="t-deadline" class="form-input" value="Aug 10, 2026" required />
-        </div>
-      </div>
-      <button type="submit" class="btn btn-primary btn-full mt-16">Create Task</button>
-    </form>
-  `);
-}
 
-async function handleAddTaskSubmit(e) {
-  e.preventDefault();
-  const title = document.getElementById('t-title').value;
-  const committeeName = document.getElementById('t-comm').value;
-  const assignedTo = document.getElementById('t-assign').value;
-  const priority = document.getElementById('t-priority').value;
-  const deadline = document.getElementById('t-deadline').value;
 
-  showToast('📋 Creating new Kanban task…');
-  const newTask = await API.addEventTask({ eventId: 1, committeeName, title, priority, status: 'todo', assignedTo, deadline });
-  if (CURRENT_PLANNER_DATA && CURRENT_PLANNER_DATA.tasks) {
-    CURRENT_PLANNER_DATA.tasks.push(newTask || { id: Date.now(), committee_name: committeeName, title, priority, status: 'todo', assigned_to: assignedTo, deadline });
-  }
-  closeModal();
-  showToast('✅ Kanban task created!');
-  renderPlannerTabContent('tasks');
-}
+
+
+
+
+
+
+
+
 
 
 
@@ -2033,7 +1354,7 @@ function selectChapter(id) {
   detail.innerHTML = `
     <div class="chapter-detail-content">
       <div class="chapter-detail-header">
-        <div class="chapter-detail-icon">${c.icon}</div>
+        <div class="chapter-detail-icon">${emojiIcon(c.icon, 'hexagon')}</div>
         <div>
           <div class="chapter-detail-title">${c.name}</div>
           <div class="chapter-detail-sub">${c.type.charAt(0).toUpperCase() + c.type.slice(1)} Chapter · Est. 2020 · PostgreSQL Synced</div>
@@ -2046,13 +1367,13 @@ function selectChapter(id) {
       </div>
       <div style="font-size:14px;font-weight:700;margin-bottom:12px">Chapter Leadership &amp; Officers</div>
       ${['President: Rafiq Hossain (CSE 2018)', 'VP: Meher Nisha (SWE 2019)', 'Secretary: Tanvir Chowdhury (BBA 2020)'].map(m => `
-        <div class="chapter-member"><span style="font-size:20px">👤</span><span>${m}</span></div>
+        <div class="chapter-member"><span style="font-size:20px"><i data-lucide="user" class="ui-icon"></i></span><span>${m}</span></div>
       `).join('')}
       <div style="margin-top:16px;display:flex;gap:8px">
         <button class="btn ${isJoined ? 'btn-outline' : 'btn-primary'} btn-sm" id="btn-join-${c.id}" onclick="toggleJoinChapter(${c.id})">
-          ${isJoined ? '✓ Joined Chapter' : '+ Join Chapter'}
+          ${isJoined ? '<i data-lucide="check" class="ui-icon"></i> Joined Chapter' : '+ Join Chapter'}
         </button>
-        <button class="btn btn-outline btn-sm" onclick="showChapterMembersModal(${c.id})">👥 View Members</button>
+        <button class="btn btn-outline btn-sm" onclick="showChapterMembersModal(${c.id})"><i data-lucide="users" class="ui-icon"></i> View Members</button>
       </div>
     </div>`;
 }
@@ -2090,18 +1411,18 @@ async function showChapterMembersModal(id) {
   if (members.length === 0) {
     openModal(`
       <div class="onboarding-header">
-        <div class="onboarding-title">👥 Chapter Enrolled Members</div>
+        <div class="onboarding-title"><i data-lucide="users" class="ui-icon"></i> Chapter Enrolled Members</div>
         <div class="onboarding-sub">${escapeHtml(c ? c.name : 'DIC Alumni Chapter')}</div>
-        <button class="modal-close" onclick="closeModal()">✕</button>
+        <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
       </div>
-      ${renderEmptyState('👤', 'No members yet', 'Be the first to join this chapter.')}
+      ${renderEmptyState('<i data-lucide="user" class="ui-icon"></i>', 'No members yet', 'Be the first to join this chapter.')}
     `);
     return;
   }
 
   openModal(`
     <div class="onboarding-header">
-      <div class="onboarding-title">👥 Chapter Enrolled Members</div>
+      <div class="onboarding-title"><i data-lucide="users" class="ui-icon"></i> Chapter Enrolled Members</div>
       <div class="onboarding-sub">${escapeHtml(c ? c.name : 'DIC Alumni Chapter')} · ${members.length} Enrolled Member${members.length === 1 ? '' : 's'}</div>
     </div>
 
@@ -2138,7 +1459,7 @@ async function renderNewsFeed() {
     return;
   }
   if (stories.length === 0) {
-    feed.innerHTML = renderEmptyState('📰', 'No stories published yet',
+    feed.innerHTML = renderEmptyState('<i data-lucide="newspaper" class="ui-icon"></i>', 'No stories published yet',
       'Approved alumni stories and college announcements will appear here.');
     return;
   }
@@ -2148,7 +1469,7 @@ async function renderNewsFeed() {
     const date = n.published_date || formatDate(n.created_at);
     return `
     <div class="news-card">
-      <div class="news-banner" style="background:linear-gradient(135deg, rgba(108,99,255,0.12), rgba(0,212,170,0.08))">${escapeHtml(n.emoji || '🌟')}</div>
+      <div class="news-banner" style="background:linear-gradient(135deg, rgba(11,56,151,0.12), rgba(0,212,170,0.08))">${emojiIcon(n.emoji, 'sparkle')}</div>
       <div class="news-card-body">
         <div class="news-category">${escapeHtml(n.category)}</div>
         <div class="news-title">${escapeHtml(n.title)}</div>
@@ -2161,7 +1482,7 @@ async function renderNewsFeed() {
               <div class="news-meta">${escapeHtml(date)}</div>
             </div>
           </div>
-          <span class="moderated-badge">✓ Published</span>
+          <span class="moderated-badge"><i data-lucide="check" class="ui-icon"></i> Published</span>
         </div>
       </div>
     </div>
@@ -2182,7 +1503,7 @@ async function renderSpotlightAlumni() {
   }
   const spotlights = result.alumni;
   if (spotlights.length === 0) {
-    el.innerHTML = renderEmptyState('✨', 'No mentors available yet');
+    el.innerHTML = renderEmptyState('<i data-lucide="sparkles" class="ui-icon"></i>', 'No mentors available yet');
     return;
   }
 
@@ -2271,13 +1592,13 @@ async function renderAuditLog() {
     return;
   }
   if (rows.length === 0) {
-    el.innerHTML = renderEmptyState('🛡', 'No audit entries yet', 'Privileged actions are recorded here as they happen.');
+    el.innerHTML = renderEmptyState('<i data-lucide="shield" class="ui-icon"></i>', 'No audit entries yet', 'Privileged actions are recorded here as they happen.');
     return;
   }
 
   el.innerHTML = rows.map(l => `
     <div class="audit-entry">
-      <div class="audit-icon" style="background:${escapeHtml(l.bg_color || 'rgba(0,168,89,0.15)')}">${escapeHtml(l.icon || '🛡')}</div>
+      <div class="audit-icon" style="background:${escapeHtml(l.bg_color || 'rgba(0,168,89,0.15)')}">${emojiIcon(l.icon, 'shield')}</div>
       <div style="flex:1;min-width:0">
         <div class="audit-action">${escapeHtml(l.action)}</div>
         <div class="audit-meta">${escapeHtml(l.meta)} · ${escapeHtml(formatRelativeTime(l.created_at))}</div>
@@ -2298,10 +1619,10 @@ async function renderComplianceGrid() {
     return;
   }
 
-  const labels = { compliant: '✓ Compliant', pending: '◐ No data yet', at_risk: '⚠ Action required' };
+  const labels = { compliant: '<i data-lucide="check" class="ui-icon"></i> Compliant', pending: '<i data-lucide="clock" class="ui-icon"></i> No data yet', at_risk: '<i data-lucide="triangle-alert" class="ui-icon"></i> Action required' };
   el.innerHTML = items.map(c => `
     <div class="compliance-card ${c.status}">
-      <div class="compliance-icon">${c.icon}</div>
+      <div class="compliance-icon">${emojiIcon(c.icon, 'shield-check')}</div>
       <div class="compliance-title">${escapeHtml(c.title)}</div>
       <div class="compliance-desc">${escapeHtml(c.desc)}</div>
       <span class="compliance-status ${c.status}">${labels[c.status] || c.status}</span>
@@ -2344,14 +1665,17 @@ async function renderNotifications() {
     return;
   }
   if (items.length === 0) {
-    el.innerHTML = renderEmptyState('🔔', 'You are all caught up', 'New activity will show up here.');
+    el.innerHTML = renderEmptyState('<i data-lucide="bell" class="ui-icon"></i>', 'You are all caught up', 'New activity will show up here.');
     updateNotifBadge(0);
     return;
   }
 
   el.innerHTML = items.map(n => `
-    <div class="notif-item${n.is_unread ? ' unread' : ''}" onclick="markNotificationRead(${n.id})">
-      <div class="notif-item-icon">${escapeHtml(n.icon || '🔔')}</div>
+    <div class="notif-item${n.is_unread ? ' unread' : ''}${n.link_entity ? ' linked' : ''}"
+         ${n.link_entity ? 'role="button" tabindex="0"' : ''}
+         onclick="openNotification(${n.id}, '${n.link_entity || ''}', ${n.link_id || 'null'})"
+         ${n.link_entity ? `onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"` : ''}>
+      <div class="notif-item-icon">${emojiIcon(n.icon, 'bell')}</div>
       <div class="notif-item-body">
         <div class="notif-item-title">${escapeHtml(n.title)}</div>
         <div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(n.subtitle || '')}</div>
@@ -2370,6 +1694,40 @@ function updateNotifBadge(count) {
     badge.textContent = count;
     badge.style.display = count > 0 ? '' : 'none';
   });
+}
+
+/* Notifications carry link_entity/link_id, so clicking one opens the thing it
+   is about instead of only marking it read. Staff land in the event workspace;
+   an assignee who is not staff gets the task itself, which they can update. */
+async function openNotification(id, entity, linkId) {
+  markNotificationRead(id);
+  if (!entity || !linkId) return;
+  if (typeof closeNotifications === 'function') closeNotifications();
+
+  if (entity === 'task') {
+    showPage('events');
+    if (evCanManage()) {
+      const t = await API.getTask(linkId);
+      if (!apiFailed(t) && t.event_id) {
+        await openEventWorkspace(t.event_id, 'tasks');
+        await evOpenTask(linkId);
+        return;
+      }
+    }
+    await evOpenTask(linkId);
+    return;
+  }
+
+  if (entity === 'event') {
+    showPage('events');
+    if (evCanManage()) await openEventWorkspace(linkId, 'overview');
+    return;
+  }
+
+  if (entity === 'ticket') {
+    showPage('events');
+    await evViewTicket(linkId);
+  }
 }
 
 async function markNotificationRead(id) {
@@ -2397,7 +1755,7 @@ function renderInternshipDrives() {
   ];
   el.innerHTML = drives.map(d => `
     <div class="internship-item">
-      <span>${d.emoji}</span>
+      <span>${emojiIcon(d.emoji, 'briefcase')}</span>
       <div style="flex:1"><div style="font-weight:600;font-size:13px">${d.role}</div><div style="font-size:11px;color:var(--text-muted)">${d.company}</div></div>
       <button class="btn btn-sm btn-outline" onclick="showPage('jobs')">View Board</button>
     </div>
@@ -2458,21 +1816,97 @@ function initQRCode() {
       text: 'https://dic.alumnai.io/verify?id=DIC-2020-0847&token=SEC-' + Math.random().toString(36).substr(2,12).toUpperCase(),
       width: 70,
       height: 70,
-      colorDark: '#6C63FF',
+      colorDark: '#0B3897',
       colorLight: '#ffffff',
       correctLevel: QRCode.CorrectLevel.M,
     });
-  } catch(e) { el.style.background = '#fff'; el.innerHTML = '<div style="font-size:8px;color:#6C63FF;padding:4px;text-align:center">QR Code</div>'; }
+  } catch(e) { el.style.background = '#fff'; el.innerHTML = '<div style="font-size:8px;color:#0B3897;padding:4px;text-align:center">QR Code</div>'; }
 }
 
 // ─── MODALS ──────────────────────────────────────────────────
-function showModal(html) {
+let _modalReturnFocus = null;
+// A data-entry form must not be dismissed by a stray click on the backdrop —
+// that would silently throw away everything the user typed. Only read-only
+// dialogs (a ticket, a public preview) opt back in via { dismissable: true }.
+let _modalDismissable = false;
+
+function showModal(html, options) {
+  const opts = options || {};
   const body = document.getElementById('modal-body');
   const overlay = document.getElementById('modal-overlay');
+  const content = document.getElementById('modal-content');
   if (body) body.innerHTML = html;
+
+  _modalDismissable = opts.dismissable === true;
+
+  if (content) {
+    // The creation wizard needs room for three step labels side by side.
+    content.classList.toggle('modal-wide', opts.wide === true);
+    content.setAttribute('role', 'dialog');
+    content.setAttribute('aria-modal', 'true');
+    const heading = content.querySelector('.modal-title');
+    if (heading) {
+      heading.id = heading.id || 'modal-heading';
+      content.setAttribute('aria-labelledby', heading.id);
+    } else {
+      content.removeAttribute('aria-labelledby');
+    }
+    // Every close control is normalised here rather than trusting each call
+    // site: an untyped <button> inside a <form> submits instead of closing.
+    content.querySelectorAll('.modal-close').forEach(btn => {
+      btn.setAttribute('type', 'button');
+      if (!btn.getAttribute('aria-label')) btn.setAttribute('aria-label', 'Close');
+      btn.dataset.modalClose = '1';
+    });
+  }
+
   if (overlay) overlay.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
+
+  _modalReturnFocus = (_modalReturnFocus && document.getElementById('modal-overlay') &&
+                       !overlay.classList.contains('hidden') && content.contains(document.activeElement))
+    ? _modalReturnFocus            // re-render of an already-open dialog: keep the original opener
+    : document.activeElement;
+
+  if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
+
+  requestAnimationFrame(() => {
+    const first = content && content.querySelector(
+      'input:not([type=hidden]):not([disabled]), select, textarea, button:not(.modal-close), [href], [tabindex]:not([tabindex="-1"])');
+    (first || content)?.focus?.();
+  });
 }
+
+// Delegated close handling. Survives every re-render of the dialog body,
+// works for a click on the icon inside the button, and works on touch.
+document.addEventListener('click', (e) => {
+  const overlay = document.getElementById('modal-overlay');
+  if (!overlay || overlay.classList.contains('hidden')) return;
+
+  const closer = e.target.closest && e.target.closest('[data-modal-close], .modal-close');
+  if (closer) { e.preventDefault(); e.stopPropagation(); closeModal(); return; }
+
+  // Backdrop: the click landed on the overlay itself, not inside the dialog.
+  if (e.target === overlay && _modalDismissable) closeModal();
+});
+
+// Keeps Tab inside an open dialog rather than letting it walk the page behind.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Tab') return;
+  const overlay = document.getElementById('modal-overlay');
+  if (!overlay || overlay.classList.contains('hidden')) return;
+  const content = document.getElementById('modal-content');
+  if (!content) return;
+
+  const focusable = [...content.querySelectorAll(
+    'a[href], button:not([disabled]), input:not([type=hidden]):not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+    .filter(el => el.offsetParent !== null || el === document.activeElement);
+  if (!focusable.length) return;
+
+  const first = focusable[0], last = focusable[focusable.length - 1];
+  if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+  else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+});
 
 function openModal(html) {
   showModal(html);
@@ -2480,10 +1914,25 @@ function openModal(html) {
 window.openModal = showModal;
 
 function closeModal(e) {
+  if (e && typeof e.preventDefault === 'function') e.preventDefault();
   const overlay = document.getElementById('modal-overlay');
   if (overlay) overlay.classList.add('hidden');
   document.body.style.overflow = '';
+  _modalDismissable = false;
+  // Hand focus back to whatever opened the dialog.
+  if (_modalReturnFocus && document.contains(_modalReturnFocus)) {
+    try { _modalReturnFocus.focus(); } catch (err) { /* element may be gone */ }
+  }
+  _modalReturnFocus = null;
 }
+
+// Escape closes whichever modal is open, independent of where the click
+// actually lands — a keyboard-driven fallback for the close button.
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const overlay = document.getElementById('modal-overlay');
+  if (overlay && !overlay.classList.contains('hidden')) closeModal();
+});
 
 // ─── MENTOR REQUEST MODAL ───
 function showMentorModal(mentorName = '', mentorId = null, matchScore = 0) {
@@ -2493,11 +1942,11 @@ function showMentorModal(mentorName = '', mentorId = null, matchScore = 0) {
   }
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">🤝 Request a Mentor</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="handshake" class="ui-icon"></i> Request a Mentor</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <div class="socratic-prompt">
-      <div class="socratic-prompt-icon">🤖</div>
+      <div class="socratic-prompt-icon"><i data-lucide="bot" class="ui-icon"></i></div>
       <div class="socratic-prompt-text">
         <strong>ConnectAI:</strong> Be specific about your goal and what guidance you need — focused requests are accepted far more often.
       </div>
@@ -2515,7 +1964,7 @@ function showMentorModal(mentorName = '', mentorId = null, matchScore = 0) {
       <label class="input-label">Your message</label>
       <textarea id="mentor-message" class="form-input" rows="5" placeholder="Introduce yourself, your background and what specific guidance would help most…"></textarea>
     </div>
-    <button class="btn btn-primary btn-full" onclick="submitMentorRequest(${mentorId}, ${matchScore})">🤝 Send Request</button>
+    <button class="btn btn-primary btn-full" onclick="submitMentorRequest(${mentorId}, ${matchScore})"><i data-lucide="handshake" class="ui-icon"></i> Send Request</button>
     <div style="font-size:11px;color:var(--text-muted);margin-top:10px;text-align:center">Unanswered requests expire automatically after 5 days.</div>
   `);
 }
@@ -2529,8 +1978,8 @@ function showDonateModal(campaignId, campaignName) {
 
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">💚 Donate</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="heart" class="ui-icon"></i> Donate</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <div style="margin-bottom:14px;padding:12px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
       <div style="font-size:12px;color:var(--text-muted)">Contributing to</div>
@@ -2550,7 +1999,7 @@ function showDonateModal(campaignId, campaignName) {
     <div class="modal-section">
       <div class="modal-section-title">Payment Method</div>
       <div class="gateway-grid">
-        ${[['bkash','📱','bKash'],['nagad','📲','Nagad'],['rocket','🚀','Rocket'],['card','💳','Card']].map(([id, icon, label]) =>
+        ${[['bkash','<i data-lucide="smartphone" class="ui-icon"></i>','bKash'],['nagad','<i data-lucide="smartphone" class="ui-icon"></i>','Nagad'],['rocket','<i data-lucide="rocket" class="ui-icon"></i>','Rocket'],['card','<i data-lucide="credit-card" class="ui-icon"></i>','Card']].map(([id, icon, label]) =>
           `<div class="gateway-option" onclick="selectGateway(this, '${id}')">
              <div style="font-size:22px">${icon}</div><div style="font-size:12px;font-weight:700">${label}</div>
            </div>`).join('')}
@@ -2585,50 +2034,16 @@ function selectGateway(el, gateway) {
 
 
 // ─── CREATE EVENT (was a toast-only shell) ───
-function showCreateEventModal() {
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title">➕ Create Event</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <form onsubmit="handleCreateEventSubmit(event)">
-      <div class="input-group"><label class="input-label">Event Title</label>
-        <input type="text" id="event-title" class="form-input" placeholder="e.g. Alumni Career Summit 2026" required /></div>
-      <div class="input-group"><label class="input-label">Emoji</label>
-        <input type="text" id="event-emoji" class="form-input" value="🎓" /></div>
-      <div class="field-grid-2">
-        <div class="input-group"><label class="input-label">Date</label>
-          <input type="date" id="event-date" class="form-input" required /></div>
-        <div class="input-group"><label class="input-label">Time</label>
-          <input type="time" id="event-time" class="form-input" /></div>
-      </div>
-      <div class="input-group"><label class="input-label">Venue</label>
-        <input type="text" id="event-venue" class="form-input" placeholder="Venue or Online (Zoom)" required /></div>
-      <div class="field-grid-2">
-        <div class="input-group"><label class="input-label">Capacity</label>
-          <input type="number" id="event-capacity" class="form-input" min="1" value="200" required /></div>
-        <div class="input-group"><label class="input-label">Ticket Price</label>
-          <input type="text" id="event-price" class="form-input" placeholder="Free or ৳500" value="Free" /></div>
-      </div>
-      <div class="input-group"><label class="input-label">Type</label>
-        <select id="event-type" class="form-select">
-          <option>Gala</option><option>Professional</option><option>Conference</option>
-          <option>Workshop</option><option>Reunion</option>
-        </select></div>
-      <button type="submit" class="btn btn-primary btn-full">Create Event</button>
-    </form>
-  `);
-}
 
 // ─── POST JOB (was a toast-only shell) ───
 function showPostJobModal() {
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">➕ Post a Job</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="plus" class="ui-icon"></i> Post a Job</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
-    <div style="background:var(--primary-glow);border:1px solid rgba(108,99,255,0.2);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--primary-light)">
-      🔒 Alumni-only posting — visible to verified DIC alumni.
+    <div style="background:var(--primary-glow);border:1px solid rgba(11,56,151,0.2);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--primary-light)">
+      <i data-lucide="lock" class="ui-icon"></i> Alumni-only posting — visible to verified DIC alumni.
     </div>
     <form onsubmit="handlePostJobSubmit(event)">
       <div class="input-group"><label class="input-label">Job Title</label>
@@ -2656,15 +2071,15 @@ function showPostJobModal() {
 function showCreateChapterModal() {
   openModal(`
     <div class="modal-header">
-      <div class="modal-title">➕ Create Chapter</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="plus" class="ui-icon"></i> Create Chapter</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <form onsubmit="handleCreateChapterSubmit(event)">
       <div class="input-group"><label class="input-label">Chapter Name</label><input type="text" id="chap-create-name" class="form-input" placeholder="e.g., Sylhet Regional Chapter" required /></div>
       <div class="input-group"><label class="input-label">Type</label><select id="chap-create-type" class="form-select"><option value="regional">Regional</option><option value="batch">Batch</option><option value="interest">Interest</option></select></div>
       <div class="input-group"><label class="input-label">Icon Emoji</label><input type="text" id="chap-create-icon" class="form-input" value="🏫" required /></div>
       <div class="input-group"><label class="input-label">Description</label><textarea id="chap-create-desc" class="form-input" rows="3" placeholder="What is this chapter for?"></textarea></div>
-      <button type="submit" class="btn btn-primary btn-full mt-16">🚀 Submit Chapter for Moderation</button>
+      <button type="submit" class="btn btn-primary btn-full mt-16"><i data-lucide="rocket" class="ui-icon"></i> Submit Chapter for Moderation</button>
     </form>
   `);
 }
@@ -2673,7 +2088,7 @@ async function handleCreateChapterSubmit(e) {
   e.preventDefault();
   const name = document.getElementById('chap-create-name').value.trim();
   const type = document.getElementById('chap-create-type').value;
-  const icon = document.getElementById('chap-create-icon').value.trim() || '🏫';
+  const icon = document.getElementById('chap-create-icon').value.trim() || '<i data-lucide="school" class="ui-icon"></i>';
   const description = document.getElementById('chap-create-desc').value.trim();
 
   if (!name) return;
@@ -2704,8 +2119,8 @@ async function handleCreateChapterSubmit(e) {
 function showCreateNewsModal() {
   openModal(`
     <div class="modal-header">
-      <div class="modal-title">✐ Write a Story</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="pen-line" class="ui-icon"></i> Write a Story</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <form onsubmit="handleCreateStorySubmit(event)">
       <div class="input-group"><label class="input-label">Headline / Title</label><input type="text" id="story-create-title" class="form-input" placeholder="e.g., DIC AI Lab Launch 2026" required /></div>
@@ -2721,7 +2136,7 @@ async function handleCreateStorySubmit(e) {
   e.preventDefault();
   const title = document.getElementById('story-create-title').value.trim();
   const category = document.getElementById('story-create-category').value;
-  const emoji = document.getElementById('story-create-emoji').value.trim() || '🌟';
+  const emoji = document.getElementById('story-create-emoji').value.trim() || '<i data-lucide="sparkle" class="ui-icon"></i>';
   const content = document.getElementById('story-create-content').value.trim();
 
   if (!title || !content) return;
@@ -2747,8 +2162,8 @@ async function handleCreateStorySubmit(e) {
 function showTenantSwitcher() {
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">⇅ Switch Institution</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="repeat" class="ui-icon"></i> Switch Institution</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">You have cross-institutional access to the following alumni networks:</p>
     ${MOCK_TENANTS.map(t => `
@@ -2801,24 +2216,49 @@ function handleGlobalSearch(value) {
 }
 
 // ─── TOAST NOTIFICATION ──────────────────────────────────────
-function showToast(message) {
+// message is developer-authored text that may embed a leading emoji plus
+// server- or user-derived data (names, error strings). The emoji is mapped
+// to a safe, fixed icon element; everything else stays textContent so
+// interpolated data can never be interpreted as markup.
+function showToast(message, iconName) {
   let toast = document.getElementById('toast-container');
   if (!toast) {
     toast = document.createElement('div');
     toast.id = 'toast-container';
-    toast.style.cssText = 'position:fixed;bottom:90px;right:20px;z-index:2000;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
+    toast.className = 'toast-stack';
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
     document.body.appendChild(toast);
   }
 
   const t = document.createElement('div');
-  t.style.cssText = 'background:rgba(17,27,46,0.97);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 18px;font-size:13px;font-weight:600;color:#F1F5FF;backdrop-filter:blur(20px);box-shadow:0 8px 30px rgba(0,0,0,0.4);animation:slideInRight 0.3s ease;max-width:320px;pointer-events:auto;';
-  t.textContent = message;
-  toast.appendChild(t);
+  t.className = 'toast';
 
-  setTimeout(() => {
-    t.style.animation = 'slideOutRight 0.3s ease forwards';
-    setTimeout(() => t.remove(), 300);
-  }, 3000);
+  // v5 callers pass a Lucide name. Older callers still prefix an emoji, which
+  // is mapped to the equivalent icon and stripped from the text.
+  let name = iconName || null;
+  if (!name) {
+    const lead = message.match(/^(\S+)\s*/);
+    if (lead && EMOJI_ICON_MAP[lead[1]]) {
+      name = EMOJI_ICON_MAP[lead[1]];
+      message = message.slice(lead[0].length);
+    }
+  }
+  if (name) {
+    const iconEl = document.createElement('i');
+    iconEl.setAttribute('data-lucide', name);
+    iconEl.setAttribute('aria-hidden', 'true');
+    iconEl.className = 'ui-icon toast-icon';
+    t.appendChild(iconEl);
+  }
+
+  const span = document.createElement('span');
+  span.textContent = message;
+  t.appendChild(span);
+
+  toast.appendChild(t);
+  if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
+  setTimeout(() => { t.style.opacity = '0'; setTimeout(() => t.remove(), 250); }, 3200);
 }
 
 // Add toast keyframes
@@ -2858,10 +2298,10 @@ function toggleProgressiveDisclosure(targetId, btn) {
   const isHidden = target.classList.contains('hidden');
   if (isHidden) {
     target.classList.remove('hidden');
-    if (btn) btn.innerHTML = '▲ Show Less';
+    if (btn) btn.innerHTML = '<i data-lucide="chevron-up" class="ui-icon"></i> Show Less';
   } else {
     target.classList.add('hidden');
-    if (btn) btn.innerHTML = '▼ Show More';
+    if (btn) btn.innerHTML = '<i data-lucide="chevron-down" class="ui-icon"></i> Show More';
   }
 }
 
@@ -2873,8 +2313,6 @@ let __appInitialized = false;
 async function initAppOnce() {
   if (__appInitialized) return;
   __appInitialized = true;
-
-  initAppTheme();
 
   const user = await API.me();
   if (user) {
@@ -2891,6 +2329,32 @@ if (document.readyState === 'complete' || document.readyState === 'interactive')
   document.addEventListener('DOMContentLoaded', initAppOnce);
   window.addEventListener('load', initAppOnce);
 }
+
+// ─── LUCIDE ICON RENDERING ────────────────────────────────────
+// The UI is built almost entirely from innerHTML template strings, so
+// <i data-lucide="..."> placeholders keep appearing as the app re-renders.
+// Re-scanning after every DOM mutation (instead of after each render call)
+// means every one of those call sites gets icons for free.
+(function () {
+  function renderIcons() {
+    if (window.lucide) lucide.createIcons();
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderIcons);
+  } else {
+    renderIcons();
+  }
+  // Trailing debounce rather than a single rAF: the app's dashboards render
+  // progressively as each API call resolves, so mutations can land across
+  // several ticks. Each new mutation pushes the timer back, guaranteeing a
+  // final createIcons() pass once the burst actually settles.
+  let debounceTimer = null;
+  const observer = new MutationObserver(() => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(renderIcons, 50);
+  });
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+})();
 
 // ============================================================
 // GAP-FIX ADDITIONS — REQ-01, REQ-03, REQ-05, REQ-07, REQ-08
@@ -2957,7 +2421,7 @@ async function renderCampaignsEnhanced() {
     return;
   }
   if (campaigns.length === 0) {
-    container.innerHTML = renderEmptyState('💚', 'No active campaigns', 'Fundraising campaigns will appear here once launched.');
+    container.innerHTML = renderEmptyState('<i data-lucide="heart" class="ui-icon"></i>', 'No active campaigns', 'Fundraising campaigns will appear here once launched.');
     return;
   }
 
@@ -2984,8 +2448,8 @@ async function renderCampaignsEnhanced() {
           <span class="progress-goal">of ৳${(goal / 100000).toFixed(1)}L goal · ${pct}%</span>
         </div>
         <div style="display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--text-muted)">
-          <span>👥 ${Number(c.donors_count || 0).toLocaleString()} donors</span>
-          <span>📅 ${c.days_left} days left</span>
+          <span><i data-lucide="users" class="ui-icon"></i> ${Number(c.donors_count || 0).toLocaleString()} donors</span>
+          <span><i data-lucide="calendar" class="ui-icon"></i> ${c.days_left} days left</span>
         </div>
       </div>
       <div class="campaign-footer">
@@ -2993,7 +2457,7 @@ async function renderCampaignsEnhanced() {
           ${gateways.map(g => `<span class="gateway-pill ${escapeHtml(g)}">${escapeHtml(g.charAt(0).toUpperCase() + g.slice(1))}</span>`).join('')}
         </div>
         <div style="display:flex;gap:6px">
-          ${canManage ? `<button class="btn btn-ghost btn-sm" onclick="deleteCampaignPrompt(${c.id}, '${safeName}')">🗑</button>` : ''}
+          ${canManage ? `<button class="btn btn-ghost btn-sm" onclick="deleteCampaignPrompt(${c.id}, '${safeName}')"><i data-lucide="trash-2" class="ui-icon"></i></button>` : ''}
           <button class="donate-btn" onclick="showDonateModal(${c.id}, '${safeName}')">Donate →</button>
         </div>
       </div>
@@ -3005,8 +2469,8 @@ async function renderCampaignsEnhanced() {
 function showReferralModal(jobId, jobTitle, postedBy) {
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">🤝 Request a Referral</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="handshake" class="ui-icon"></i> Request a Referral</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <div style="margin-bottom:14px;padding:12px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
       <div style="font-size:12px;color:var(--text-muted)">Referral for</div>
@@ -3017,7 +2481,7 @@ function showReferralModal(jobId, jobTitle, postedBy) {
       <label class="input-label">Your message</label>
       <textarea id="referral-message" class="form-input" rows="5" placeholder="Introduce yourself and explain why you are a strong fit for this role…"></textarea>
     </div>
-    <button class="btn btn-primary btn-full" onclick="submitReferralRequest(${jobId})">🤝 Send Referral Request</button>
+    <button class="btn btn-primary btn-full" onclick="submitReferralRequest(${jobId})"><i data-lucide="handshake" class="ui-icon"></i> Send Referral Request</button>
   `);
 }
 
@@ -3038,7 +2502,7 @@ async function renderJobsEnhanced(filter = '') {
     return;
   }
   if (jobs.length === 0) {
-    container.innerHTML = renderEmptyState('💼', 'No openings match your filters',
+    container.innerHTML = renderEmptyState('<i data-lucide="briefcase" class="ui-icon"></i>', 'No openings match your filters',
       'Verified alumni can post roles using the button above.');
     return;
   }
@@ -3052,15 +2516,15 @@ async function renderJobsEnhanced(filter = '') {
     const safeTitle = escapeHtml(j.title).replace(/'/g, '&#39;');
     return `
     <div class="job-card">
-      <div class="job-company-logo">${escapeHtml(j.emoji || '💼')}</div>
+      <div class="job-company-logo">${emojiIcon(j.emoji, 'briefcase')}</div>
       <div class="job-info">
         <div class="job-title">${escapeHtml(j.title)}</div>
         <div class="job-company">${escapeHtml(j.company)}</div>
         <div class="job-meta">
-          <span class="job-meta-item">📍 ${escapeHtml(j.location || '—')}</span>
-          <span class="job-meta-item">👤 ${escapeHtml(j.posted_by_name || 'DIC Alumni')}</span>
+          <span class="job-meta-item"><i data-lucide="map-pin" class="ui-icon"></i> ${escapeHtml(j.location || '—')}</span>
+          <span class="job-meta-item"><i data-lucide="user" class="ui-icon"></i> ${escapeHtml(j.posted_by_name || 'DIC Alumni')}</span>
           <span class="job-meta-item">🕒 ${escapeHtml(formatRelativeTime(j.created_at))}</span>
-          <span class="job-meta-item">📥 ${j.applicants} applicant${j.applicants === 1 ? '' : 's'}</span>
+          <span class="job-meta-item"><i data-lucide="download" class="ui-icon"></i> ${j.applicants} applicant${j.applicants === 1 ? '' : 's'}</span>
         </div>
         <div class="job-tags">${tags.map(t => `<span class="job-tag">${escapeHtml(t)}</span>`).join('')}</div>
       </div>
@@ -3069,10 +2533,10 @@ async function renderJobsEnhanced(filter = '') {
         <span class="job-type-badge ${escapeHtml(j.type)}">${escapeHtml((j.type || '').charAt(0).toUpperCase() + (j.type || '').slice(1))}</span>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           ${mine || isAdmin
-            ? `<button class="apply-btn" onclick="showJobApplicants(${j.id}, '${safeTitle}')">👥 Applicants (${j.applicants})</button>
-               <button class="referral-btn" onclick="deleteJobPrompt(${j.id}, '${safeTitle}')">🗑 Delete</button>`
-            : `<button class="apply-btn" ${j.has_applied ? 'disabled' : ''} onclick="applyJob(${j.id}, '${safeTitle}')">${j.has_applied ? '✓ Applied' : 'Apply →'}</button>
-               <button class="referral-btn" onclick="showReferralModal(${j.id}, '${safeTitle}', '${escapeHtml(j.posted_by_name || '').replace(/'/g, '&#39;')}')">🤝 Referral</button>`}
+            ? `<button class="apply-btn" onclick="showJobApplicants(${j.id}, '${safeTitle}')"><i data-lucide="users" class="ui-icon"></i> Applicants (${j.applicants})</button>
+               <button class="referral-btn" onclick="deleteJobPrompt(${j.id}, '${safeTitle}')"><i data-lucide="trash-2" class="ui-icon"></i> Delete</button>`
+            : `<button class="apply-btn" ${j.has_applied ? 'disabled' : ''} onclick="applyJob(${j.id}, '${safeTitle}')">${j.has_applied ? '<i data-lucide="check" class="ui-icon"></i> Applied' : 'Apply →'}</button>
+               <button class="referral-btn" onclick="showReferralModal(${j.id}, '${safeTitle}', '${escapeHtml(j.posted_by_name || '').replace(/'/g, '&#39;')}')"><i data-lucide="handshake" class="ui-icon"></i> Referral</button>`}
         </div>
       </div>
     </div>`;
@@ -3118,7 +2582,7 @@ function renderCareerRegistry(filter = '') {
         <div class="career-registry-history">Previously: ${c.prev}</div>
       </div>
       <div class="career-registry-action" style="text-align:right;flex-shrink:0">
-        <div class="career-update-badge ${c.updateType}">${c.updateType === 'ai' ? '🤖 AI Updated' : c.updateType === 'self' ? '✎ Self-Reported' : '⏳ Pending'}</div>
+        <div class="career-update-badge ${c.updateType}">${c.updateType === 'ai' ? '<i data-lucide="bot" class="ui-icon"></i> AI Updated' : c.updateType === 'self' ? '<i data-lucide="pen-line" class="ui-icon"></i> Self-Reported' : '<i data-lucide="hourglass" class="ui-icon"></i> Pending'}</div>
         <div style="font-size:10px;color:var(--text-muted);margin-top:4px">${c.lastUpdated}</div>
         <button class="btn btn-sm btn-outline" style="margin-top:6px;font-size:10px" onclick="showToast('✎ Edit form for ${c.name} loading…')">Edit</button>
       </div>
@@ -3166,11 +2630,11 @@ function renderEnrichmentStats() {
 function showSelfReportPrompt() {
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">✎ Update My Career</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="pen-line" class="ui-icon"></i> Update My Career</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <div class="socratic-prompt">
-      <div class="socratic-prompt-icon">🤖</div>
+      <div class="socratic-prompt-icon"><i data-lucide="bot" class="ui-icon"></i></div>
       <div class="socratic-prompt-text"><strong>ConnectAI:</strong> Let me help you update your career history. What changed?</div>
     </div>
     <div class="input-group"><label class="input-label">Current Employer</label><input type="text" class="form-input" value="TechBD Solutions" /></div>
@@ -3188,7 +2652,7 @@ function showSelfReportPrompt() {
       </select>
     </div>
     <div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.15);border-radius:var(--radius-sm);padding:10px;font-size:12px;color:var(--text-secondary);margin-bottom:16px">
-      🔒 Opt-out: You can hide any field from AI enrichment. Your scraping opt-out preference is stored encrypted.
+      <i data-lucide="lock" class="ui-icon"></i> Opt-out: You can hide any field from AI enrichment. Your scraping opt-out preference is stored encrypted.
     </div>
     <button class="btn btn-primary btn-full" onclick="closeModal(); showToast('✅ Career updated! Profile visible to DIC alumni.')">Save Career Update</button>
   `);
@@ -3197,14 +2661,14 @@ function showSelfReportPrompt() {
 function showSelfReportModal(name) {
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">✎ Confirm Career Info</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="pen-line" class="ui-icon"></i> Confirm Career Info</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Confirming career info for <strong>${name}</strong>. Please review and update if needed.</p>
     <div class="input-group"><label class="input-label">Current Employer</label><input type="text" class="form-input" placeholder="Company name" /></div>
     <div class="input-group"><label class="input-label">Current Role</label><input type="text" class="form-input" placeholder="Job title" /></div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-primary" onclick="closeModal(); showToast('✅ Career info confirmed for ${name}')">✓ Confirm & Save</button>
+      <button class="btn btn-primary" onclick="closeModal(); showToast('✅ Career info confirmed for ${name}')"><i data-lucide="check" class="ui-icon"></i> Confirm & Save</button>
       <button class="btn btn-outline" onclick="closeModal(); showToast('⏭ Skipped — will prompt again in 30 days')">Skip for Now</button>
     </div>
   `);
@@ -3213,8 +2677,8 @@ function showSelfReportModal(name) {
 function showCareerPrivacyModal() {
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">🔒 Career Privacy Controls</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="lock" class="ui-icon"></i> Career Privacy Controls</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Control how your career data is collected and displayed. All preferences are PDPA 2026 compliant.</p>
     ${[
@@ -3241,7 +2705,7 @@ const MOCK_RBAC_V2 = {
     'Mentorship', 'Donations & MFS', 'Financial Ledger', 'Event Management',
     'Job Board', 'Security Audit Log', 'Content Moderation', 'API & Webhooks', 'Career Tracker'
   ],
-  roles: ['Super Admin', 'School Owner', 'Alumni Dir.', 'Chapter Off.', 'Content Mod.', 'Event Mgr.', 'Alumni ✓', 'Alumni ✗', 'Student', 'Finance Aud.', 'API Dev.', 'System'],
+  roles: ['Super Admin', 'School Owner', 'Alumni Dir.', 'Chapter Off.', 'Content Mod.', 'Event Mgr.', 'Alumni <i data-lucide="check" class="ui-icon"></i>', 'Alumni <i data-lucide="x" class="ui-icon"></i>', 'Student', 'Finance Aud.', 'API Dev.', 'System'],
   matrix: [
     ['Full', 'Edit', 'Full', 'None', 'None', 'None', 'None', 'None', 'None', 'None', 'None', 'View'],
     ['Full', 'Full', 'Full', 'Edit', 'None', 'None', 'None', 'None', 'None', 'None', 'None', 'View'],
@@ -3318,7 +2782,7 @@ function renderOfflineSyncPanel() {
         <div style="font-size:11px;color:var(--text-muted);margin-top:4px">LRU eviction triggers at 100MB cache threshold · Retry on reconnect after 3 exponential backoffs</div>
       </div>
       <div style="display:flex;gap:8px;margin-top:12px">
-        <button class="btn btn-primary btn-sm" onclick="showToast('🔄 Manual sync triggered — 6 items syncing…')">🔄 Sync Now</button>
+        <button class="btn btn-primary btn-sm" onclick="showToast('🔄 Manual sync triggered — 6 items syncing…')"><i data-lucide="refresh-cw" class="ui-icon"></i> Sync Now</button>
         <button class="btn btn-outline btn-sm" onclick="showToast('🗑 Conflict log cleared')">Clear Conflicts</button>
       </div>
     </div>
@@ -3336,7 +2800,7 @@ function renderOfflineSyncPanel() {
     <div class="glass-card">
       <div class="card-header"><h3 class="card-title">Conflict Resolution Log</h3></div>
       ${MOCK_SYNC_QUEUE.filter(q => q.type === 'conflict').length === 0
-        ? '<div style="text-align:center;padding:24px;color:var(--text-muted)">✓ No conflicts</div>'
+        ? '<div style="text-align:center;padding:24px;color:var(--text-muted)"><i data-lucide="check" class="ui-icon"></i> No conflicts</div>'
         : MOCK_SYNC_QUEUE.filter(q => q.type === 'conflict').map(q => `
           <div class="sync-queue-item">
             <span class="sync-queue-type conflict">CONFLICT</span>
@@ -3362,7 +2826,7 @@ async function renderBroadcastHistory() {
     return;
   }
   if (rows.length === 0) {
-    el.innerHTML = renderEmptyState('📢', 'No broadcasts sent yet', 'Announcements you send will be listed here with delivery counts.');
+    el.innerHTML = renderEmptyState('<i data-lucide="megaphone" class="ui-icon"></i>', 'No broadcasts sent yet', 'Announcements you send will be listed here with delivery counts.');
     return;
   }
 
@@ -3438,7 +2902,7 @@ function renderAPIApps() {
   if (!el) return;
   el.innerHTML = MOCK_API_APPS.map(a => `
     <div class="api-app-card">
-      <div class="api-app-icon">${a.icon}</div>
+      <div class="api-app-icon">${emojiIcon(a.icon, 'app-window')}</div>
       <div class="api-app-info">
         <div class="api-app-name">${a.name}</div>
         <div class="api-app-client">${a.clientId}</div>
@@ -3465,7 +2929,7 @@ function renderWebhooks() {
         <div class="webhook-events">${w.events.map(e => `<span class="webhook-event-tag">${e}</span>`).join('')}</div>
         <div style="font-size:10px;color:var(--text-muted);margin-top:4px">${w.deliveries.toLocaleString()} deliveries</div>
       </div>
-      <span class="webhook-status ${w.status}">${w.status === 'active' ? '● Active' : '○ Inactive'}</span>
+      <span class="webhook-status ${w.status}">${w.status === 'active' ? '<i data-lucide="circle-dot" class="ui-icon"></i> Active' : '<i data-lucide="circle" class="ui-icon"></i> Inactive'}</span>
       <button class="api-key-btn" onclick="showToast('🗑 Webhook deleted')">Delete</button>
     </div>
   `).join('');
@@ -3505,7 +2969,7 @@ function renderSISIntegrations() {
   if (!el) return;
   el.innerHTML = MOCK_SIS_INTEGRATIONS.map(s => `
     <div class="sis-integration-item">
-      <div class="sis-integration-icon">${s.icon}</div>
+      <div class="sis-integration-icon">${emojiIcon(s.icon, 'link')}</div>
       <div class="sis-integration-info">
         <div class="sis-integration-name">${s.name}</div>
         <div class="sis-integration-type">${s.type}</div>
@@ -3518,8 +2982,8 @@ function renderSISIntegrations() {
 function showApiDocs() {
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">📄 OpenAPI Documentation</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="file-text" class="ui-icon"></i> OpenAPI Documentation</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <div style="background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm);padding:16px;font-family:monospace;font-size:12px;color:var(--text-secondary);margin-bottom:16px">
 openapi: 3.0.3
@@ -3543,7 +3007,7 @@ paths:
     post:
       summary: Verify alumni status
     </div>
-    <button class="btn btn-outline btn-full" onclick="showToast('📄 Full OpenAPI spec downloading as YAML…')">⬇ Download Full Spec</button>
+    <button class="btn btn-outline btn-full" onclick="showToast('📄 Full OpenAPI spec downloading as YAML…')"><i data-lucide="download" class="ui-icon"></i> Download Full Spec</button>
   `);
 }
 
@@ -3551,7 +3015,7 @@ function showCreateApiApp() {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">+ New OAuth2 Application</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <div class="input-group"><label class="input-label">Application Name</label><input type="text" class="form-input" placeholder="e.g., SIS Integration v2" /></div>
     <div class="input-group"><label class="input-label">Callback URLs</label><input type="text" class="form-input" placeholder="https://sis.dic.edu.bd/callback" /></div>
@@ -3569,7 +3033,7 @@ function showAddWebhookModal() {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">+ Add Webhook Endpoint</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <div class="input-group"><label class="input-label">Endpoint URL</label><input type="url" class="form-input" placeholder="https://your-server.com/webhook" /></div>
     <div class="input-group"><label class="input-label">Secret (HMAC-SHA256)</label><input type="text" class="form-input" value="whsec_${Math.random().toString(36).substr(2,24)}" /></div>
@@ -3593,10 +3057,10 @@ function renderTenantListEnhanced() {
         <div style="font-size:16px;font-weight:700">${t.name}</div>
         <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${t.subdomain}</div>
         <div class="tenant-branding-editor">
-          <div class="branding-editor-title">🎨 Branding</div>
+          <div class="branding-editor-title"><i data-lucide="palette" class="ui-icon"></i> Branding</div>
           <div class="branding-color-grid">
             <div class="color-field">
-              <div class="color-swatch" style="background:#6C63FF" title="Primary color" onclick="showToast('🎨 Color picker for Primary')"></div>
+              <div class="color-swatch" style="background:#0B3897" title="Primary color" onclick="showToast('🎨 Color picker for Primary')"></div>
               <span class="color-label">Primary</span>
             </div>
             <div class="color-field">
@@ -3622,7 +3086,7 @@ function renderTenantListEnhanced() {
       <div style="flex:1">
         <div style="font-size:16px;font-weight:700">Rajshahi University Alumni <span style="font-size:12px;color:var(--red)">— SUSPENDED</span></div>
         <div style="font-size:12px;color:var(--text-secondary)">ru.alumnai.io</div>
-        <div style="font-size:12px;color:var(--red);margin-top:6px">⚠ Subscription expired Jul 1, 2026 · 72 day grace period remaining</div>
+        <div style="font-size:12px;color:var(--red);margin-top:6px"><i data-lucide="triangle-alert" class="ui-icon"></i> Subscription expired Jul 1, 2026 · 72 day grace period remaining</div>
         <div style="font-size:11px;color:var(--text-muted)">White-labeled suspension notice active at ru.alumnai.io</div>
       </div>
       <span class="tenant-status" style="background:rgba(248,113,113,0.12);color:var(--red)">SUSPENDED</span>
@@ -3651,7 +3115,7 @@ async function renderDonorLeaderboard() {
     return;
   }
   if (rows.length === 0) {
-    el.innerHTML = renderEmptyState('🏆', 'No donations yet', 'The top contributors will be listed here.');
+    el.innerHTML = renderEmptyState('<i data-lucide="trophy" class="ui-icon"></i>', 'No donations yet', 'The top contributors will be listed here.');
     return;
   }
 
@@ -3720,57 +3184,77 @@ function renderMentorshipHealthAnalytics() {
   }
 }
 
-const MOCK_EVENT_ROI = [
-  { name: 'Alumni Reunion 2026', ticketsSold: 470, capacity: 500, rev: '৳7,05,000', cost: '৳3,20,000', margin: '+120%', roi: '2.2x' },
-  { name: 'Tech Career Fair Q2', ticketsSold: 310, capacity: 350, rev: '৳3,10,000', cost: '৳1,10,000', margin: '+181%', roi: '2.8x' },
-  { name: 'AI & Tech Symposium', ticketsSold: 180, capacity: 200, rev: '৳2,16,000', cost: '৳95,000', margin: '+127%', roi: '2.3x' },
-  { name: 'UK Chapter Dinner', ticketsSold: 65, capacity: 70, rev: '৳2,60,000', cost: '৳1,80,000', margin: '+44%', roi: '1.4x' }
-];
 
-function renderEventROIAnalytics() {
+async function renderEventROIAnalytics() {
   const table = document.getElementById('event-roi-table');
   const summary = document.getElementById('roi-summary');
   if (!table) return;
 
-  table.innerHTML = `
-    <div class="table-scroll">
-      <table class="rbac-table">
-        <thead>
-          <tr>
-            <th>Event Name</th>
-            <th>Tickets Sold</th>
-            <th>Revenue (BDT)</th>
-            <th>Cost (BDT)</th>
-            <th>Net Margin</th>
-            <th>ROI Multiplier</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${MOCK_EVENT_ROI.map(e => `
-            <tr>
-              <td style="font-weight:700">${e.name}</td>
-              <td>${e.ticketsSold} / ${e.capacity}</td>
-              <td style="color:var(--teal);font-weight:700">${e.rev}</td>
-              <td style="color:var(--text-muted)">${e.cost}</td>
-              <td><span class="card-badge teal">${e.margin}</span></td>
-              <td style="font-weight:800;color:var(--primary-light)">${e.roi}</td>
-            </tr>
-          `).join('')}
-        </tbody>
-      </table>
-    </div>
-  `;
+  // v5: real figures from the events API. This panel previously rendered a
+  // hardcoded MOCK_EVENT_ROI array that looked like live reporting.
+  table.innerHTML = renderSkeletonCards(2, 'analytics');
+  const events = await API.getEvents({ scope: 'manage', status: 'all' });
+
+  if (apiFailed(events)) {
+    table.innerHTML = renderErrorState(events && events.error ? events.error : 'Could not load event data.',
+      'renderEventROIAnalytics()');
+    if (summary) summary.innerHTML = '';
+    evRefreshIcons();
+    return;
+  }
+  if (!events.length) {
+    table.innerHTML = renderEmptyState('<i data-lucide="calendar" class="ui-icon"></i>',
+      'No events yet', 'Attendance and revenue appear here once events exist.');
+    if (summary) summary.innerHTML = '';
+    evRefreshIcons();
+    return;
+  }
+
+  const rows = events.map(function (e) {
+    const reg = e.registered || 0;
+    const cap = e.capacity || 0;
+    return {
+      name: e.title,
+      registered: reg,
+      capacity: cap,
+      checkedIn: e.checked_in || 0,
+      fill: cap ? Math.round((reg / cap) * 100) : 0,
+      revenue: Number(e.revenue || 0)
+    };
+  });
+
+  table.innerHTML =
+    '<div class="table-scroll"><table class="rbac-table"><thead><tr>' +
+      '<th>Event</th><th>Registered</th><th>Capacity</th><th>Fill rate</th>' +
+      '<th>Checked in</th><th>Ticket revenue</th>' +
+    '</tr></thead><tbody>' +
+    rows.map(function (r) {
+      return '<tr><td style="font-weight:700">' + escapeHtml(r.name) + '</td>' +
+        '<td>' + r.registered.toLocaleString() + '</td>' +
+        '<td>' + r.capacity.toLocaleString() + '</td>' +
+        '<td><span class="card-badge ' + (r.fill >= 80 ? 'teal' : '') + '">' + r.fill + '%</span></td>' +
+        '<td>' + r.checkedIn.toLocaleString() + '</td>' +
+        '<td style="font-weight:700">' + evMoney(r.revenue) + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
 
   if (summary) {
-    summary.innerHTML = `
-      <div style="display:flex;flex-direction:column;gap:12px">
-        <div class="enrichment-stat-item"><span class="enrichment-stat-label">Total Events Financial Yield</span><span class="enrichment-stat-val" style="color:var(--teal)">৳14,91,000</span></div>
-        <div class="enrichment-stat-item"><span class="enrichment-stat-label">Total Program Expenses</span><span class="enrichment-stat-val" style="color:var(--text-muted)">৳7,05,000</span></div>
-        <div class="enrichment-stat-item"><span class="enrichment-stat-label">Net Surplus Generated</span><span class="enrichment-stat-val" style="color:var(--green)">+৳7,86,000</span></div>
-        <div class="enrichment-stat-item"><span class="enrichment-stat-label">Average Event ROI</span><span class="enrichment-stat-val" style="color:var(--primary-light)">2.18x</span></div>
-      </div>
-    `;
+    const totalReg = rows.reduce(function (a, r) { return a + r.registered; }, 0);
+    const totalCap = rows.reduce(function (a, r) { return a + r.capacity; }, 0);
+    const totalRev = rows.reduce(function (a, r) { return a + r.revenue; }, 0);
+    const totalIn = rows.reduce(function (a, r) { return a + r.checkedIn; }, 0);
+    const stat = function (label, value) {
+      return '<div class="enrichment-stat-item"><span class="enrichment-stat-label">' + label +
+             '</span><span class="enrichment-stat-val">' + value + '</span></div>';
+    };
+    summary.innerHTML = '<div style="display:flex;flex-direction:column;gap:12px">' +
+      stat('Events', rows.length) +
+      stat('Total registered', totalReg.toLocaleString()) +
+      stat('Overall fill rate', (totalCap ? Math.round((totalReg / totalCap) * 100) : 0) + '%') +
+      stat('Total checked in', totalIn.toLocaleString()) +
+      stat('Total ticket revenue', evMoney(totalRev)) +
+      '</div>';
   }
+  evRefreshIcons();
 }
 
 // ─── 3. REQ-14: NID & BRC AES-256 ENCRYPTED VAULT ───────────
@@ -3787,28 +3271,28 @@ async function renderNIDVaultPanel() {
   }
 
   const banner = data.encryptionEnabled
-    ? `<div class="vault-banner ok">🔐 AES-256-GCM encryption active. Values are decryptable only with a logged reason.</div>`
-    : `<div class="vault-banner warn">⚠ ENCRYPTION_KEY is not configured — the vault is refusing to store identity data.</div>`;
+    ? `<div class="vault-banner ok"><i data-lucide="lock-keyhole" class="ui-icon"></i> AES-256-GCM encryption active. Values are decryptable only with a logged reason.</div>`
+    : `<div class="vault-banner warn"><i data-lucide="triangle-alert" class="ui-icon"></i> ENCRYPTION_KEY is not configured — the vault is refusing to store identity data.</div>`;
 
   el.innerHTML = `
     ${banner}
     <div style="display:flex;gap:8px;margin:12px 0;flex-wrap:wrap">
-      <button class="btn btn-outline btn-sm" onclick="showStoreIdentityModal()">➕ Encrypt a field</button>
-      <button class="btn btn-ghost btn-sm" onclick="showVaultAccessLogs()">📜 Access log</button>
+      <button class="btn btn-outline btn-sm" onclick="showStoreIdentityModal()"><i data-lucide="plus" class="ui-icon"></i> Encrypt a field</button>
+      <button class="btn btn-ghost btn-sm" onclick="showVaultAccessLogs()"><i data-lucide="scroll-text" class="ui-icon"></i> Access log</button>
     </div>
     ${data.entries.length === 0
-      ? renderEmptyState('🔐', 'No identity fields stored', 'Encrypted NID / BRC records will be listed here, masked.')
+      ? renderEmptyState('<i data-lucide="lock-keyhole" class="ui-icon"></i>', 'No identity fields stored', 'Encrypted NID / BRC records will be listed here, masked.')
       : `<div style="display:flex;flex-direction:column;gap:8px">
           ${data.entries.map(v => `
             <div class="vault-row">
-              <div class="vault-icon">🪪</div>
+              <div class="vault-icon"><i data-lucide="id-card" class="ui-icon"></i></div>
               <div style="flex:1;min-width:0">
                 <div style="font-weight:700;font-size:13px">${escapeHtml(v.owner_name)}</div>
                 <div style="font-size:12px;color:var(--text-secondary)">
                   ${escapeHtml(v.field_type.toUpperCase())} · <span style="font-family:monospace">•••• •••• ${escapeHtml(v.last_four || '••••')}</span>
                 </div>
               </div>
-              <button class="btn btn-sm btn-outline" onclick="decryptVaultField(${v.id}, '${escapeHtml(v.owner_name).replace(/'/g, '&#39;')}')">🔓 Decrypt</button>
+              <button class="btn btn-sm btn-outline" onclick="decryptVaultField(${v.id}, '${escapeHtml(v.owner_name).replace(/'/g, '&#39;')}')"><i data-lucide="unlock" class="ui-icon"></i> Decrypt</button>
             </div>`).join('')}
         </div>`}
   `;
@@ -3891,25 +3375,25 @@ function renderBulkImportPanel() {
     <div class="glass-card">
       <div class="card-header">
         <div>
-          <h3 class="card-title">📥 Bulk User Import &amp; Automatic Profile Generation</h3>
+          <h3 class="card-title"><i data-lucide="download" class="ui-icon"></i> Bulk User Import &amp; Automatic Profile Generation</h3>
           <p style="font-size:12px;color:var(--text-secondary);margin-top:2px">Upload CSV or Excel files to import hundreds of student/alumni records simultaneously with automated login accounts &amp; email notifications.</p>
         </div>
-        <button class="btn btn-outline btn-sm" onclick="downloadSampleImportCSV()">📄 Download CSV Template</button>
+        <button class="btn btn-outline btn-sm" onclick="downloadSampleImportCSV()"><i data-lucide="file-text" class="ui-icon"></i> Download CSV Template</button>
       </div>
 
       <!-- WIZARD STEPS INDICATOR -->
       <div class="import-wizard-steps">
         <div class="wizard-step-item ${currentImportState.step === 1 ? 'active' : ''}">
-          <span class="wizard-step-num">1</span> 📁 Upload File
+          <span class="wizard-step-num">1</span> <i data-lucide="folder" class="ui-icon"></i> Upload File
         </div>
         <div class="wizard-step-item ${currentImportState.step === 2 ? 'active' : ''}">
-          <span class="wizard-step-num">2</span> 🔍 Validation Engine
+          <span class="wizard-step-num">2</span> <i data-lucide="search" class="ui-icon"></i> Validation Engine
         </div>
         <div class="wizard-step-item ${currentImportState.step === 3 ? 'active' : ''}">
-          <span class="wizard-step-num">3</span> ⚡ Preview &amp; Duplicates
+          <span class="wizard-step-num">3</span> <i data-lucide="zap" class="ui-icon"></i> Preview &amp; Duplicates
         </div>
         <div class="wizard-step-item ${currentImportState.step === 4 ? 'active' : ''}">
-          <span class="wizard-step-num">4</span> 🎉 Accounts Created
+          <span class="wizard-step-num">4</span> <i data-lucide="party-popper" class="ui-icon"></i> Accounts Created
         </div>
       </div>
 
@@ -3921,7 +3405,7 @@ function renderBulkImportPanel() {
     <!-- HISTORICAL IMPORT AUDIT LOG -->
     <div class="glass-card mt-16">
       <div class="card-header">
-        <h3 class="card-title">📜 Import Activity History &amp; Audit Trail</h3>
+        <h3 class="card-title"><i data-lucide="scroll-text" class="ui-icon"></i> Import Activity History &amp; Audit Trail</h3>
         <span class="card-badge teal">Write-Once System Log</span>
       </div>
       <div class="table-scroll">
@@ -3933,7 +3417,7 @@ function renderBulkImportPanel() {
             ${importHistory.map(h => `
               <tr>
                 <td><strong>${escapeHtml(h.batch_code)}</strong></td>
-                <td>📄 ${escapeHtml(h.filename)}</td>
+                <td><i data-lucide="file-text" class="ui-icon"></i> ${escapeHtml(h.filename)}</td>
                 <td>${h.total_records}</td>
                 <td><span class="card-badge teal">${h.success_count}</span></td>
                 <td>${h.failed_count > 0 ? `<span class="card-badge amber">${h.failed_count}</span>` : '0'}</td>
@@ -3955,7 +3439,7 @@ function renderWizardStepContent() {
       <input type="file" id="import-file-input" accept=".csv,text/csv" style="display:none"
              onchange="handleImportFileSelected(this)" />
       <div class="dropzone" onclick="document.getElementById('import-file-input').click()">
-        <div class="dropzone-icon">📄</div>
+        <div class="dropzone-icon"><i data-lucide="file-text" class="ui-icon"></i></div>
         <div class="dropzone-title">Click to choose a CSV file</div>
         <div class="dropzone-sub">Headers are detected and mapped automatically. Timestamp and
           &ldquo;Commicate with&rdquo; are excluded by default.</div>
@@ -3983,7 +3467,7 @@ function renderWizardStepContent() {
         </div>
       </div>
 
-      <button class="btn btn-outline btn-full mt-16" onclick="downloadSampleImportCSV()">📥 Download a sample template</button>
+      <button class="btn btn-outline btn-full mt-16" onclick="downloadSampleImportCSV()"><i data-lucide="download" class="ui-icon"></i> Download a sample template</button>
     `;
   }
 
@@ -3997,7 +3481,7 @@ function renderWizardStepContent() {
 
     return `
       <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:12px">
-        <div style="font-weight:700;font-size:14px">📄 ${escapeHtml(filename)} — ${totalRows} rows, ${headers.length} columns</div>
+        <div style="font-weight:700;font-size:14px"><i data-lucide="file-text" class="ui-icon"></i> ${escapeHtml(filename)} — ${totalRows} rows, ${headers.length} columns</div>
         <button class="btn btn-outline btn-sm" onclick="resetImportWizard()">← Choose a different file</button>
       </div>
 
@@ -4028,7 +3512,7 @@ function renderWizardStepContent() {
       </div>
 
       <button class="btn btn-primary btn-full mt-16" ${(!hasName || !hasEmail) ? 'disabled' : ''}
-              onclick="validateImportRows()">✓ Confirm mapping and validate ${totalRows} rows</button>
+              onclick="validateImportRows()"><i data-lucide="check" class="ui-icon"></i> Confirm mapping and validate ${totalRows} rows</button>
     `;
   }
 
@@ -4040,7 +3524,7 @@ function renderWizardStepContent() {
     return `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div style="font-weight:700;font-size:14px;color:var(--text-primary)">
-          📄 Parsed File: <strong>"${currentImportState.filename}"</strong> (${currentImportState.totalRows} Total Records)
+          <i data-lucide="file-text" class="ui-icon"></i> Parsed File: <strong>"${currentImportState.filename}"</strong> (${currentImportState.totalRows} Total Records)
         </div>
         <button class="btn btn-outline btn-sm" onclick="resetImportWizard()">← Upload Different File</button>
       </div>
@@ -4056,7 +3540,7 @@ function renderWizardStepContent() {
       <!-- DUPLICATE RESOLUTION STRATEGY -->
       ${dupCount > 0 ? `
         <div class="duplicate-strategy-box">
-          <div style="font-weight:700;color:var(--amber);margin-bottom:6px">⚠️ ${dupCount} Duplicate Records Detected (Priority: StudentID &gt; Roll &gt; Email &gt; Phone)</div>
+          <div style="font-weight:700;color:var(--amber);margin-bottom:6px"><i data-lucide="triangle-alert" class="ui-icon"></i> ${dupCount} Duplicate Records Detected (Priority: StudentID &gt; Roll &gt; Email &gt; Phone)</div>
           <div style="display:flex;gap:16px;font-size:12px">
             <label style="display:flex;align-items:center;gap:6px;cursor:pointer">
               <input type="radio" name="dup-strat" value="skip" checked onchange="currentImportState.dupResolution = this.value" />
@@ -4090,7 +3574,7 @@ function renderWizardStepContent() {
                 <td>${r.year}</td>
                 <td>${r.dept}</td>
                 <td><span class="card-badge teal">Valid</span></td>
-                <td style="color:var(--teal);font-size:11px">✓ Ready for Account Creation</td>
+                <td style="color:var(--teal);font-size:11px"><i data-lucide="check" class="ui-icon"></i> Ready for Account Creation</td>
               </tr>
             `).join('')}
             ${currentImportState.duplicateRecords.map(r => `
@@ -4102,7 +3586,7 @@ function renderWizardStepContent() {
                 <td>${r.year}</td>
                 <td>${r.dept}</td>
                 <td><span class="card-badge amber">Duplicate</span></td>
-                <td style="color:var(--amber);font-size:11px">⚠ Matches existing alumni ID ${r.studentId}</td>
+                <td style="color:var(--amber);font-size:11px"><i data-lucide="triangle-alert" class="ui-icon"></i> Matches existing alumni ID ${r.studentId}</td>
               </tr>
             `).join('')}
             ${currentImportState.invalidRecords.map(r => `
@@ -4114,7 +3598,7 @@ function renderWizardStepContent() {
                 <td>${r.year || 'N/A'}</td>
                 <td>${r.dept || 'N/A'}</td>
                 <td><span class="card-badge red">Invalid</span></td>
-                <td style="color:var(--red);font-size:11px">❌ ${r.errorMsg}</td>
+                <td style="color:var(--red);font-size:11px"><i data-lucide="circle-x" class="ui-icon"></i> ${r.errorMsg}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -4123,9 +3607,9 @@ function renderWizardStepContent() {
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px">
         ${invalidCount > 0 ? `
-          <button class="btn btn-outline btn-sm" onclick="downloadImportErrorReportCSV()">📥 Download Error Report (${invalidCount} rows)</button>
+          <button class="btn btn-outline btn-sm" onclick="downloadImportErrorReportCSV()"><i data-lucide="download" class="ui-icon"></i> Download Error Report (${invalidCount} rows)</button>
         ` : '<div></div>'}
-        <button class="btn btn-primary" onclick="executeBulkImportProcess()">🚀 Confirm &amp; Create ${validCount} Accounts →</button>
+        <button class="btn btn-primary" onclick="executeBulkImportProcess()"><i data-lucide="rocket" class="ui-icon"></i> Confirm &amp; Create ${validCount} Accounts →</button>
       </div>
     `;
   }
@@ -4133,15 +3617,15 @@ function renderWizardStepContent() {
   if (currentImportState.step === 4) {
     return `
       <div style="text-align:center;padding:24px 0">
-        <div style="font-size:48px;margin-bottom:8px">🎉</div>
+        <div style="font-size:48px;margin-bottom:8px"><i data-lucide="party-popper" class="ui-icon"></i></div>
         <h2 style="color:var(--teal);font-size:22px;font-weight:800">Bulk Import &amp; Profile Generation Complete!</h2>
         <p style="color:var(--text-secondary);font-size:13px;max-width:500px;margin:8px auto 20px">
           Successfully created <strong>${currentImportState.validRecords.length} User Accounts &amp; Alumni Profiles</strong> in the database. Account activation emails &amp; temporary credentials have been dispatched.
         </p>
 
         <div style="display:inline-flex;gap:12px;justify-content:center">
-          <button class="btn btn-primary" onclick="showPage('directory')">◉ View Alumni Directory</button>
-          <button class="btn btn-outline" onclick="resetImportWizard()">📥 Import Another File</button>
+          <button class="btn btn-primary" onclick="showPage('directory')"><i data-lucide="users" class="ui-icon"></i> View Alumni Directory</button>
+          <button class="btn btn-outline" onclick="resetImportWizard()"><i data-lucide="download" class="ui-icon"></i> Import Another File</button>
         </div>
       </div>
     `;
@@ -4264,19 +3748,19 @@ async function renderCustomFieldManager() {
             <input type="checkbox" id="cf-required" /> Required field
           </label></div>
       </div>
-      <button type="submit" class="btn btn-primary btn-full">➕ Add Custom Field</button>
+      <button type="submit" class="btn btn-primary btn-full"><i data-lucide="plus" class="ui-icon"></i> Add Custom Field</button>
     </form>
     <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
       ${fields.length ? fields.map(f => `
         <div class="custom-field-row">
-          <div class="vault-icon">🧩</div>
+          <div class="vault-icon"><i data-lucide="puzzle" class="ui-icon"></i></div>
           <div style="flex:1;min-width:0">
             <div style="font-weight:700;font-size:13px">${escapeHtml(f.label)}${f.is_required ? ' <span style="color:var(--red)">*</span>' : ''}</div>
             <div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(f.section)} · ${escapeHtml(f.field_type)} · <span style="font-family:monospace;font-size:11px">${escapeHtml(f.id)}</span></div>
           </div>
-          <button class="btn btn-sm btn-ghost" onclick="deleteCustomField('${escapeHtml(f.id)}', '${escapeHtml(f.label).replace(/'/g, '&#39;')}')">🗑</button>
+          <button class="btn btn-sm btn-ghost" onclick="deleteCustomField('${escapeHtml(f.id)}', '${escapeHtml(f.label).replace(/'/g, '&#39;')}')"><i data-lucide="trash-2" class="ui-icon"></i></button>
         </div>`).join('')
-      : renderEmptyState('🧩', 'No custom fields yet', 'Add schema fields without a code change.')}
+      : renderEmptyState('<i data-lucide="puzzle" class="ui-icon"></i>', 'No custom fields yet', 'Add schema fields without a code change.')}
     </div>`;
 }
 
@@ -4397,8 +3881,8 @@ function render10SectionProfile(filterSection = 'all') {
     html += `
       <div class="profile-section-card">
         <div class="profile-section-header">
-          <div class="profile-section-title">👤 Section 1: Basic &amp; Academic Identity</div>
-          <span class="privacy-badge public">🌐 Public</span>
+          <div class="profile-section-title"><i data-lucide="user" class="ui-icon"></i> Section 1: Basic &amp; Academic Identity</div>
+          <span class="privacy-badge public"><i data-lucide="globe" class="ui-icon"></i> Public</span>
         </div>
         <div class="field-grid-3 mb-16">
           <div class="profile-field-row"><div><div class="field-label">Full Name</div><div class="field-val">${p.fullName}</div></div></div>
@@ -4418,8 +3902,8 @@ function render10SectionProfile(filterSection = 'all') {
     html += `
       <div class="profile-section-card">
         <div class="profile-section-header">
-          <div class="profile-section-title">📱 Section 2: Contact &amp; Emergency Details</div>
-          <span class="privacy-badge ${priv.mobile}">${priv.mobile === 'private' ? '🔒 Private' : '🌐 Public'}</span>
+          <div class="profile-section-title"><i data-lucide="smartphone" class="ui-icon"></i> Section 2: Contact &amp; Emergency Details</div>
+          <span class="privacy-badge ${priv.mobile}">${priv.mobile === 'private' ? '<i data-lucide="lock" class="ui-icon"></i> Private' : '<i data-lucide="globe" class="ui-icon"></i> Public'}</span>
         </div>
         <div class="field-grid-2 mb-16">
           <div class="profile-field-row"><div><div class="field-label">Primary Email</div><div class="field-val">${p.primaryEmail}</div></div></div>
@@ -4436,8 +3920,8 @@ function render10SectionProfile(filterSection = 'all') {
     html += `
       <div class="profile-section-card">
         <div class="profile-section-header">
-          <div class="profile-section-title">📍 Section 3: Address &amp; Geographical Location</div>
-          <span class="privacy-badge ${priv.address}">${priv.address === 'private' ? '🔒 Private' : '👥 Alumni Only'}</span>
+          <div class="profile-section-title"><i data-lucide="map-pin" class="ui-icon"></i> Section 3: Address &amp; Geographical Location</div>
+          <span class="privacy-badge ${priv.address}">${priv.address === 'private' ? '<i data-lucide="lock" class="ui-icon"></i> Private' : '<i data-lucide="users" class="ui-icon"></i> Alumni Only'}</span>
         </div>
         <div class="field-grid-2 mb-16">
           <div class="profile-field-row"><div><div class="field-label">Present Address</div><div class="field-val">${p.presentAddress}</div></div></div>
@@ -4454,8 +3938,8 @@ function render10SectionProfile(filterSection = 'all') {
     html += `
       <div class="profile-section-card">
         <div class="profile-section-header">
-          <div class="profile-section-title">🎓 Section 4: Academic Honors &amp; Publications</div>
-          <span class="privacy-badge alumni">👥 Alumni Only</span>
+          <div class="profile-section-title"><i data-lucide="graduation-cap" class="ui-icon"></i> Section 4: Academic Honors &amp; Publications</div>
+          <span class="privacy-badge alumni"><i data-lucide="users" class="ui-icon"></i> Alumni Only</span>
         </div>
         <div class="field-grid-2 mb-16">
           <div class="profile-field-row"><div><div class="field-label">Degree &amp; CGPA</div><div class="field-val">${p.degree} (CGPA: ${p.cgpa})</div></div></div>
@@ -4472,8 +3956,8 @@ function render10SectionProfile(filterSection = 'all') {
     html += `
       <div class="profile-section-card">
         <div class="profile-section-header">
-          <div class="profile-section-title">💼 Section 5: Professional Career &amp; Experience</div>
-          <span class="privacy-badge public">🌐 Public</span>
+          <div class="profile-section-title"><i data-lucide="briefcase" class="ui-icon"></i> Section 5: Professional Career &amp; Experience</div>
+          <span class="privacy-badge public"><i data-lucide="globe" class="ui-icon"></i> Public</span>
         </div>
         <div class="field-grid-2 mb-16">
           <div class="profile-field-row"><div><div class="field-label">Current Company &amp; Role</div><div class="field-val">${p.currentCompany} — ${p.jobTitle}</div></div></div>
@@ -4490,13 +3974,13 @@ function render10SectionProfile(filterSection = 'all') {
     html += `
       <div class="profile-section-card">
         <div class="profile-section-header">
-          <div class="profile-section-title">🤝 Section 6: Networking &amp; Mentorship Status</div>
-          <span class="privacy-badge public">🌐 Public</span>
+          <div class="profile-section-title"><i data-lucide="handshake" class="ui-icon"></i> Section 6: Networking &amp; Mentorship Status</div>
+          <span class="privacy-badge public"><i data-lucide="globe" class="ui-icon"></i> Public</span>
         </div>
         <div class="verification-badges-grid mb-16">
-          <span class="verify-pill" style="background:rgba(0,168,89,0.2)">✓ Open for Mentoring Students</span>
-          <span class="verify-pill" style="background:rgba(0,212,170,0.2)">✓ Actively Hiring at Brain Station 23</span>
-          <span class="verify-pill">✓ Available for Startup Collaboration</span>
+          <span class="verify-pill" style="background:rgba(0,168,89,0.2)"><i data-lucide="check" class="ui-icon"></i> Open for Mentoring Students</span>
+          <span class="verify-pill" style="background:rgba(0,212,170,0.2)"><i data-lucide="check" class="ui-icon"></i> Actively Hiring at Brain Station 23</span>
+          <span class="verify-pill"><i data-lucide="check" class="ui-icon"></i> Available for Startup Collaboration</span>
         </div>
       </div>
     `;
@@ -4507,8 +3991,8 @@ function render10SectionProfile(filterSection = 'all') {
     html += `
       <div class="profile-section-card">
         <div class="profile-section-header">
-          <div class="profile-section-title">🌐 Section 7: Social Profiles &amp; Portfolio</div>
-          <span class="privacy-badge public">🌐 Public</span>
+          <div class="profile-section-title"><i data-lucide="globe" class="ui-icon"></i> Section 7: Social Profiles &amp; Portfolio</div>
+          <span class="privacy-badge public"><i data-lucide="globe" class="ui-icon"></i> Public</span>
         </div>
         <div class="field-grid-2 mb-16">
           <div class="profile-field-row"><div><div class="field-label">LinkedIn</div><div class="field-val"><a href="${p.linkedin}" target="_blank" style="color:var(--teal)">${p.linkedin}</a></div></div></div>
@@ -4525,8 +4009,8 @@ function render10SectionProfile(filterSection = 'all') {
       html += `
         <div class="profile-section-card">
           <div class="profile-section-header">
-            <div class="profile-section-title">⚙ Section 8: Admin Custom Institution Fields</div>
-            <span class="privacy-badge alumni">👥 DIC Portal Only</span>
+            <div class="profile-section-title"><i data-lucide="settings" class="ui-icon"></i> Section 8: Admin Custom Institution Fields</div>
+            <span class="privacy-badge alumni"><i data-lucide="users" class="ui-icon"></i> DIC Portal Only</span>
           </div>
           <div class="field-grid-2 mb-16">
             ${MOCK_CUSTOM_FIELDS.map(f => `
@@ -4557,7 +4041,7 @@ function showEditProfileV2() {
   const p = FULL_USER_PROFILE;
   openModal(`
     <div class="onboarding-header">
-      <div class="onboarding-title">✎ Edit Comprehensive Profile</div>
+      <div class="onboarding-title"><i data-lucide="pen-line" class="ui-icon"></i> Edit Comprehensive Profile</div>
       <div class="onboarding-sub">Update your 10-section profile details and field privacy settings</div>
     </div>
 
@@ -4568,13 +4052,13 @@ function showEditProfileV2() {
       <div class="input-group"><label class="input-label">LinkedIn Profile URL</label><input type="url" id="edit-linkedin" class="form-input" value="${p.linkedin}" /></div>
       <div class="input-group"><label class="input-label">Mobile Number Privacy Level</label>
         <select class="form-select" id="edit-priv-mobile">
-          <option value="public" ${PROFILE_PRIVACY_SETTINGS.mobile === 'public' ? 'selected' : ''}>🌐 Public (Everyone)</option>
-          <option value="alumni" ${PROFILE_PRIVACY_SETTINGS.mobile === 'alumni' ? 'selected' : ''}>👥 DIC Alumni Only</option>
-          <option value="private" ${PROFILE_PRIVACY_SETTINGS.mobile === 'private' ? 'selected' : ''}>🔒 Private (Only Me)</option>
+          <option value="public" ${PROFILE_PRIVACY_SETTINGS.mobile === 'public' ? 'selected' : ''}>Public (Everyone)</option>
+          <option value="alumni" ${PROFILE_PRIVACY_SETTINGS.mobile === 'alumni' ? 'selected' : ''}>DIC Alumni Only</option>
+          <option value="private" ${PROFILE_PRIVACY_SETTINGS.mobile === 'private' ? 'selected' : ''}>Private (Only Me)</option>
         </select>
       </div>
       <div class="input-group"><label class="input-label">Biography</label><textarea id="edit-bio" class="form-input" rows="3">${p.bio}</textarea></div>
-      <button type="submit" class="btn btn-primary btn-full mt-16">💾 Save Profile &amp; Update ID Card</button>
+      <button type="submit" class="btn btn-primary btn-full mt-16"><i data-lucide="save" class="ui-icon"></i> Save Profile &amp; Update ID Card</button>
     </form>
   `);
 }
@@ -4605,7 +4089,7 @@ function renderSegmentationPanel() {
   el.innerHTML = `
     <div class="glass-card">
       <div class="card-header">
-        <h3 class="card-title">🎯 Advanced Alumni Audience Segmentation</h3>
+        <h3 class="card-title"><i data-lucide="target" class="ui-icon"></i> Advanced Alumni Audience Segmentation</h3>
         <span class="card-badge teal">Real-Time Vector Filtering</span>
       </div>
       <div class="segment-builder">
@@ -4637,7 +4121,7 @@ function renderSegmentationPanel() {
       </div>
       <div style="margin-top:16px;padding:12px;background:var(--bg-glass);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center">
         <div><strong style="color:var(--teal)">Segment Match:</strong> <span id="segment-count-val">3,420</span> Alumni matched</div>
-        <button class="btn btn-primary btn-sm" onclick="showBroadcastModal()">📢 Broadcast to Segment</button>
+        <button class="btn btn-primary btn-sm" onclick="showBroadcastModal()"><i data-lucide="megaphone" class="ui-icon"></i> Broadcast to Segment</button>
       </div>
     </div>
   `;
@@ -4664,14 +4148,14 @@ async function renderActivePoll() {
     return;
   }
   if (!poll) {
-    el.innerHTML = renderEmptyState('🗳', 'No active poll');
+    el.innerHTML = renderEmptyState('<i data-lucide="vote" class="ui-icon"></i>', 'No active poll');
     return;
   }
 
   el.innerHTML = `
     <div class="poll-header">
-      <div class="poll-title">🗳 Institutional Alumni Poll</div>
-      <div class="poll-meta">🟢 Live · ${poll.total} vote${poll.total === 1 ? '' : 's'}</div>
+      <div class="poll-title"><i data-lucide="vote" class="ui-icon"></i> Institutional Alumni Poll</div>
+      <div class="poll-meta"><i data-lucide="circle" class="ui-icon"></i> Live · ${poll.total} vote${poll.total === 1 ? '' : 's'}</div>
     </div>
     <div class="poll-question-text">${escapeHtml(poll.question)}</div>
     <div class="poll-options">
@@ -4681,7 +4165,7 @@ async function renderActivePoll() {
         return `
         <button class="poll-option-btn${mine ? ' voted' : ''}" onclick="votePoll(${poll.id}, ${idx})">
           <div class="poll-option-bar" style="width:${pct}%"></div>
-          <span class="poll-option-text">${mine ? '✓ ' : ''}${escapeHtml(o)}</span>
+          <span class="poll-option-text">${mine ? '<i data-lucide="check" class="ui-icon"></i> ' : ''}${escapeHtml(o)}</span>
           <span class="poll-option-pct">${pct}%</span>
         </button>`;
       }).join('')}
@@ -4711,11 +4195,11 @@ function renderPastPolls() {
     <div style="font-size:12px;color:var(--text-secondary)">
       <div style="padding:6px 0;border-bottom:1px solid var(--border-glass)">
         <div style="font-weight:700">FY26 Mentorship Model</div>
-        <div style="font-size:10px;color:var(--teal)">✓ 1-on-1 Matching won (64%)</div>
+        <div style="font-size:10px;color:var(--teal)"><i data-lucide="check" class="ui-icon"></i> 1-on-1 Matching won (64%)</div>
       </div>
       <div style="padding:6px 0">
         <div style="font-weight:700">Digital ID Card Design</div>
-        <div style="font-size:10px;color:var(--teal)">✓ Glassmorphism Dark won (78%)</div>
+        <div style="font-size:10px;color:var(--teal)"><i data-lucide="check" class="ui-icon"></i> Glassmorphism Dark won (78%)</div>
       </div>
     </div>
   `;
@@ -4727,7 +4211,7 @@ function renderEngagementScore() {
   if (!el) return;
   el.innerHTML = `
     <div class="engagement-score-display">
-      <div class="score-badge-circle">👑</div>
+      <div class="score-badge-circle"><i data-lucide="crown" class="ui-icon"></i></div>
       <div class="score-points">1,840 PTS</div>
       <div class="score-level">Gold Tier Alumni</div>
       <div style="font-size:11px;color:var(--text-muted);margin-top:6px">Earn points by donating, mentoring, or attending events</div>
@@ -4750,7 +4234,7 @@ function renderAlumniBadges() {
     <div class="alumni-badges-grid">
       ${badges.map(b => `
         <div class="badge-card">
-          <div class="badge-icon">${b.icon}</div>
+          <div class="badge-icon">${emojiIcon(b.icon, 'award')}</div>
           <div class="badge-title">${b.title}</div>
           <div class="badge-desc">${b.desc}</div>
         </div>
@@ -4759,44 +4243,7 @@ function renderAlumniBadges() {
   `;
 }
 
-// ─── 8. EVENT WAITLIST MANAGER ───────────────────────────────
-const _origFilterEvents = filterEvents;
-filterEvents = function(type, btn) {
-  if (type === 'waitlist') {
-    document.querySelectorAll('.events-tabs .chart-tab').forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
-    renderEventWaitlist();
-  } else {
-    if (typeof _origFilterEvents === 'function') _origFilterEvents(type, btn);
-  }
-};
 
-function renderEventWaitlist() {
-  const grid = document.getElementById('events-grid');
-  if (!grid) return;
-  const waitlist = [
-    { name: 'Dr. Kazi Rahman', event: 'Alumni Reunion 2026', pos: '#1', batch: '2014' },
-    { name: 'Shirin Sultana', event: 'Alumni Reunion 2026', pos: '#2', batch: '2018' },
-    { name: 'Mahmudul Hasan', event: 'AI & Tech Symposium', pos: '#1', batch: '2021' }
-  ];
-  grid.innerHTML = `
-    <div class="glass-card span-3" style="grid-column: span 3">
-      <div class="card-header">
-        <h3 class="card-title">⏳ Event Capacity Overflow Waitlist</h3>
-        <span class="card-badge amber">3 Pending Auto-Promotions</span>
-      </div>
-      ${waitlist.map(w => `
-        <div class="waitlist-item">
-          <div>
-            <span style="font-weight:700">${w.name}</span>
-            <span style="font-size:11px;color:var(--text-muted)"> (${w.event} · Waitlist Position ${w.pos})</span>
-          </div>
-          <button class="btn btn-sm btn-primary" onclick="showToast('🎟 Promoted ${w.name} from waitlist to confirmed ticket!')">Promote to Ticket →</button>
-        </div>
-      `).join('')}
-    </div>
-  `;
-}
 
 // ─── 9. MODERATION QUEUE & APPROVAL WORKFLOW ─────────────────
 async function renderModerationPanel() {
@@ -4817,11 +4264,11 @@ async function renderModerationPanel() {
   el.innerHTML = `
     <div class="glass-card mb-16">
       <div class="card-header">
-        <h3 class="card-title">🏫 Pending Chapter Creation Approvals (${pendingChapters.length})</h3>
+        <h3 class="card-title"><i data-lucide="school" class="ui-icon"></i> Pending Chapter Creation Approvals (${pendingChapters.length})</h3>
         <span class="card-badge ${pendingChapters.length > 0 ? 'amber' : 'teal'}">${pendingChapters.length} Pending Review</span>
       </div>
       ${pendingChapters.length === 0 ? `
-        <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">✓ No pending chapter review requests at this time.</div>
+        <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px"><i data-lucide="check" class="ui-icon"></i> No pending chapter review requests at this time.</div>
       ` : `
         <div class="table-scroll">
           <table class="rbac-table">
@@ -4831,14 +4278,14 @@ async function renderModerationPanel() {
             <tbody>
               ${pendingChapters.map(c => `
                 <tr>
-                  <td style="font-size:20px">${c.icon}</td>
+                  <td style="font-size:20px">${emojiIcon(c.icon, 'hexagon')}</td>
                   <td><strong>${c.name}</strong></td>
                   <td><span class="card-badge teal">${c.type}</span></td>
                   <td style="font-size:12px;color:var(--text-secondary)">${c.description || 'No description provided'}</td>
                   <td>
                     <div style="display:flex;gap:6px">
-                      <button class="btn btn-sm btn-primary" onclick="handleModerateChapter(${c.id}, 'approve')">Approve ✓</button>
-                      <button class="btn btn-sm btn-danger" onclick="handleModerateChapter(${c.id}, 'reject')">Reject ✕</button>
+                      <button class="btn btn-sm btn-primary" onclick="handleModerateChapter(${c.id}, 'approve')">Approve <i data-lucide="check" class="ui-icon"></i></button>
+                      <button class="btn btn-sm btn-danger" onclick="handleModerateChapter(${c.id}, 'reject')">Reject <i data-lucide="x" class="ui-icon"></i></button>
                     </div>
                   </td>
                 </tr>
@@ -4851,11 +4298,11 @@ async function renderModerationPanel() {
 
     <div class="glass-card">
       <div class="card-header">
-        <h3 class="card-title">✐ Pending Story &amp; News Approvals (${pendingStories.length})</h3>
+        <h3 class="card-title"><i data-lucide="pen-line" class="ui-icon"></i> Pending Story &amp; News Approvals (${pendingStories.length})</h3>
         <span class="card-badge ${pendingStories.length > 0 ? 'amber' : 'teal'}">${pendingStories.length} Pending Review</span>
       </div>
       ${pendingStories.length === 0 ? `
-        <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px">✓ No pending story moderation requests at this time.</div>
+        <div style="padding:20px;text-align:center;color:var(--text-muted);font-size:13px"><i data-lucide="check" class="ui-icon"></i> No pending story moderation requests at this time.</div>
       ` : `
         <div class="table-scroll">
           <table class="rbac-table">
@@ -4865,15 +4312,15 @@ async function renderModerationPanel() {
             <tbody>
               ${pendingStories.map(s => `
                 <tr>
-                  <td style="font-size:20px">${s.emoji || '🌟'}</td>
+                  <td style="font-size:20px">${s.emoji || '<i data-lucide="sparkle" class="ui-icon"></i>'}</td>
                   <td><strong>${s.title}</strong></td>
                   <td><span class="card-badge indigo">${s.category}</span></td>
                   <td>${s.author_name}</td>
                   <td style="font-size:12px;color:var(--text-secondary)">${s.excerpt}</td>
                   <td>
                     <div style="display:flex;gap:6px">
-                      <button class="btn btn-sm btn-primary" onclick="handleModerateStory(${s.id}, 'approve')">Approve ✓</button>
-                      <button class="btn btn-sm btn-danger" onclick="handleModerateStory(${s.id}, 'reject')">Reject ✕</button>
+                      <button class="btn btn-sm btn-primary" onclick="handleModerateStory(${s.id}, 'approve')">Approve <i data-lucide="check" class="ui-icon"></i></button>
+                      <button class="btn btn-sm btn-danger" onclick="handleModerateStory(${s.id}, 'reject')">Reject <i data-lucide="x" class="ui-icon"></i></button>
                     </div>
                   </td>
                 </tr>
@@ -4940,129 +4387,10 @@ switchAdmin = function(tab, btn) {
 
 // ─── EVENT REGISTRATION & TICKETS ───
 
-async function registerForEvent(eventId, title, isFull) {
-  showToast(isFull ? '⏳ Joining the waitlist…' : '🎫 Reserving your ticket…');
 
-  // A client mutation id makes an offline replay idempotent server-side.
-  const res = await API.registerForEvent(eventId, {
-    clientMutationId: `reg-${eventId}-${state.currentUser.id}-${Date.now()}`
-  });
 
-  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Registration failed.'}`); return; }
 
-  showToast(res.status === 'waitlisted'
-    ? `⏳ "${title}" is full — you are on the waitlist.`
-    : `✅ Ticket confirmed for "${title}".`);
 
-  renderEvents(state.eventFilter || 'upcoming');
-  renderNotifications();
-  if (res.status === 'confirmed') viewMyTicket(eventId);
-}
-
-async function cancelTicket(eventId, title) {
-  if (!confirm(`Cancel your ticket for "${title}"?`)) return;
-  const res = await API.cancelRegistration(eventId);
-  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not cancel.'}`); return; }
-  showToast(`✓ Ticket cancelled${res.promoted ? ' — a waitlisted alumnus was promoted.' : '.'}`);
-  renderEvents(state.eventFilter || 'upcoming');
-}
-
-async function viewMyTicket(eventId) {
-  const ticket = await API.getMyTicket(eventId);
-  if (apiFailed(ticket) || !ticket) { showToast('⚠ No ticket found for this event.'); return; }
-
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title">🎫 Your Ticket</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div style="text-align:center;padding:8px 0">
-      <div id="ticket-qr" style="display:flex;justify-content:center;margin-bottom:14px"></div>
-      <div style="font-family:monospace;font-size:15px;font-weight:800;letter-spacing:0.06em;color:var(--teal)">${escapeHtml(ticket.ticket_code)}</div>
-      <div style="font-size:12px;color:var(--text-secondary);margin-top:6px">
-        ${escapeHtml(ticket.status === 'waitlisted' ? 'Waitlisted — you will be notified if a seat opens' : 'Confirmed')}
-        ${ticket.checked_in ? ' · ✅ Checked in' : ''}
-      </div>
-      ${Number(ticket.amount_paid) > 0
-        ? `<div style="font-size:12px;color:var(--text-muted);margin-top:4px">Paid ৳${Number(ticket.amount_paid).toLocaleString()}${ticket.payment_gateway ? ` via ${escapeHtml(ticket.payment_gateway)}` : ''}</div>`
-        : ''}
-      <div style="font-size:11px;color:var(--text-muted);margin-top:14px">Present this QR code at the venue entrance.</div>
-    </div>
-  `);
-
-  // Render the signed payload as a scannable QR.
-  if (typeof QRCode !== 'undefined') {
-    try {
-      new QRCode(document.getElementById('ticket-qr'), {
-        text: ticket.qr_payload, width: 168, height: 168,
-        colorDark: '#0B3897', colorLight: '#ffffff'
-      });
-    } catch (e) {
-      document.getElementById('ticket-qr').innerHTML = '<div style="font-size:52px">🎫</div>';
-    }
-  } else {
-    document.getElementById('ticket-qr').innerHTML = '<div style="font-size:52px">🎫</div>';
-  }
-}
-
-async function handleCheckIn(e) {
-  if (e) e.preventDefault();
-  const input = document.getElementById('checkin-code');
-  const box = document.getElementById('checkin-result');
-  const code = input.value.trim();
-  if (!code) return;
-
-  const res = await API.checkInTicket(code);
-
-  if (apiFailed(res)) {
-    box.innerHTML = `<div class="state-panel state-error" style="padding:18px">
-        <div class="state-title">${escapeHtml(res?.error || 'Check-in failed')}</div>
-      </div>`;
-    return;
-  }
-
-  box.innerHTML = `<div class="state-panel" style="padding:18px;border-color:rgba(52,211,153,0.4);background:rgba(52,211,153,0.08)">
-      <div class="state-icon">✅</div>
-      <div class="state-title">${escapeHtml(res.attendee)} checked in</div>
-      ${res.batch ? `<div class="state-subtitle">Batch ${res.batch}</div>` : ''}
-    </div>`;
-  input.value = '';
-  input.focus();
-}
-
-async function showAttendeesModal(eventId) {
-  const rows = await API.getAttendees(eventId);
-  if (apiFailed(rows)) { showToast(`⚠ ${rows?.error || 'Could not load attendees.'}`); return; }
-
-  const confirmed = rows.filter(r => r.status === 'confirmed');
-  const waitlisted = rows.filter(r => r.status === 'waitlisted');
-  const checkedIn = rows.filter(r => r.checked_in).length;
-
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title">👥 Attendees</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-      <span class="card-badge teal">${confirmed.length} confirmed</span>
-      <span class="card-badge amber">${waitlisted.length} waitlisted</span>
-      <span class="card-badge">${checkedIn} checked in</span>
-    </div>
-    <div style="display:flex;flex-direction:column;gap:8px;max-height:56vh;overflow-y:auto">
-      ${rows.length ? rows.map(a => `
-        <div class="glass-card" style="display:flex;align-items:center;gap:10px;padding:10px 12px">
-          <div class="alumni-avatar" style="width:36px;height:36px;font-size:12px;background:var(--teal);flex-shrink:0"><span>${escapeHtml(a.initials || '??')}</span></div>
-          <div style="flex:1;min-width:0">
-            <div style="font-weight:700;font-size:13px">${escapeHtml(a.name)}</div>
-            <div style="font-size:11px;color:var(--text-secondary)">${escapeHtml([a.dept, a.batch && `Batch ${a.batch}`, a.company].filter(Boolean).join(' · ') || '—')}</div>
-            <div style="font-size:10px;color:var(--text-muted);font-family:monospace">${escapeHtml(a.ticket_code)}</div>
-          </div>
-          <span class="card-badge ${a.checked_in ? 'teal' : a.status === 'waitlisted' ? 'amber' : ''}">${a.checked_in ? '✅ In' : a.status === 'waitlisted' ? 'Waitlist' : 'Confirmed'}</span>
-        </div>`).join('')
-      : renderEmptyState('👤', 'No registrations yet')}
-    </div>
-  `);
-}
 
 // ─── DONATIONS ───
 
@@ -5087,11 +4415,11 @@ async function processDonation(campaignId, campaignName) {
 
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">🔐 Authorize Payment</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="lock-keyhole" class="ui-icon"></i> Authorize Payment</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <div class="payment-step">
-      <div style="font-size:44px;margin-bottom:10px">${state.selectedGateway === 'bkash' ? '📱' : state.selectedGateway === 'nagad' ? '📲' : state.selectedGateway === 'rocket' ? '🚀' : '💳'}</div>
+      <div style="font-size:44px;margin-bottom:10px">${state.selectedGateway === 'bkash' ? '<i data-lucide="smartphone" class="ui-icon"></i>' : state.selectedGateway === 'nagad' ? '<i data-lucide="smartphone" class="ui-icon"></i>' : state.selectedGateway === 'rocket' ? '<i data-lucide="rocket" class="ui-icon"></i>' : '<i data-lucide="credit-card" class="ui-icon"></i>'}</div>
       <div style="font-size:17px;font-weight:800;margin-bottom:6px">Authorising via ${escapeHtml(gwName)}</div>
       <div style="color:var(--text-secondary);margin-bottom:6px">Amount: <strong style="color:var(--teal)">৳${Number(amount).toLocaleString()}</strong></div>
       <div style="font-family:monospace;font-size:11px;color:var(--text-muted);margin-bottom:18px">Ref ${escapeHtml(donation.transaction_reference)}</div>
@@ -5101,7 +4429,7 @@ async function processDonation(campaignId, campaignName) {
           ${[0,1,2,3].map(() => '<input type="password" class="otp-box" maxlength="1" inputmode="numeric" />').join('')}
         </div>
       </div>
-      <button class="btn btn-primary btn-full" onclick="settleDonation(${donation.id}, true)">✓ Confirm Payment</button>
+      <button class="btn btn-primary btn-full" onclick="settleDonation(${donation.id}, true)"><i data-lucide="check" class="ui-icon"></i> Confirm Payment</button>
       <button class="btn btn-ghost btn-full mt-8" onclick="settleDonation(${donation.id}, false)">Simulate a failed payment</button>
       <div style="font-size:11px;color:var(--text-muted);margin-top:10px">A PENDING ledger entry has already been recorded. The campaign total updates only on confirmation.</div>
     </div>
@@ -5120,11 +4448,11 @@ async function settleDonation(donationId, success) {
   if (d.status === 'FAILED') {
     showModal(`
       <div class="modal-header">
-        <div class="modal-title">❌ Payment Failed</div>
-        <button class="modal-close" onclick="closeModal()">✕</button>
+        <div class="modal-title"><i data-lucide="circle-x" class="ui-icon"></i> Payment Failed</div>
+        <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
       </div>
       <div class="payment-step">
-        <div style="font-size:44px;margin-bottom:10px">⚠️</div>
+        <div style="font-size:44px;margin-bottom:10px"><i data-lucide="triangle-alert" class="ui-icon"></i></div>
         <div style="font-size:16px;font-weight:800;margin-bottom:6px">The transaction was declined</div>
         <div style="color:var(--text-secondary);margin-bottom:8px">${escapeHtml(d.failure_reason || 'The gateway rejected the payment.')}</div>
         <div style="font-family:monospace;font-size:11px;color:var(--text-muted);margin-bottom:18px">Ref ${escapeHtml(d.transaction_reference)}</div>
@@ -5139,11 +4467,11 @@ async function settleDonation(donationId, success) {
 
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">🎉 Payment Successful</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="party-popper" class="ui-icon"></i> Payment Successful</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <div class="payment-step">
-      <div class="payment-success">✅</div>
+      <div class="payment-success"><i data-lucide="circle-check-big" class="ui-icon"></i></div>
       <div class="payment-success-title">Thank you for your donation!</div>
       <div class="payment-success-sub">Your contribution has been recorded in the ledger.</div>
       <div class="receipt-preview">
@@ -5157,8 +4485,8 @@ async function settleDonation(donationId, success) {
         <div class="receipt-row"><span>Amount</span><span>৳${Number(d.amount).toLocaleString()}</span></div>
       </div>
       <div style="margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-        <button class="btn btn-outline" onclick="downloadReceipt(${d.id})">📄 Download Receipt</button>
-        <button class="btn btn-outline" onclick="closeModal()">✓ Done</button>
+        <button class="btn btn-outline" onclick="downloadReceipt(${d.id})"><i data-lucide="file-text" class="ui-icon"></i> Download Receipt</button>
+        <button class="btn btn-outline" onclick="closeModal()"><i data-lucide="check" class="ui-icon"></i> Done</button>
       </div>
     </div>
   `);
@@ -5237,8 +4565,8 @@ async function respondToMentorship(id, action) {
 async function applyJob(jobId, title) {
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">📄 Apply — ${escapeHtml(title)}</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="file-text" class="ui-icon"></i> Apply — ${escapeHtml(title)}</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <form onsubmit="submitJobApplication(event, ${jobId})">
       <div class="input-group">
@@ -5272,8 +4600,8 @@ async function showJobApplicants(jobId, title) {
 
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">👥 Applicants — ${escapeHtml(title)}</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="users" class="ui-icon"></i> Applicants — ${escapeHtml(title)}</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;max-height:56vh;overflow-y:auto">
       ${rows.length ? rows.map(a => `
@@ -5288,7 +4616,7 @@ async function showJobApplicants(jobId, title) {
           </div>
           ${a.cover_note ? `<div style="font-size:12px;color:var(--text-secondary);margin-top:8px;padding-top:8px;border-top:1px solid var(--border-glass)">${escapeHtml(a.cover_note)}</div>` : ''}
         </div>`).join('')
-      : renderEmptyState('📭', 'No applications yet')}
+      : renderEmptyState('<i data-lucide="inbox" class="ui-icon"></i>', 'No applications yet')}
     </div>
   `);
 }
@@ -5367,22 +4695,22 @@ async function showDeleteAccount() {
 
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">⚠ Delete Account</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="triangle-alert" class="ui-icon"></i> Delete Account</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     ${hasPending ? `
       <div class="state-panel" style="border-color:rgba(255,140,66,0.4);background:rgba(255,140,66,0.08)">
-        <div class="state-icon">⏳</div>
+        <div class="state-icon"><i data-lucide="hourglass" class="ui-icon"></i></div>
         <div class="state-title">Deletion already scheduled</div>
         <div class="state-subtitle">Your account will be permanently purged on ${escapeHtml(formatDate(pending.purge_after))}. You can cancel until then.</div>
       </div>
-      <button class="btn btn-primary btn-full mt-16" onclick="cancelAccountDeletion()">↩ Cancel deletion request</button>
+      <button class="btn btn-primary btn-full mt-16" onclick="cancelAccountDeletion()"><i data-lucide="undo-2" class="ui-icon"></i> Cancel deletion request</button>
     ` : `
       <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">
         Under PDPA 2026 your account enters a <strong>30-day grace period</strong> before permanent deletion.
         You can cancel at any point during that window. We recommend exporting your data first.
       </p>
-      <button class="btn btn-outline btn-full" onclick="exportUserData('json')">📦 Export my data first</button>
+      <button class="btn btn-outline btn-full" onclick="exportUserData('json')"><i data-lucide="package" class="ui-icon"></i> Export my data first</button>
       <div class="input-group mt-16">
         <label class="input-label">Reason (optional)</label>
         <textarea id="delete-reason" class="form-input" rows="3" placeholder="Help us understand why you are leaving…"></textarea>
@@ -5412,8 +4740,8 @@ async function cancelAccountDeletion() {
 async function decryptVaultField(vaultId, ownerName) {
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">🔓 Decrypt Identity Field</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="unlock" class="ui-icon"></i> Decrypt Identity Field</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">
       Decrypting ${escapeHtml(ownerName)}'s identity data is a privileged action. Your name, the reason
@@ -5423,7 +4751,7 @@ async function decryptVaultField(vaultId, ownerName) {
       <label class="input-label">Reason for access (required)</label>
       <input type="text" id="vault-reason" class="form-input" placeholder="e.g. Scholarship eligibility verification" required />
     </div>
-    <button class="btn btn-primary btn-full" onclick="performVaultReveal(${vaultId})">🔓 Decrypt & Log Access</button>
+    <button class="btn btn-primary btn-full" onclick="performVaultReveal(${vaultId})"><i data-lucide="unlock" class="ui-icon"></i> Decrypt & Log Access</button>
     <div id="vault-reveal-result" class="mt-16"></div>
   `);
 }
@@ -5467,47 +4795,8 @@ async function recordConsent(consentType, granted = true) {
 
 // ─── EVENT PLANNER REPORTS ───
 
-async function downloadEventReport(type = 'full', eventId = 1) {
-  showToast(`📊 Generating the ${type} report…`);
-  try {
-    const res = await fetch(API.plannerReportUrl(eventId, type), {
-      headers: { Authorization: `Bearer ${localStorage.getItem('dic_session_token')}` }
-    });
-    if (!res.ok) throw new Error('report failed');
-    downloadTextFile(`dic_event_${eventId}_${type}_report.csv`, await res.text(), 'text/csv');
-    showToast('✅ Report downloaded.');
-  } catch {
-    showToast('⚠ Could not generate the report.');
-  }
-}
 
-async function exportPDF() { return downloadEventReport('full'); }
-async function exportExcel() { return downloadEventReport('full'); }
 
-function filterJobLocation(v) {
-  state.jobFilters = { ...(state.jobFilters || {}), location: v === 'all' ? '' : v };
-  renderJobsEnhanced();
-}
-
-async function handleCreateEventSubmit(e) {
-  if (e) e.preventDefault();
-  const rawDate = document.getElementById('event-date').value;
-  const res = await API.createEvent({
-    title: document.getElementById('event-title').value.trim(),
-    emoji: document.getElementById('event-emoji').value.trim() || '🎓',
-    eventDate: rawDate ? new Date(rawDate).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBA',
-    eventTime: document.getElementById('event-time').value,
-    venue: document.getElementById('event-venue').value.trim(),
-    capacity: document.getElementById('event-capacity').value,
-    price: document.getElementById('event-price').value.trim() || 'Free',
-    type: document.getElementById('event-type').value
-  });
-
-  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not create the event.'}`); return; }
-  closeModal();
-  showToast(`✅ "${res.title}" created and published.`);
-  renderEvents(state.eventFilter || 'upcoming');
-}
 
 async function handlePostJobSubmit(e) {
   if (e) e.preventDefault();
@@ -5530,8 +4819,8 @@ async function handlePostJobSubmit(e) {
 function showCreateCampaign() {
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">➕ Create Campaign</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="plus" class="ui-icon"></i> Create Campaign</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <form onsubmit="handleCreateCampaignSubmit(event)">
       <div class="input-group"><label class="input-label">Campaign Name</label>
@@ -5581,8 +4870,8 @@ async function handleCreateCampaignSubmit(e) {
 function showBroadcastModal() {
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">📢 Send Broadcast</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="megaphone" class="ui-icon"></i> Send Broadcast</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <div class="input-group"><label class="input-label">Title</label>
       <input type="text" id="broadcast-title" class="form-input" placeholder="e.g. Reunion registration now open" required /></div>
@@ -5598,10 +4887,10 @@ function showBroadcastModal() {
       </select></div>
     <div class="input-group"><label class="input-label">Channels</label>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${[['push','🔔 Push'],['sms','💬 SMS'],['email','✉ Email']].map((c, i) =>
+        ${[['push','<i data-lucide="bell" class="ui-icon"></i> Push'],['sms','<i data-lucide="message-circle" class="ui-icon"></i> SMS'],['email','<i data-lucide="mail" class="ui-icon"></i> Email']].map((c, i) =>
           `<button type="button" class="chip broadcast-channel${i === 0 ? ' active' : ''}" data-channel="${c[0]}" onclick="this.classList.toggle('active')">${c[1]}</button>`).join('')}
       </div></div>
-    <button class="btn btn-primary btn-full" onclick="sendBroadcast()">📢 Send Broadcast</button>
+    <button class="btn btn-primary btn-full" onclick="sendBroadcast()"><i data-lucide="megaphone" class="ui-icon"></i> Send Broadcast</button>
     <div style="font-size:11px;color:var(--text-muted);margin-top:10px;text-align:center">Recipients are resolved from the live audience and delivered as in-app notifications.</div>
   `);
 }
@@ -5609,8 +4898,8 @@ function showBroadcastModal() {
 function showStoreIdentityModal() {
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">🔐 Encrypt an Identity Field</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="lock-keyhole" class="ui-icon"></i> Encrypt an Identity Field</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">
       The value is encrypted with AES-256-GCM in the application layer before it reaches PostgreSQL.
@@ -5624,7 +4913,7 @@ function showStoreIdentityModal() {
       </select></div>
     <div class="input-group"><label class="input-label">Value</label>
       <input type="text" id="vault-field-value" class="form-input" placeholder="Enter the identity number" autocomplete="off" required /></div>
-    <button class="btn btn-primary btn-full" onclick="storeIdentityField()">🔐 Encrypt & Store</button>
+    <button class="btn btn-primary btn-full" onclick="storeIdentityField()"><i data-lucide="lock-keyhole" class="ui-icon"></i> Encrypt & Store</button>
   `);
 }
 
@@ -5634,8 +4923,8 @@ async function showVaultAccessLogs() {
 
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">📜 Vault Access Log</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="scroll-text" class="ui-icon"></i> Vault Access Log</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;max-height:56vh;overflow-y:auto">
       ${rows.length ? rows.map(l => `
@@ -5645,7 +4934,7 @@ async function showVaultAccessLogs() {
           <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">Reason: ${escapeHtml(l.reason)}</div>
           <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${escapeHtml(formatRelativeTime(l.created_at))}</div>
         </div>`).join('')
-      : renderEmptyState('📜', 'No decryption events recorded')}
+      : renderEmptyState('<i data-lucide="scroll-text" class="ui-icon"></i>', 'No decryption events recorded')}
     </div>
   `);
 }
@@ -5667,7 +4956,7 @@ async function renderChapters() {
     id: c.id,
     name: c.name,
     type: c.type,
-    icon: c.icon || '🏫',
+    icon: c.icon || '<i data-lucide="school" class="ui-icon"></i>',
     description: c.description || '',
     // members_count is the counter the join/leave endpoint maintains.
     members: c.members_count || 0,
@@ -5679,7 +4968,7 @@ async function renderChapters() {
   USER_CHAPTER_MEMBERSHIPS = new Set(rows.filter(c => c.is_member).map(c => c.id));
 
   if (chaptersCache.length === 0) {
-    tree.innerHTML = renderEmptyState('⬡', 'No chapters yet', 'Create the first regional, batch or interest chapter.');
+    tree.innerHTML = renderEmptyState('<i data-lucide="hexagon" class="ui-icon"></i>', 'No chapters yet', 'Create the first regional, batch or interest chapter.');
     const detail = document.getElementById('chapter-detail');
     if (detail) detail.innerHTML = '';
     return;
@@ -5690,14 +4979,14 @@ async function renderChapters() {
 
   tree.innerHTML = roots.map(c => `
     <div class="chapter-node" onclick="selectChapter(${c.id})">
-      <span class="chapter-icon">${escapeHtml(c.icon)}</span>
+      <span class="chapter-icon">${emojiIcon(c.icon, 'hexagon')}</span>
       <span class="chapter-name">${escapeHtml(c.name)}</span>
       <span class="chapter-type ${escapeHtml(c.type)}">${escapeHtml(c.type)}</span>
       <span class="chapter-count">${c.members.toLocaleString()}</span>
     </div>
     ${children(c.id).map(sub => `
       <div class="chapter-node chapter-indent" onclick="selectChapter(${sub.id})">
-        <span class="chapter-icon">${escapeHtml(sub.icon)}</span>
+        <span class="chapter-icon">${emojiIcon(sub.icon, 'hexagon')}</span>
         <span class="chapter-name">${escapeHtml(sub.name)}</span>
         <span class="chapter-type ${escapeHtml(sub.type)}">${escapeHtml(sub.type)}</span>
         <span class="chapter-count">${sub.members.toLocaleString()}</span>
@@ -5724,197 +5013,12 @@ function closeNotifications() {
 }
 // Shared table→card renderer. On mobile every planner table becomes a stack of
 // cards (Phase 7) instead of a horizontally scrolling grid.
-function plannerTable(columns, rows, rowFn, emptyIcon, emptyText) {
-  if (!rows.length) return renderEmptyState(emptyIcon, emptyText);
-  return `
-    <div class="planner-table">
-      <div class="planner-table-head">
-        ${columns.map(c => `<div>${escapeHtml(c)}</div>`).join('')}
-      </div>
-      ${rows.map(r => `<div class="planner-table-row">${rowFn(r).map((cell, i) =>
-          `<div data-label="${escapeHtml(columns[i])}">${cell}</div>`).join('')}</div>`).join('')}
-    </div>`;
-}
 
-function plannerToolbar(kind, label) {
-  const canEdit = state.currentUser && ['super_admin', 'univ_admin', 'dept_admin', 'moderator'].includes(state.currentUser.role);
-  if (!canEdit) return '';
-  return `<button class="btn btn-sm btn-primary" onclick="showPlannerItemModal('${kind}')">➕ Add ${escapeHtml(label)}</button>`;
-}
 
 // ─── PLANNER: VENDORS / TIMELINE / LOGISTICS TABS (new in Phase 6) ───
-function renderPlannerExtraTab(tab) {
-  const container = document.getElementById('planner-tab-content');
-  if (!container || !CURRENT_PLANNER_DATA) return;
-  const d = CURRENT_PLANNER_DATA;
 
-  if (tab === 'vendors') {
-    const committed = (d.vendors || []).reduce((a, v) => a + Number(v.contract_value || 0), 0);
-    container.innerHTML = `
-      <div class="glass-card">
-        <div class="card-header">
-          <h3 class="card-title">🏪 Vendor Management</h3>
-          ${plannerToolbar('vendors', 'Vendor')}
-        </div>
-        <div class="planner-metrics-ribbon mb-16">
-          <div class="pmetric-card"><div class="pmetric-val">${(d.vendors || []).length}</div><div class="pmetric-lab">Vendors</div></div>
-          <div class="pmetric-card"><div class="pmetric-val" style="color:var(--teal)">৳${committed.toLocaleString()}</div><div class="pmetric-lab">Committed Value</div></div>
-          <div class="pmetric-card"><div class="pmetric-val">${(d.vendors || []).filter(v => v.status === 'contracted' || v.status === 'paid').length}</div><div class="pmetric-lab">Contracted</div></div>
-        </div>
-        ${plannerTable(
-          ['Vendor', 'Category', 'Contact', 'Contract', 'Rating', 'Status', ''],
-          d.vendors || [],
-          v => [
-            `<strong>${escapeHtml(v.name)}</strong>`,
-            escapeHtml(v.category || '—'),
-            `${escapeHtml(v.contact_person || '—')}${v.phone ? `<div style="font-size:11px;color:var(--text-muted)">${escapeHtml(v.phone)}</div>` : ''}`,
-            `৳${Number(v.contract_value).toLocaleString()}`,
-            '★'.repeat(v.rating || 0) + '☆'.repeat(5 - (v.rating || 0)),
-            `<span class="card-badge ${v.status === 'paid' ? 'teal' : v.status === 'contracted' ? '' : 'amber'}">${escapeHtml(v.status)}</span>`,
-            `<button class="btn btn-sm btn-ghost" onclick="deletePlannerItem('vendors', ${v.id})">🗑</button>`
-          ],
-          '🏪', 'No vendors added yet')}
-      </div>`;
+/* Planner analytics moved into the event Reports tab (evTabReports). */
 
-  } else if (tab === 'timeline') {
-    const done = (d.timeline || []).filter(m => m.status === 'done').length;
-    const avg = (d.timeline || []).length
-      ? Math.round((d.timeline).reduce((a, m) => a + (m.progress || 0), 0) / d.timeline.length) : 0;
-    container.innerHTML = `
-      <div class="glass-card">
-        <div class="card-header">
-          <h3 class="card-title">🗓 Event Timeline</h3>
-          ${plannerToolbar('timeline', 'Milestone')}
-        </div>
-        <div class="planner-metrics-ribbon mb-16">
-          <div class="pmetric-card"><div class="pmetric-val">${(d.timeline || []).length}</div><div class="pmetric-lab">Milestones</div></div>
-          <div class="pmetric-card"><div class="pmetric-val" style="color:var(--teal)">${done}</div><div class="pmetric-lab">Completed</div></div>
-          <div class="pmetric-card"><div class="pmetric-val">${avg}%</div><div class="pmetric-lab">Avg Progress</div></div>
-        </div>
-        ${(d.timeline || []).length ? `<div class="timeline-track">
-          ${d.timeline.map(m => `
-            <div class="timeline-item ${escapeHtml(m.status)}">
-              <div class="timeline-dot"></div>
-              <div class="timeline-body">
-                <div class="timeline-head">
-                  <strong>${escapeHtml(m.title)}</strong>
-                  <span class="card-badge ${m.status === 'done' ? 'teal' : m.status === 'delayed' ? 'amber' : ''}">${escapeHtml(m.status.replace('_', ' '))}</span>
-                </div>
-                ${m.description ? `<div class="timeline-desc">${escapeHtml(m.description)}</div>` : ''}
-                <div class="timeline-meta">
-                  📅 ${escapeHtml(formatDate(m.starts_at))} → ${escapeHtml(formatDate(m.ends_at))}
-                  ${m.owner ? ` · 👤 ${escapeHtml(m.owner)}` : ''} · ${escapeHtml(m.phase)}
-                </div>
-                <div class="progress-track" style="margin-top:8px"><div class="progress-fill" style="width:${m.progress || 0}%"></div></div>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
-                  <span style="font-size:11px;color:var(--text-muted)">${m.progress || 0}% complete</span>
-                  <button class="btn btn-sm btn-ghost" onclick="deletePlannerItem('timeline', ${m.id})">🗑</button>
-                </div>
-              </div>
-            </div>`).join('')}
-        </div>` : renderEmptyState('🗓', 'No milestones yet', 'Break the event into phases with owners and dates.')}
-      </div>`;
-
-  } else if (tab === 'logistics') {
-    container.innerHTML = `
-      <div class="glass-card">
-        <div class="card-header">
-          <h3 class="card-title">🚚 Logistics &amp; Site Operations</h3>
-          ${plannerToolbar('logistics', 'Item')}
-        </div>
-        ${plannerTable(
-          ['Item', 'Category', 'Qty', 'Location', 'Responsible', 'Status', ''],
-          d.logistics || [],
-          l => [
-            `<strong>${escapeHtml(l.item)}</strong>`,
-            escapeHtml(l.category || '—'),
-            String(l.quantity ?? 1),
-            escapeHtml(l.location || '—'),
-            escapeHtml(l.responsible || '—'),
-            `<span class="card-badge ${l.status === 'on_site' || l.status === 'arranged' ? 'teal' : 'amber'}">${escapeHtml((l.status || '').replace('_', ' '))}</span>`,
-            `<button class="btn btn-sm btn-ghost" onclick="deletePlannerItem('logistics', ${l.id})">🗑</button>`
-          ],
-          '🚚', 'No logistics items yet')}
-      </div>`;
-  }
-}
-
-// ─── PLANNER ANALYTICS — computed server-side from real rows ───
-async function renderPlannerAnalytics() {
-  const container = document.getElementById('planner-tab-content');
-  if (!container) return;
-
-  const a = await API.getPlannerAnalytics(CURRENT_PLANNER_EVENT_ID);
-  if (apiFailed(a)) {
-    container.innerHTML = renderErrorState(a?.error || 'Could not load analytics.', 'renderPlannerAnalytics()');
-    return;
-  }
-
-  const roi = a.budget.actual ? (((a.sponsors.secured - a.budget.actual) / a.budget.actual) * 100).toFixed(1) : '0.0';
-
-  container.innerHTML = `
-    <div class="glass-card">
-      <div class="card-header">
-        <h3 class="card-title">📈 Event Analytics</h3>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">
-          <button class="btn btn-sm btn-primary" onclick="downloadEventReport('full', ${CURRENT_PLANNER_EVENT_ID})">📥 Full report (CSV)</button>
-          <button class="btn btn-sm btn-outline" onclick="downloadEventReport('budget', ${CURRENT_PLANNER_EVENT_ID})">💰 Budget only</button>
-        </div>
-      </div>
-
-      <div class="planner-metrics-ribbon mt-14 mb-16">
-        <div class="pmetric-card">
-          <div class="pmetric-val" style="color:${roi >= 0 ? 'var(--teal)' : 'var(--red)'}">${roi >= 0 ? '+' : ''}${roi}%</div>
-          <div class="pmetric-lab">Sponsor ROI vs Spend</div>
-        </div>
-        <div class="pmetric-card">
-          <div class="pmetric-val">${a.tasks.completionRate}%</div>
-          <div class="pmetric-lab">Task Completion (${a.tasks.completed || 0}/${a.tasks.total})</div>
-        </div>
-        <div class="pmetric-card">
-          <div class="pmetric-val">${a.budget.utilisation}%</div>
-          <div class="pmetric-lab">Budget Utilisation</div>
-        </div>
-        <div class="pmetric-card">
-          <div class="pmetric-val" style="color:var(--teal)">${a.sponsors.coverage}%</div>
-          <div class="pmetric-lab">Sponsor Coverage</div>
-        </div>
-      </div>
-
-      <div class="field-grid-2">
-        <div class="analytics-block">
-          <div class="analytics-block-title">💰 Budget</div>
-          <div class="analytics-row"><span>Estimated</span><strong>৳${a.budget.estimated.toLocaleString()}</strong></div>
-          <div class="analytics-row"><span>Actual</span><strong>৳${a.budget.actual.toLocaleString()}</strong></div>
-          <div class="analytics-row"><span>Variance</span><strong style="color:${a.budget.variance >= 0 ? 'var(--teal)' : 'var(--red)'}">৳${a.budget.variance.toLocaleString()}</strong></div>
-          <div class="analytics-row"><span>Budget lines</span><strong>${a.budget.lines}</strong></div>
-        </div>
-        <div class="analytics-block">
-          <div class="analytics-block-title">🤝 Sponsorship</div>
-          <div class="analytics-row"><span>Secured</span><strong>৳${a.sponsors.secured.toLocaleString()}</strong></div>
-          <div class="analytics-row"><span>Full pipeline</span><strong>৳${a.sponsors.pipeline.toLocaleString()}</strong></div>
-          <div class="analytics-row"><span>Sponsors</span><strong>${a.sponsors.count}</strong></div>
-        </div>
-        <div class="analytics-block">
-          <div class="analytics-block-title">📢 Marketing</div>
-          <div class="analytics-row"><span>Spend</span><strong>৳${a.marketing.spend.toLocaleString()}</strong></div>
-          <div class="analytics-row"><span>Reach</span><strong>${a.marketing.reach.toLocaleString()}</strong></div>
-          <div class="analytics-row"><span>Conversions</span><strong>${a.marketing.conversions.toLocaleString()}</strong></div>
-          <div class="analytics-row"><span>Cost / conversion</span><strong>৳${a.marketing.costPerConversion.toLocaleString()}</strong></div>
-        </div>
-        <div class="analytics-block">
-          <div class="analytics-block-title">🚦 Delivery</div>
-          <div class="analytics-row"><span>Timeline progress</span><strong>${a.timeline.avgProgress}%</strong></div>
-          <div class="analytics-row"><span>Milestones done</span><strong>${a.timeline.done}/${a.timeline.milestones}</strong></div>
-          <div class="analytics-row"><span>Procurement spend</span><strong>৳${a.procurement.spend.toLocaleString()}</strong></div>
-          <div class="analytics-row"><span>Vendors committed</span><strong>৳${a.vendors.committed.toLocaleString()}</strong></div>
-          <div class="analytics-row"><span>High-severity risks</span><strong>${a.risks.high || 0}</strong></div>
-        </div>
-      </div>
-    </div>`;
-}
-
-// ─── PLANNER CRUD MODALS ───
 const PLANNER_FIELDS = {
   vendors:    { label: 'Vendor', fields: [['name','Vendor name','text',true],['category','Category','text'],['contactPerson','Contact person','text'],['phone','Phone','tel'],['email','Email','email'],['contractValue','Contract value (৳)','number'],['rating','Rating (0-5)','number'],['status','Status','select',false,['shortlisted','contracted','paid','rejected']]] },
   timeline:   { label: 'Milestone', fields: [['title','Milestone title','text',true],['description','Description','textarea'],['phase','Phase','text'],['startsAt','Start date','date'],['endsAt','End date','date'],['owner','Owner','text'],['progress','Progress %','number'],['status','Status','select',false,['pending','in_progress','done','delayed']]] },
@@ -5923,32 +5027,45 @@ const PLANNER_FIELDS = {
   meetings:   { label: 'Meeting', fields: [['title','Meeting title','text',true],['agenda','Agenda','textarea'],['meetingDate','Date','date'],['meetingTime','Time','text'],['location','Location','text'],['attendees','Attendees','text'],['status','Status','select',false,['scheduled','held','cancelled']]] },
   committees: { label: 'Committee', fields: [['name','Committee name','text',true],['leaderName','Leader','text',true],['membersCount','Members','number'],['budgetAllocated','Budget (৳)','number']] },
   volunteers: { label: 'Volunteer', fields: [['volunteerName','Volunteer name','text',true],['shiftTime','Shift','text'],['assignedCommittee','Committee','text'],['attendanceStatus','Attendance','select',false,['assigned','checked_in','absent']]] },
-  risks:      { label: 'Risk', fields: [['riskTitle','Risk','text',true],['category','Category','text'],['severity','Severity','select',false,['high','medium','low']],['contingencyPlan','Contingency plan','textarea',true]] }
+  risks:      { label: 'Risk', fields: [['riskTitle','Risk','text',true],['category','Category','text'],['severity','Severity','select',false,['high','medium','low']],['contingencyPlan','Contingency plan','textarea',true]] },
+  budgets:    { label: 'Budget line', fields: [['category','Category','text',true],['estimatedCost','Estimated cost','number'],['actualCost','Actual cost','number'],['vendorName','Vendor','text'],['paymentStatus','Payment','select',false,['unpaid','partial','paid']]] },
+  sponsors:   { label: 'Sponsor', fields: [['company','Company','text',true],['contactPerson','Contact person','text'],['email','Email','email'],['phone','Phone','tel'],['packageTier','Tier','select',false,['title','gold','silver','bronze','partner']],['contributionAmount','Amount','number'],['pipelineStatus','Status','select',false,['proposed','agreed','received','rejected']],['deliverables','Deliverables','textarea']] },
+  procurement:{ label: 'Item', fields: [['itemName','Item','text',true],['category','Category','text'],['quantity','Quantity','number'],['estimatedPrice','Estimated price','number'],['actualPrice','Actual price','number'],['vendorName','Vendor','text'],['deliveryStatus','Delivery','select',false,['requested','ordered','delivered']]] }
 };
 
 function showPlannerItemModal(kind) {
   const spec = PLANNER_FIELDS[kind];
   if (!spec) return;
 
+  // Every label is tied to its field with `for`, and the close button carries an
+  // accessible name — this form is reached from the event workspace, so it holds
+  // to the same bar as the rest of the module.
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">➕ Add ${escapeHtml(spec.label)}</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <h2 class="modal-title"><i data-lucide="plus" class="ui-icon" aria-hidden="true"></i> Add ${escapeHtml(spec.label)}</h2>
+      <button type="button" class="modal-close" aria-label="Close">
+        <i data-lucide="x" class="ui-icon" aria-hidden="true"></i></button>
     </div>
     <form onsubmit="submitPlannerItem(event, '${kind}')">
       ${spec.fields.map(([key, label, type, required, options]) => {
+        const id = `pf-${key}`;
+        const req = required ? ' <span class="req">*</span>' : '';
+        const lab = `<label class="input-label" for="${id}">${escapeHtml(label)}${req}</label>`;
         if (type === 'textarea') {
-          return `<div class="input-group"><label class="input-label">${escapeHtml(label)}</label>
-            <textarea id="pf-${key}" class="form-input" rows="3" ${required ? 'required' : ''}></textarea></div>`;
+          return `<div class="input-group">${lab}
+            <textarea id="${id}" class="form-input" rows="3" ${required ? 'required' : ''}></textarea></div>`;
         }
         if (type === 'select') {
-          return `<div class="input-group"><label class="input-label">${escapeHtml(label)}</label>
-            <select id="pf-${key}" class="form-select">${options.map(o => `<option value="${o}">${o.replace('_', ' ')}</option>`).join('')}</select></div>`;
+          return `<div class="input-group">${lab}
+            <select id="${id}" class="form-select">${options.map(o => `<option value="${o}">${o.replace('_', ' ')}</option>`).join('')}</select></div>`;
         }
-        return `<div class="input-group"><label class="input-label">${escapeHtml(label)}</label>
-          <input type="${type}" id="pf-${key}" class="form-input" ${required ? 'required' : ''} /></div>`;
+        return `<div class="input-group">${lab}
+          <input type="${type}" id="${id}" class="form-input" ${required ? 'required' : ''} /></div>`;
       }).join('')}
-      <button type="submit" class="btn btn-primary btn-full">Save ${escapeHtml(spec.label)}</button>
+      <div class="ev-modal-footer">
+        <button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save ${escapeHtml(spec.label)}</button>
+      </div>
     </form>
   `);
 }
@@ -5956,7 +5073,8 @@ function showPlannerItemModal(kind) {
 async function submitPlannerItem(e, kind) {
   if (e) e.preventDefault();
   const spec = PLANNER_FIELDS[kind];
-  const payload = { eventId: CURRENT_PLANNER_EVENT_ID };
+  const payload = { eventId: EV.event ? EV.event.id : null };
+  if (!payload.eventId) { showToast('Open an event first.', 'triangle-alert'); return; }
   spec.fields.forEach(([key]) => {
     const el = document.getElementById('pf-' + key);
     if (el && el.value !== '') payload[key] = el.value;
@@ -5966,16 +5084,20 @@ async function submitPlannerItem(e, kind) {
   if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not save.'}`); return; }
 
   closeModal();
-  showToast(`✅ ${spec.label} added.`);
-  await loadEventPlannerWorkspace(CURRENT_PLANNER_EVENT_ID);
+  showToast(`${spec.label} added.`, 'circle-check-big');
+  EV.tab = 'advanced';
+  renderEventTabs();
+  await evTabAdvanced();
 }
 
 async function deletePlannerItem(kind, id) {
   if (!confirm('Delete this entry?')) return;
   const res = await API.deletePlannerItem(kind, id);
   if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not delete.'}`); return; }
-  showToast('🗑 Deleted.');
-  await loadEventPlannerWorkspace(CURRENT_PLANNER_EVENT_ID);
+  showToast('Deleted.', 'trash-2');
+  EV.tab = 'advanced';
+  renderEventTabs();
+  await evTabAdvanced();
 }
 
 /* ============================================================
@@ -6252,8 +5374,8 @@ async function handleSignupSubmit(e) {
 function showChangePasswordModal(forced = false) {
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">🔑 ${forced ? 'Set a New Password' : 'Change Password'}</div>
-      ${forced ? '' : '<button class="modal-close" onclick="closeModal()">✕</button>'}
+      <div class="modal-title"><i data-lucide="key" class="ui-icon"></i> ${forced ? 'Set a New Password' : 'Change Password'}</div>
+      ${forced ? '' : '<button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>'}
     </div>
     ${forced ? `<p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">
       Your account was created by a bulk import and still uses the shared initial password.
@@ -6328,8 +5450,8 @@ async function showEditProfileV2() {
 
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">✏️ Edit My Profile</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="modal-title"><i data-lucide="pen-line" class="ui-icon"></i> Edit My Profile</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
     </div>
     <form onsubmit="handleSaveProfileV2(event)">
       <div class="modal-section-title">Identity</div>
@@ -6394,3 +5516,2634 @@ async function handleSaveProfileV2(e) {
 }
 
 function showEditProfile() { return showEditProfileV2(); }
+
+/* ============================================================
+   EVENTS & TICKETS — v5
+   One list, one workspace, one creation wizard. Light UI, Lucide icons,
+   no emoji, no mock panels. Staff see management; alumni see discovery.
+   ============================================================ */
+
+const EV_TYPES = ['Reunion', 'Seminar', 'Workshop', 'Career', 'Sports', 'Gala',
+                  'Conference', 'Cultural', 'Ceremony', 'Meetup', 'Other'];
+
+const EV_TYPE_ICON = {
+  Reunion: 'users', Seminar: 'presentation', Workshop: 'wrench', Career: 'briefcase',
+  Sports: 'trophy', Gala: 'sparkles', Conference: 'mic', Cultural: 'music',
+  Ceremony: 'award', Meetup: 'coffee', Other: 'calendar'
+};
+
+const EV_STATUS_LABEL = { upcoming: 'Upcoming', ongoing: 'Ongoing', past: 'Past', cancelled: 'Cancelled' };
+
+const EV_TASK_STATUS = [
+  { key: 'todo',        label: 'Not Started', icon: 'circle-dashed',    tone: 'muted' },
+  { key: 'in_progress', label: 'In Progress', icon: 'circle-dot',       tone: 'info' },
+  { key: 'blocked',     label: 'Blocked',     icon: 'octagon-alert',    tone: 'danger' },
+  { key: 'completed',   label: 'Done',        icon: 'circle-check-big', tone: 'success' }
+];
+const EV_TASK_CATEGORIES = ['Venue', 'Catering', 'Invitations', 'Budget',
+                            'Volunteers', 'Marketing', 'Logistics', 'General'];
+const EV_PRIORITIES = ['critical', 'high', 'medium', 'low'];
+const EV_PEOPLE_ROLES = [
+  { key: 'coordinator',    label: 'Coordinator' },
+  { key: 'committee_lead', label: 'Committee lead' },
+  { key: 'member',         label: 'Committee member' },
+  { key: 'volunteer',      label: 'Volunteer' }
+];
+
+const EV = {
+  list: [], filter: 'upcoming', search: '', publicView: false,
+  event: null, overview: null, tab: 'overview',
+  tasks: [], taskFilter: 'all', people: [], attendees: [], advancedTab: 'budget',
+  wizard: null, picker: null, task: null, _searchTimer: null
+};
+
+/* ─── helpers ─── */
+/* "Super Admin · Super Admin" happened because the account name and its role
+   label are often the same string on staff accounts. Show the name once, and
+   append the role only when it genuinely adds something. */
+function evCreditLine(name, roleLabel) {
+  const n = String(name || '').trim();
+  if (!n) return 'Not recorded';
+  const r = String(roleLabel || '').trim();
+  if (!r || r.toLowerCase() === n.toLowerCase()) return escapeHtml(n);
+  return escapeHtml(n) + ' · ' + escapeHtml(r);
+}
+
+function evCanManage() {
+  return !!state.currentUser &&
+    ['super_admin', 'univ_admin', 'dept_admin', 'moderator'].includes(state.currentUser.role);
+}
+function evIsAdmin() {
+  return !!state.currentUser && ['super_admin', 'univ_admin'].includes(state.currentUser.role);
+}
+function evTypeIcon(t) { return EV_TYPE_ICON[t] || 'calendar'; }
+
+const EV_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+// Date-only values arrive as 'YYYY-MM-DD' and are formatted from their parts.
+// Running them through `new Date()` would re-interpret them as UTC midnight and
+// shift the day for any viewer west of Greenwich.
+function evDate(v) {
+  if (!v) return 'Date to be confirmed';
+  const s = String(v);
+  const plain = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (plain) {
+    return Number(plain[3]) + ' ' + EV_MONTHS[Number(plain[2]) - 1] + ' ' + plain[1];
+  }
+  const d = new Date(v);            // a real instant (created_at, approved_at…)
+  if (isNaN(d)) return s;
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// Value for <input type="date">, which wants a bare 'YYYY-MM-DD'.
+function evDateInput(v) {
+  if (!v) return '';
+  const s = String(v);
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const d = new Date(v);
+  if (isNaN(d)) return '';
+  // Local parts, not toISOString(), so the day does not slip a zone.
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') +
+         '-' + String(d.getDate()).padStart(2, '0');
+}
+function evTime(v) {
+  if (!v) return '';
+  const parts = String(v).split(':');
+  if (parts.length < 2) return String(v);
+  const hh = parseInt(parts[0], 10);
+  if (isNaN(hh)) return String(v);
+  const suffix = hh >= 12 ? 'PM' : 'AM';
+  const h12 = hh % 12 === 0 ? 12 : hh % 12;
+  return h12 + ':' + parts[1] + ' ' + suffix;
+}
+function evTimeInput(v) { return v ? String(v).slice(0, 5) : ''; }
+function evTimeRange(e) {
+  const a = evTime(e.start_time), b = evTime(e.end_time);
+  return a && b ? (a + ' – ' + b) : (a || '');
+}
+function evMoney(n) { return '৳' + Number(n || 0).toLocaleString('en-IN'); }
+function evIcon(name, cls) {
+  return '<i data-lucide="' + name + '" class="ui-icon ' + (cls || '') + '" aria-hidden="true"></i>';
+}
+function evRefreshIcons() {
+  if (window.lucide && typeof lucide.createIcons === 'function') lucide.createIcons();
+}
+
+// Digits-only phone for tel: and wa.me. Bangladeshi local numbers get +880.
+function evPhoneDigits(raw) {
+  if (!raw) return null;
+  let d = String(raw).replace(/[^\d]/g, '');
+  if (!d) return null;
+  if (d.startsWith('880')) return d;
+  if (d.startsWith('0')) return '880' + d.slice(1);
+  return d;
+}
+
+// Call / WhatsApp / Profile. A button is omitted when its number is missing.
+function evContactButtons(p, compact) {
+  const cls = 'ev-contact-btn' + (compact ? ' sm' : '');
+  const phone = evPhoneDigits(p.phone);
+  const wa = evPhoneDigits(p.whatsapp);
+  const name = escapeHtml(p.name || 'this person');
+  const out = [];
+  if (phone) {
+    out.push('<a class="' + cls + '" href="tel:+' + phone + '" aria-label="Call ' + name + '">' +
+             evIcon('phone') + '<span>Call</span></a>');
+  }
+  if (wa) {
+    out.push('<a class="' + cls + ' wa" href="https://wa.me/' + wa + '" target="_blank" rel="noopener" ' +
+             'aria-label="Message ' + name + ' on WhatsApp">' + evIcon('message-circle') + '<span>WhatsApp</span></a>');
+  }
+  /* Only a DIC account has a profile to open. An external contact's id is an
+     event_people row, not a user — linking it would open a stranger. */
+  const uid = p.person_type === 'external' ? null : (p.user_id || p.id);
+  if (uid && typeof viewAlumniProfile === 'function') {
+    out.push('<button type="button" class="' + cls + '" onclick="viewAlumniProfile(' + uid + ')" ' +
+             'aria-label="Open profile for ' + name + '">' + evIcon('user') + '<span>Profile</span></button>');
+  }
+  return out.join('');
+}
+
+function evAvatar(p, size) {
+  const s = size || 34;
+  if (p.photo_url) {
+    return '<img class="ev-avatar" style="width:' + s + 'px;height:' + s + 'px" src="' +
+           escapeHtml(p.photo_url) + '" alt="" loading="lazy" />';
+  }
+  const initials = p.initials || String(p.name || '?').split(' ').map(w => w[0]).slice(0, 2).join('');
+  return '<span class="ev-avatar ev-avatar-initials" aria-hidden="true" style="width:' + s +
+         'px;height:' + s + 'px;font-size:' + Math.round(s / 2.8) + 'px">' + escapeHtml(initials) + '</span>';
+}
+
+function evPersonMeta(p) {
+  return [p.dept, p.section ? 'Sec ' + p.section : null, p.student_id,
+          p.batch ? 'Batch ' + p.batch : null]
+    .filter(Boolean).map(escapeHtml).join(' · ') || '—';
+}
+
+/* ══════════════════════════════════════════════════════════
+   EVENT LIST
+   ══════════════════════════════════════════════════════════ */
+
+/* Entering the Events page always starts in Manage for staff.
+   EV.publicView used to persist for the life of the page, so an admin who
+   peeked at Public view and navigated away came back to the public screen —
+   which is the "wrong view on first entry, correct after refresh" report.
+   Public view is a look, not a saved preference. */
+async function renderEventsPage() {
+  const listView = document.getElementById('ev-list-view');
+  const wsView = document.getElementById('ev-workspace-view');
+  if (listView) listView.classList.remove('hidden');
+  if (wsView) wsView.classList.add('hidden');
+  EV.event = null;
+
+  // Identity must be settled before deciding which Events screen to draw.
+  // Without this the module would fall through to its non-staff branch and
+  // flash the public list at an admin.
+  if (!(await evEnsureIdentity())) return;
+
+  EV.publicView = false;
+  renderEventListChrome();
+  evRunMaintenanceSweep();
+  await loadEventList();
+}
+
+/* Resolves the signed-in user before anything role-dependent renders.
+   Shows a neutral skeleton while it waits, never the wrong view. */
+async function evEnsureIdentity() {
+  if (state.currentUser && state.currentUser.role) return true;
+
+  const actions = document.getElementById('ev-list-actions');
+  const filters = document.getElementById('ev-filters');
+  const list = document.getElementById('ev-list');
+  const sub = document.getElementById('ev-list-subtitle');
+  if (actions) actions.innerHTML = '<span class="ev-chrome-skeleton" aria-hidden="true"></span>';
+  if (filters) filters.innerHTML = '';
+  if (sub) sub.textContent = 'Loading your events…';
+  if (list) list.innerHTML = renderSkeletonCards(3, 'event');
+
+  const me = await API.me();
+  if (me && me.role) {
+    state.currentUser = me;
+    return true;
+  }
+  if (list) {
+    list.innerHTML = renderErrorState(
+      'Your session could not be confirmed. Please sign in again.', 'renderEventsPage()');
+  }
+  if (sub) sub.textContent = '';
+  evRefreshIcons();
+  return false;
+}
+
+function renderEventListChrome() {
+  const manage = evCanManage() && !EV.publicView;
+  const sub = document.getElementById('ev-list-subtitle');
+  if (sub) {
+    sub.textContent = evCanManage()
+      ? (manage ? 'Create, approve and run college events'
+                : 'This is what alumni see')
+      : 'Browse and register for college events';
+  }
+
+  const actions = document.getElementById('ev-list-actions');
+  if (actions) {
+    actions.innerHTML = evCanManage() ? (
+      '<div class="ev-viewswitch" role="group" aria-label="Event view">' +
+        '<button type="button" class="ev-viewswitch-btn ' + (EV.publicView ? '' : 'active') + '" ' +
+          'aria-pressed="' + (!EV.publicView) + '" onclick="setEventListView(false)">' +
+          evIcon('settings-2') + '<span>Manage</span></button>' +
+        '<button type="button" class="ev-viewswitch-btn ' + (EV.publicView ? 'active' : '') + '" ' +
+          'aria-pressed="' + EV.publicView + '" onclick="setEventListView(true)">' +
+          evIcon('eye') + '<span>Public view</span></button>' +
+      '</div>' +
+      '<button type="button" class="btn btn-primary" onclick="openEventWizard()">' +
+        evIcon('plus') + ' New Event</button>'
+    ) : '';
+  }
+
+  const filters = document.getElementById('ev-filters');
+  if (filters) {
+    const opts = [['upcoming', 'Upcoming'], ['ongoing', 'Ongoing'], ['past', 'Past'],
+                  ['cancelled', 'Cancelled'], ['all', 'All']];
+    filters.innerHTML = opts.map(function (o) {
+      const on = EV.filter === o[0];
+      return '<button type="button" class="ev-chip ' + (on ? 'active' : '') + '" role="tab" ' +
+             'aria-selected="' + on + '" onclick="setEventFilter(\'' + o[0] + '\')">' + o[1] + '</button>';
+    }).join('');
+  }
+  evRefreshIcons();
+}
+
+function setEventListView(isPublic) {
+  EV.publicView = isPublic;
+  renderEventListChrome();
+  loadEventList();
+}
+function setEventFilter(f) {
+  EV.filter = f;
+  renderEventListChrome();
+  loadEventList();
+}
+function onEventSearch(v) {
+  EV.search = v;
+  clearTimeout(EV._searchTimer);
+  EV._searchTimer = setTimeout(loadEventList, 250);
+}
+
+/* Boot fires one render and a click can fire another, so two responses race.
+   Only the newest is allowed to paint — otherwise a slower earlier request
+   lands last and overwrites the list the user actually asked for. */
+let _evListRequest = 0;
+
+async function loadEventList() {
+  const el = document.getElementById('ev-list');
+  if (!el) return;
+  const ticket = ++_evListRequest;
+  el.innerHTML = renderSkeletonCards(3, 'event');
+
+  const params = {};
+  if (EV.search) params.search = EV.search;
+  if (EV.filter !== 'all') params.status = EV.filter;
+  if (evCanManage() && !EV.publicView) params.scope = 'manage';
+
+  const rows = await API.getEvents(params);
+  if (ticket !== _evListRequest) return;   // a newer request has taken over
+  if (apiFailed(rows)) {
+    el.innerHTML = renderErrorState(rows && rows.error ? rows.error : 'Could not load events.', 'loadEventList()');
+    evRefreshIcons();
+    return;
+  }
+  EV.list = rows;
+
+  if (!rows.length) {
+    // Say why it is empty. "Nothing here yet" is wrong when the college has
+    // plenty of events and the Upcoming filter simply matches none of them.
+    const labels = { upcoming: 'upcoming', ongoing: 'ongoing', past: 'past', cancelled: 'cancelled' };
+    let title, hint;
+    if (EV.search) {
+      title = 'No events match "' + EV.search.trim() + '"';
+      hint = 'Try a different name or venue, or clear the search.';
+    } else if (EV.filter !== 'all') {
+      title = 'No ' + (labels[EV.filter] || EV.filter) + ' events';
+      hint = 'Choose "All" to see every event.';
+    } else {
+      title = 'No events yet';
+      hint = evCanManage() && !EV.publicView
+        ? 'Use "New Event" to create the first one.'
+        : 'New events will appear here once published.';
+    }
+    el.innerHTML = renderEmptyState(evIcon('calendar'), title, hint);
+    evRefreshIcons();
+    return;
+  }
+
+  const manage = evCanManage() && !EV.publicView;
+  el.innerHTML = rows.map(function (e) { return manage ? evManageCard(e) : evPublicCard(e); }).join('');
+  evRefreshIcons();
+}
+
+function evStatusPill(e) {
+  if (e.status === 'cancelled') return '<span class="ev-pill danger">' + evIcon('calendar-x') + ' Cancelled</span>';
+  if (e.approval_status === 'pending_approval') return '<span class="ev-pill warn">' + evIcon('clock') + ' Awaiting approval</span>';
+  if (e.approval_status === 'rejected') return '<span class="ev-pill danger">' + evIcon('undo-2') + ' Sent back</span>';
+  if (e.approval_status === 'draft') return '<span class="ev-pill muted">' + evIcon('file-pen') + ' Draft</span>';
+  const label = EV_STATUS_LABEL[e.status] || e.status;
+  return '<span class="ev-pill ' + (e.status === 'past' ? 'muted' : 'success') + '">' +
+         evIcon('circle-check-big') + ' ' + escapeHtml(label) + '</span>';
+}
+
+function evCapacityBar(e) {
+  const reg = e.registered != null ? e.registered : 0;
+  const cap = e.capacity || 0;
+  const pct = cap ? Math.min(100, Math.round((reg / cap) * 100)) : 0;
+  return '<div class="ev-capacity">' +
+    '<div class="ev-capacity-track" role="img" aria-label="' + reg + ' of ' + cap + ' places taken">' +
+      '<div class="ev-capacity-fill" style="width:' + pct + '%"></div></div>' +
+    '<div class="ev-capacity-meta"><span>' + reg.toLocaleString() + ' of ' + cap.toLocaleString() +
+      ' registered</span><span>' + pct + '%</span></div></div>';
+}
+
+function evManageCard(e) {
+  return '<article class="ev-card">' +
+    '<div class="ev-card-top">' +
+      '<span class="ev-card-icon">' + evIcon(evTypeIcon(e.event_type)) + '</span>' +
+      '<div class="ev-card-headings">' +
+        '<h3 class="ev-card-title">' + escapeHtml(e.title) + '</h3>' +
+        '<p class="ev-card-type">' + escapeHtml(e.event_type || 'Event') + '</p>' +
+      '</div>' + evStatusPill(e) +
+    '</div>' +
+    '<dl class="ev-card-meta">' +
+      '<div><dt>' + evIcon('calendar') + '<span class="sr-only">Date</span></dt><dd>' +
+        escapeHtml(evDate(e.starts_on)) + (evTimeRange(e) ? ' · ' + escapeHtml(evTimeRange(e)) : '') + '</dd></div>' +
+      '<div><dt>' + evIcon('map-pin') + '<span class="sr-only">Venue</span></dt><dd>' +
+        escapeHtml(e.venue) + '</dd></div>' +
+      '<div><dt>' + evIcon('user-round-pen') + '<span class="sr-only">Created by</span></dt><dd>' +
+        evCreditLine(e.created_by_name, e.created_by_role) + '</dd></div>' +
+    '</dl>' +
+    evCapacityBar(e) +
+    '<div class="ev-card-actions">' +
+      '<button class="btn btn-primary btn-sm" onclick="openEventWorkspace(' + e.id + ')">' +
+        evIcon('settings-2') + ' Manage</button>' +
+      (e.approval_status === 'pending_approval' && evIsAdmin()
+        ? '<button class="btn btn-outline btn-sm" onclick="evApprove(' + e.id + ')">' + evIcon('check') + ' Approve</button>' +
+          '<button class="btn btn-ghost btn-sm" onclick="evReject(' + e.id + ')">' + evIcon('undo-2') + ' Send back</button>'
+        : '') +
+    '</div></article>';
+}
+
+function evPublicCard(e) {
+  const reg = e.registered != null ? e.registered : 0;
+  const full = e.capacity ? reg >= e.capacity : false;
+  return '<article class="ev-card">' +
+    '<div class="ev-card-top">' +
+      '<span class="ev-card-icon">' + evIcon(evTypeIcon(e.event_type)) + '</span>' +
+      '<div class="ev-card-headings">' +
+        '<h3 class="ev-card-title">' + escapeHtml(e.title) + '</h3>' +
+        '<p class="ev-card-type">' + escapeHtml(e.event_type || 'Event') + ' · ' +
+          (e.is_paid ? 'Paid' : 'Free') + '</p>' +
+      '</div>' +
+      (full ? '<span class="ev-pill warn">' + evIcon('hourglass') + ' Full</span>'
+            : '<span class="ev-pill success">' + evIcon('circle-check-big') + ' Open</span>') +
+    '</div>' +
+    (e.description ? '<p class="ev-card-desc">' + escapeHtml(e.description) + '</p>' : '') +
+    '<dl class="ev-card-meta">' +
+      '<div><dt>' + evIcon('calendar') + '<span class="sr-only">Date</span></dt><dd>' +
+        escapeHtml(evDate(e.starts_on)) + (evTimeRange(e) ? ' · ' + escapeHtml(evTimeRange(e)) : '') + '</dd></div>' +
+      '<div><dt>' + evIcon('map-pin') + '<span class="sr-only">Venue</span></dt><dd>' +
+        escapeHtml(e.venue) + '</dd></div>' +
+    '</dl>' +
+    evCapacityBar(e) +
+    '<div class="ev-card-actions">' +
+      (e.is_registered
+        ? '<button class="btn btn-outline btn-sm" onclick="evViewTicket(' + e.id + ')">' + evIcon('ticket') + ' View ticket</button>' +
+          '<button class="btn btn-ghost btn-sm" onclick="evCancelTicket(' + e.id + ')">Cancel</button>'
+        : '<button class="btn btn-primary btn-sm" onclick="evRegister(' + e.id + ')">' +
+            evIcon(full ? 'hourglass' : 'ticket') + ' ' + (full ? 'Join waitlist' : 'Get ticket') + '</button>') +
+    '</div></article>';
+}
+
+/* ══════════════════════════════════════════════════════════
+   EVENT WORKSPACE SHELL
+   ══════════════════════════════════════════════════════════ */
+
+const EV_TABS = [
+  { key: 'overview', label: 'Overview',            icon: 'layout-dashboard' },
+  { key: 'tasks',    label: 'Tasks',               icon: 'clipboard-list' },
+  { key: 'tickets',  label: 'Tickets & Attendees', icon: 'ticket' },
+  { key: 'people',   label: 'People',              icon: 'users' },
+  { key: 'reports',  label: 'Reports',             icon: 'chart-no-axes-column' },
+  { key: 'advanced', label: 'Advanced',            icon: 'sliders-horizontal' }
+];
+
+async function openEventWorkspace(id, tab) {
+  if (!evCanManage()) { showToast('Only organisers can open the event workspace.', 'lock'); return; }
+  const listView = document.getElementById('ev-list-view');
+  const wsView = document.getElementById('ev-workspace-view');
+  if (listView) listView.classList.add('hidden');
+  if (wsView) wsView.classList.remove('hidden');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+
+  EV.tab = tab || 'overview';
+  const header = document.getElementById('ev-context-header');
+  const content = document.getElementById('ev-tab-content');
+  if (header) header.innerHTML = renderSkeletonCards(1, 'event');
+  if (content) content.innerHTML = renderSkeletonCards(2, 'planner');
+
+  const data = await API.getEventOverview(id);
+  if (apiFailed(data)) {
+    if (content) content.innerHTML = renderErrorState(
+      data && data.error ? data.error : 'Could not open this event.', 'openEventWorkspace(' + id + ')');
+    if (header) header.innerHTML = '';
+    evRefreshIcons();
+    return;
+  }
+  EV.event = data.event;
+  EV.overview = data;
+  renderEventContextHeader();
+  renderEventTabs();
+  renderEventTab(EV.tab);
+}
+
+function closeEventWorkspace() { renderEventsPage(); }
+
+async function evReloadWorkspace(tab) {
+  if (!EV.event) return;
+  await openEventWorkspace(EV.event.id, tab || EV.tab);
+}
+
+function renderEventContextHeader() {
+  const el = document.getElementById('ev-context-header');
+  const e = EV.event;
+  if (!el || !e) return;
+
+  const created = e.created_by_name
+    ? evCreditLine(e.created_by_name, e.created_by_role) + ' · ' + escapeHtml(evDate(e.created_at))
+    : 'Not recorded';
+
+  el.innerHTML =
+    '<section class="ev-context" aria-label="Event summary">' +
+      '<div class="ev-context-main">' +
+        '<span class="ev-context-icon">' + evIcon(evTypeIcon(e.event_type)) + '</span>' +
+        '<div class="ev-context-text">' +
+          '<h1 class="ev-context-title">' + escapeHtml(e.title) + '</h1>' +
+          '<p class="ev-context-line">' + evIcon('calendar') + ' ' + escapeHtml(evDate(e.starts_on)) +
+            (evTimeRange(e) ? ' · ' + escapeHtml(evTimeRange(e)) : '') + '</p>' +
+          '<p class="ev-context-line">' + evIcon('map-pin') + ' ' + escapeHtml(e.venue) + '</p>' +
+          '<p class="ev-context-line">' + evIcon('user-round-pen') + ' Created by ' + created + '</p>' +
+        '</div>' +
+        '<div class="ev-context-status">' + evStatusPill(e) +
+          '<span class="ev-context-count">' + (e.registered != null ? e.registered : 0).toLocaleString() +
+            ' / ' + (e.capacity || 0).toLocaleString() + ' registered</span>' +
+          (e.approved_by_name ? '<span class="ev-context-sub">Approved by ' + escapeHtml(e.approved_by_name) + '</span>' : '') +
+        '</div>' +
+      '</div>' +
+      (e.cancellation_reason ? '<p class="ev-banner danger">' + evIcon('triangle-alert') +
+        ' Cancelled — ' + escapeHtml(e.cancellation_reason) + '</p>' : '') +
+      (e.rejection_reason ? '<p class="ev-banner warn">' + evIcon('undo-2') +
+        ' Sent back — ' + escapeHtml(e.rejection_reason) + '</p>' : '') +
+      '<div class="ev-context-actions">' +
+        '<button class="btn btn-outline btn-sm" onclick="evEditEvent()">' + evIcon('pencil') + ' Edit event</button>' +
+        '<button class="btn btn-outline btn-sm" onclick="evPreviewPublic()">' + evIcon('eye') + ' Preview</button>' +
+        (evIsAdmin() && e.status !== 'cancelled'
+          ? '<button class="btn btn-ghost btn-sm ev-danger" onclick="evCancelEvent()">' + evIcon('calendar-x') + ' Cancel event</button>' : '') +
+        (evIsAdmin() && e.approval_status === 'pending_approval'
+          ? '<button class="btn btn-primary btn-sm" onclick="evApprove(' + e.id + ')">' + evIcon('check') + ' Approve</button>' +
+            '<button class="btn btn-ghost btn-sm" onclick="evReject(' + e.id + ')">' + evIcon('undo-2') + ' Send back</button>' : '') +
+      '</div>' +
+    '</section>';
+  evRefreshIcons();
+}
+
+function renderEventTabs() {
+  const nav = document.getElementById('ev-tabs');
+  if (!nav) return;
+  nav.innerHTML = EV_TABS.map(function (t) {
+    const on = EV.tab === t.key;
+    return '<button type="button" class="ev-tab ' + (on ? 'active' : '') + '" role="tab" ' +
+           'id="ev-tab-' + t.key + '" aria-selected="' + on + '" ' +
+           'onclick="switchEventTab(\'' + t.key + '\')">' + evIcon(t.icon) + '<span>' + t.label + '</span></button>';
+  }).join('');
+  evRefreshIcons();
+  const active = nav.querySelector('.ev-tab.active');
+  if (active && active.scrollIntoView) active.scrollIntoView({ block: 'nearest', inline: 'center' });
+}
+
+function switchEventTab(tab) {
+  EV.tab = tab;
+  renderEventTabs();
+  renderEventTab(tab);
+}
+
+function renderEventTab(tab) {
+  const el = document.getElementById('ev-tab-content');
+  if (!el) return;
+  el.setAttribute('aria-labelledby', 'ev-tab-' + tab);
+  if (tab === 'overview') return evTabOverview();
+  if (tab === 'tasks')    return evTabTasks();
+  if (tab === 'tickets')  return evTabTickets();
+  if (tab === 'people')   return evTabPeople();
+  if (tab === 'reports')  return evTabReports();
+  if (tab === 'advanced') return evTabAdvanced();
+}
+
+/* ══════════════════════════════════════════════════════════
+   TAB — OVERVIEW
+   ══════════════════════════════════════════════════════════ */
+
+function evStat(icon, value, label, tone) {
+  return '<div class="ev-stat">' +
+    '<span class="ev-stat-icon ' + (tone || '') + '">' + evIcon(icon) + '</span>' +
+    '<div><div class="ev-stat-value">' + value + '</div>' +
+    '<div class="ev-stat-label">' + label + '</div></div></div>';
+}
+
+function evTabOverview() {
+  const el = document.getElementById('ev-tab-content');
+  const e = EV.event, o = EV.overview;
+  if (!el || !e || !o) return;
+
+  const available = Math.max(0, (e.capacity || 0) - (e.registered || 0));
+  const hasTasks = o.tasks.total > 0;
+
+  el.innerHTML =
+    '<div class="ev-stats">' +
+      evStat('users', (e.registered || 0).toLocaleString(), 'Registered', 'info') +
+      evStat('armchair', available.toLocaleString(), 'Seats available') +
+      evStat('clipboard-list', o.tasks.total, 'Tasks') +
+      evStat('circle-check-big', o.tasks.completionRate + '%', 'Tasks complete', 'success') +
+      (e.is_paid ? evStat('banknote', evMoney(o.revenue), 'Ticket revenue', 'success') : '') +
+      (o.tasks.overdue ? evStat('triangle-alert', o.tasks.overdue, 'Overdue', 'danger') : '') +
+    '</div>' +
+
+    (e.description
+      ? '<section class="ev-panel"><h2 class="ev-panel-title">About this event</h2>' +
+        '<p class="ev-prose">' + escapeHtml(e.description) + '</p>' +
+        '<dl class="ev-deflist">' +
+          '<div><dt>Organiser</dt><dd>' +
+            (e.organizer_department ? escapeHtml(e.organizer_department)
+                                    : '<span class="ev-notset">Not set</span>') + '</dd></div>' +
+          '<div><dt>Visibility</dt><dd>' + escapeHtml(
+              e.visibility === 'public' ? 'Public' : e.visibility === 'invite' ? 'Invite only' : 'Alumni only') + '</dd></div>' +
+          '<div><dt>Registration</dt><dd>' + escapeHtml(evRegWindowText(e)) + '</dd></div>' +
+          '<div><dt>Waitlist</dt><dd>' + (e.waitlist_enabled ? 'Enabled' : 'Off') + '</dd></div>' +
+        '</dl></section>'
+      : '') +
+
+    '<section class="ev-panel">' +
+      '<h2 class="ev-panel-title">Next steps</h2>' +
+      '<div class="ev-starters">' +
+        '<button type="button" class="ev-starter" onclick="switchEventTab(\'tasks\')">' +
+          '<span class="ev-starter-icon">' + evIcon('clipboard-list') + '</span>' +
+          '<span class="ev-starter-text"><strong>Add tasks</strong>' +
+          '<span>Break the work down and give it deadlines</span></span>' +
+          evIcon('chevron-right', 'ev-starter-chevron') + '</button>' +
+        '<button type="button" class="ev-starter" onclick="switchEventTab(\'people\')">' +
+          '<span class="ev-starter-icon">' + evIcon('users') + '</span>' +
+          '<span class="ev-starter-text"><strong>Add people</strong>' +
+          '<span>Build the committee and volunteer team</span></span>' +
+          evIcon('chevron-right', 'ev-starter-chevron') + '</button>' +
+        '<button type="button" class="ev-starter" onclick="evPreviewPublic()">' +
+          '<span class="ev-starter-icon">' + evIcon('eye') + '</span>' +
+          '<span class="ev-starter-text"><strong>Preview public event</strong>' +
+          '<span>See what alumni will see</span></span>' +
+          evIcon('chevron-right', 'ev-starter-chevron') + '</button>' +
+      '</div>' +
+      (hasTasks ? '' :
+        '<div class="ev-callout">' + evIcon('list-checks') +
+          '<div><strong>No tasks yet</strong>' +
+          '<p>Add a ready-made checklist of the usual jobs — confirm venue, catering, ' +
+          'invitations, volunteers — with deadlines worked back from the event date.</p></div>' +
+          '<button class="btn btn-primary btn-sm" onclick="evAddStandardChecklist()">Add standard checklist</button>' +
+        '</div>') +
+    '</section>';
+  evRefreshIcons();
+}
+
+function evRegWindowText(e) {
+  const o = e.registration_opens_at ? evDate(e.registration_opens_at) : null;
+  const c = e.registration_closes_at ? evDate(e.registration_closes_at) : null;
+  if (o && c) return 'Open ' + o + ' to ' + c;
+  if (o) return 'Opens ' + o;
+  if (c) return 'Closes ' + c;
+  return 'Open now';
+}
+
+async function evAddStandardChecklist() {
+  if (!EV.event) return;
+  const res = await API.addStandardChecklist(EV.event.id);
+  if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Could not add the checklist.', 'triangle-alert'); return; }
+  showToast(res.created + ' task' + (res.created === 1 ? '' : 's') + ' added.', 'circle-check-big');
+  await evReloadWorkspace('tasks');
+}
+
+/* ══════════════════════════════════════════════════════════
+   TAB — TASKS  (filterable list; no Kanban at any width)
+   ══════════════════════════════════════════════════════════ */
+
+async function evTabTasks() {
+  const el = document.getElementById('ev-tab-content');
+  if (!el || !EV.event) return;
+  el.innerHTML = renderSkeletonCards(3, 'planner');
+
+  const tasks = await API.getEventTasks(EV.event.id);
+  if (apiFailed(tasks)) {
+    el.innerHTML = renderErrorState(tasks && tasks.error ? tasks.error : 'Could not load tasks.', 'evTabTasks()');
+    evRefreshIcons();
+    return;
+  }
+  EV.tasks = tasks;
+  evRenderTaskList();
+}
+
+function evRenderTaskList() {
+  const el = document.getElementById('ev-tab-content');
+  if (!el) return;
+
+  const counts = { all: EV.tasks.length, overdue: EV.tasks.filter(function (t) { return t.is_overdue; }).length };
+  EV_TASK_STATUS.forEach(function (s) {
+    counts[s.key] = EV.tasks.filter(function (t) { return t.status === s.key; }).length;
+  });
+
+  const chips = [{ key: 'all', label: 'All' }]
+    .concat(EV_TASK_STATUS.map(function (s) { return { key: s.key, label: s.label }; }))
+    .concat(counts.overdue ? [{ key: 'overdue', label: 'Overdue' }] : []);
+
+  const filtered = EV.tasks.filter(function (t) {
+    if (EV.taskFilter === 'all') return true;
+    if (EV.taskFilter === 'overdue') return t.is_overdue;
+    return t.status === EV.taskFilter;
+  });
+
+  el.innerHTML =
+    '<section class="ev-panel">' +
+      '<div class="ev-panel-head">' +
+        '<h2 class="ev-panel-title">Tasks</h2>' +
+        '<div class="ev-panel-actions">' +
+          (EV.tasks.length ? '' :
+            '<button class="btn btn-outline btn-sm" onclick="evAddStandardChecklist()">' +
+            evIcon('list-checks') + ' Standard checklist</button>') +
+          '<button class="btn btn-primary btn-sm" onclick="evNewTask()">' + evIcon('plus') + ' New task</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="ev-filters" role="tablist" aria-label="Filter tasks">' +
+        chips.map(function (c) {
+          const on = EV.taskFilter === c.key;
+          return '<button type="button" class="ev-chip ' + (on ? 'active' : '') + '" role="tab" ' +
+                 'aria-selected="' + on + '" onclick="evSetTaskFilter(\'' + c.key + '\')">' +
+                 c.label + '<span class="ev-chip-count">' + (counts[c.key] || 0) + '</span></button>';
+        }).join('') +
+      '</div>' +
+      (filtered.length
+        ? '<ul class="ev-tasklist">' + filtered.map(evTaskRow).join('') + '</ul>'
+        : renderEmptyState(evIcon('clipboard-list'), 'No tasks here',
+            EV.taskFilter === 'all' ? 'Add the first task to get started.' : 'Try another filter.')) +
+    '</section>';
+  evRefreshIcons();
+}
+
+function evSetTaskFilter(f) { EV.taskFilter = f; evRenderTaskList(); }
+
+function evTaskStatusMeta(key) {
+  return EV_TASK_STATUS.find(function (s) { return s.key === key; }) || EV_TASK_STATUS[0];
+}
+
+function evTaskRow(t) {
+  const meta = evTaskStatusMeta(t.status);
+  const assignees = t.assignees || [];
+  const shown = assignees.slice(0, 3);
+  const extra = assignees.length - shown.length;
+
+  return '<li class="ev-task ' + (t.is_overdue ? 'overdue' : '') + '">' +
+    '<button type="button" class="ev-task-main" onclick="evOpenTask(' + t.id + ')" ' +
+            'aria-label="Open task ' + escapeHtml(t.title) + '">' +
+      '<span class="ev-task-status ' + meta.tone + '">' + evIcon(meta.icon) +
+        '<span class="ev-task-status-label">' + meta.label + '</span></span>' +
+      '<span class="ev-task-body">' +
+        '<span class="ev-task-title">' + escapeHtml(t.title) + '</span>' +
+        '<span class="ev-task-meta">' +
+          (t.category ? '<span class="ev-tag">' + escapeHtml(t.category) + '</span>' : '') +
+          '<span class="ev-tag prio-' + escapeHtml(t.priority) + '">' + escapeHtml(t.priority) + '</span>' +
+          (t.due_on
+            ? '<span class="ev-task-due ' + (t.is_overdue ? 'danger' : '') + '">' + evIcon('calendar') + ' ' +
+              escapeHtml(evDate(t.due_on)) + (t.is_overdue ? ' · overdue' : '') + '</span>'
+            : '') +
+          (t.verified_at ? '<span class="ev-task-due success">' + evIcon('badge-check') + ' Verified</span>' : '') +
+        '</span>' +
+        (t.status === 'blocked' && t.blocked_reason
+          ? '<span class="ev-task-blocked">' + evIcon('octagon-alert') + ' ' + escapeHtml(t.blocked_reason) + '</span>'
+          : '') +
+      '</span>' +
+      '<span class="ev-task-right">' +
+        '<span class="ev-progress" role="img" aria-label="' + t.progress + ' percent complete">' +
+          '<span class="ev-progress-track"><span class="ev-progress-fill" style="width:' + t.progress + '%"></span></span>' +
+          '<span class="ev-progress-num">' + t.progress + '%</span>' +
+        '</span>' +
+        '<span class="ev-task-avatars">' +
+          shown.map(function (a) {
+            return '<span class="ev-stackav ' + (a.person_type === 'external' ? 'external' : '') + '" ' +
+              'title="' + escapeHtml(a.name) + (a.person_type === 'external' ? ' (external)' : '') + '">' +
+              evAvatar(a, 26) + '</span>'; }).join('') +
+          (extra > 0 ? '<span class="ev-avatar ev-avatar-more" style="width:26px;height:26px">+' + extra + '</span>' : '') +
+          (assignees.length === 0 ? '<span class="ev-unassigned">Unassigned</span>' : '') +
+        '</span>' +
+      '</span>' +
+    '</button></li>';
+}
+
+/* ─── Task detail ─── */
+
+async function evOpenTask(taskId) {
+  const t = await API.getTask(taskId);
+  if (apiFailed(t)) { showToast(t && t.error ? t.error : 'Could not open this task.', 'triangle-alert'); return; }
+  EV.task = t;
+  evRenderTaskModal();
+}
+
+function evRenderTaskModal() {
+  const t = EV.task;
+  if (!t) return;
+  const canManage = t.access && t.access.canManage;
+  const meta = evTaskStatusMeta(t.status);
+
+  const statusButtons = EV_TASK_STATUS.map(function (s) {
+    const on = t.status === s.key;
+    return '<button type="button" class="ev-seg ' + (on ? 'active ' + s.tone : '') + '" ' +
+      'aria-pressed="' + on + '" onclick="evSetTaskStatus(\'' + s.key + '\')">' +
+      evIcon(s.icon) + '<span>' + s.label + '</span></button>';
+  }).join('');
+
+  const steps = [0, 25, 50, 75, 100].map(function (p) {
+    return '<button type="button" class="ev-progress-step ' + (t.progress === p ? 'active' : '') + '" ' +
+      'aria-pressed="' + (t.progress === p) + '" onclick="evSetTaskProgress(' + p + ')">' + p + '%</button>';
+  }).join('');
+
+  showModal(
+    '<div class="modal-header">' +
+      '<h2 class="modal-title">' + evIcon('clipboard-list') + ' ' + escapeHtml(t.title) + '</h2>' +
+      '<button type="button" class="modal-close" aria-label="Close">' + evIcon('x') + '</button>' +
+    '</div>' +
+    '<div class="ev-taskmodal">' +
+
+      (t.is_overdue ? '<p class="ev-banner danger">' + evIcon('triangle-alert') + ' This task is overdue.</p>' : '') +
+      (t.status === 'blocked' && t.blocked_reason
+        ? '<p class="ev-banner warn">' + evIcon('octagon-alert') + ' Blocked — ' + escapeHtml(t.blocked_reason) + '</p>' : '') +
+      (t.verified_at
+        ? '<p class="ev-banner success">' + evIcon('badge-check') + ' Verified by ' +
+          escapeHtml(t.verified_by_name || 'an organiser') + ' on ' + escapeHtml(evDate(t.verified_at)) + '</p>' : '') +
+
+      (t.description ? '<p class="ev-prose">' + escapeHtml(t.description) + '</p>' : '') +
+
+      '<dl class="ev-deflist compact">' +
+        '<div><dt>Category</dt><dd>' + escapeHtml(t.category || 'General') + '</dd></div>' +
+        '<div><dt>Priority</dt><dd>' + escapeHtml(t.priority) + '</dd></div>' +
+        '<div><dt>Deadline</dt><dd>' + (t.due_on ? escapeHtml(evDate(t.due_on)) : 'None') + '</dd></div>' +
+        '<div><dt>Created by</dt><dd>' +
+          (t.created_by_name ? escapeHtml(t.created_by_name) : '<span class="ev-notset">Not recorded</span>') +
+          '</dd></div>' +
+        (t.updated_by_name ? '<div><dt>Last updated by</dt><dd>' + escapeHtml(t.updated_by_name) +
+          ' · ' + escapeHtml(evDate(t.updated_at)) + '</dd></div>' : '') +
+        (t.completed_at ? '<div><dt>Completed</dt><dd>' + escapeHtml(evDate(t.completed_at)) + '</dd></div>' : '') +
+      '</dl>' +
+
+      '<div class="ev-field">' +
+        '<span class="ev-label">Status</span>' +
+        '<div class="ev-segrow" role="group" aria-label="Task status">' + statusButtons + '</div>' +
+      '</div>' +
+
+      '<div class="ev-field">' +
+        '<span class="ev-label">Progress <strong>' + t.progress + '%</strong></span>' +
+        '<div class="ev-progress-steps" role="group" aria-label="Task progress">' + steps + '</div>' +
+      '</div>' +
+
+      '<div class="ev-field">' +
+        '<div class="ev-field-head">' +
+          '<span class="ev-label">Assigned to</span>' +
+          (canManage ? '<button class="btn btn-outline btn-sm" onclick="evOpenPicker(\'task\')">' +
+            evIcon('user-plus') + ' Add people</button>' : '') +
+        '</div>' +
+        (t.assignees && t.assignees.length
+          ? '<ul class="ev-people">' + t.assignees.map(function (a) {
+              const isExternal = a.person_type === 'external';
+              const meta = isExternal
+                ? [a.role_label, a.organization].filter(Boolean).map(escapeHtml).join(' · ')
+                : evPersonMeta(a);
+              const remove = isExternal
+                ? 'evRemoveAssigneePerson(' + a.event_person_id + ')'
+                : 'evRemoveAssignee(' + a.user_id + ')';
+              return '<li class="ev-person">' + evAvatar(a, 38) +
+                '<div class="ev-person-text">' +
+                  '<div class="ev-person-name"><strong>' + escapeHtml(a.name) + '</strong>' +
+                    evPersonBadge(a.person_type) + '</div>' +
+                  (meta ? '<span>' + meta + '</span>' : '') +
+                  (isExternal
+                    ? '<span class="ev-muted small">' + evIcon('info') +
+                      ' External contact · No in-app account</span>' : '') +
+                '</div>' +
+                '<div class="ev-person-actions">' + evContactButtons(a, true) +
+                  (canManage ? '<button type="button" class="ev-contact-btn sm danger" ' +
+                    'onclick="' + remove + '" aria-label="Remove ' + escapeHtml(a.name) + '">' +
+                    evIcon('user-minus') + '<span>Remove</span></button>' : '') +
+                '</div></li>'; }).join('') + '</ul>'
+          : '<p class="ev-muted">Nobody assigned yet.</p>') +
+        (t.assigned_to && (!t.assignees || !t.assignees.length)
+          ? '<p class="ev-muted small">Previously recorded as “' + escapeHtml(t.assigned_to) +
+            '” before people were linked to accounts.</p>' : '') +
+      '</div>' +
+
+      '<div class="ev-field">' +
+        '<div class="ev-field-head"><span class="ev-label">Checklist</span>' +
+        (canManage ? '<button class="btn btn-ghost btn-sm" onclick="evAddChecklistItem()">' +
+          evIcon('plus') + ' Add item</button>' : '') + '</div>' +
+        (t.checklist && t.checklist.length
+          ? '<ul class="ev-checklist">' + t.checklist.map(function (c) {
+              return '<li><label class="ev-check"><input type="checkbox" ' + (c.is_done ? 'checked' : '') +
+                ' onchange="evToggleChecklist(' + c.id + ', this.checked)" />' +
+                '<span>' + escapeHtml(c.label) + '</span></label>' +
+                (canManage ? '<button type="button" class="ev-icon-btn" onclick="evDeleteChecklistItem(' + c.id + ')" ' +
+                  'aria-label="Remove checklist item">' + evIcon('x') + '</button>' : '') + '</li>'; }).join('') + '</ul>'
+          : '<p class="ev-muted">No checklist items.</p>') +
+      '</div>' +
+
+      '<div class="ev-field">' +
+        '<span class="ev-label">Notes</span>' +
+        (t.notes && t.notes.length
+          ? '<ul class="ev-notes">' + t.notes.map(function (n) {
+              return '<li><div class="ev-note-head"><strong>' + escapeHtml(n.author || 'Someone') + '</strong>' +
+                '<span>' + escapeHtml(formatRelativeTime(n.created_at)) + '</span></div>' +
+                '<p>' + escapeHtml(n.body) + '</p></li>'; }).join('') + '</ul>'
+          : '<p class="ev-muted">No notes yet.</p>') +
+        '<form class="ev-note-form" onsubmit="evAddNote(event)">' +
+          '<label class="sr-only" for="ev-note-input">Add a note</label>' +
+          '<input type="text" id="ev-note-input" class="form-input" placeholder="Add a note…" maxlength="500" />' +
+          '<button type="submit" class="btn btn-outline btn-sm">' + evIcon('send') + ' Post</button>' +
+        '</form>' +
+      '</div>' +
+
+      '<div class="ev-modal-footer">' +
+        (canManage
+          ? '<button class="btn btn-outline btn-sm" onclick="evEditTask()">' + evIcon('pencil') + ' Edit details</button>' +
+            (t.status === 'completed' && !t.verified_at
+              ? '<button class="btn btn-primary btn-sm" onclick="evVerifyTask()">' + evIcon('badge-check') + ' Verify</button>' : '') +
+            '<button class="btn btn-ghost btn-sm ev-danger" onclick="evDeleteTask()">' + evIcon('trash-2') + ' Delete</button>'
+          : '') +
+      '</div>' +
+    '</div>');
+  evRefreshIcons();
+}
+
+async function evReloadTask() {
+  if (!EV.task) return;
+  const t = await API.getTask(EV.task.id);
+  if (!apiFailed(t)) { EV.task = t; evRenderTaskModal(); }
+
+  // An assignee can reach a task straight from a notification without ever
+  // opening the event workspace, so there may be no event list to refresh.
+  if (!EV.event) return;
+  const tasks = await API.getEventTasks(EV.event.id);
+  if (!apiFailed(tasks)) { EV.tasks = tasks; if (EV.tab === 'tasks') evRenderTaskList(); }
+}
+
+async function evSetTaskStatus(status) {
+  if (!EV.task) return;
+  let payload = { status: status };
+  if (status === 'blocked') {
+    const reason = prompt('What is blocking this task?', EV.task.blocked_reason || '');
+    if (reason === null) return;
+    if (!reason.trim()) { showToast('A reason is required to mark a task blocked.', 'triangle-alert'); return; }
+    payload.blockedReason = reason.trim();
+  }
+  const res = await API.updateTask(EV.task.id, payload);
+  if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Could not update the task.', 'triangle-alert'); return; }
+  showToast('Task set to ' + evTaskStatusMeta(status).label + '.', 'circle-check-big');
+  await evReloadTask();
+}
+
+async function evSetTaskProgress(p) {
+  if (!EV.task) return;
+  const payload = { progress: p };
+  if (p > 0 && p < 100 && EV.task.status === 'todo') payload.status = 'in_progress';
+  const res = await API.updateTask(EV.task.id, payload);
+  if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Could not update progress.', 'triangle-alert'); return; }
+  showToast('Progress set to ' + p + '%.', 'circle-check-big');
+  await evReloadTask();
+}
+
+async function evVerifyTask() {
+  const res = await API.verifyTask(EV.task.id);
+  if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Could not verify.', 'triangle-alert'); return; }
+  showToast('Task verified.', 'badge-check');
+  await evReloadTask();
+}
+
+async function evDeleteTask() {
+  if (!confirm('Delete this task? This cannot be undone.')) return;
+  const res = await API.deleteTask(EV.task.id);
+  if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Could not delete.', 'triangle-alert'); return; }
+  closeModal();
+  showToast('Task deleted.', 'trash-2');
+  EV.task = null;
+  if (EV.event) evTabTasks();
+}
+
+async function evAddNote(e) {
+  if (e) e.preventDefault();
+  const input = document.getElementById('ev-note-input');
+  const body = input ? input.value.trim() : '';
+  if (!body) return;
+  const res = await API.addTaskNote(EV.task.id, body);
+  if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Could not post the note.', 'triangle-alert'); return; }
+  await evReloadTask();
+}
+
+async function evAddChecklistItem() {
+  const label = prompt('Checklist item');
+  if (!label || !label.trim()) return;
+  const res = await API.addChecklistItem(EV.task.id, label.trim());
+  if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Could not add the item.', 'triangle-alert'); return; }
+  await evReloadTask();
+}
+async function evToggleChecklist(id, isDone) {
+  await API.setChecklistItem(id, isDone);
+  await evReloadTask();
+}
+async function evDeleteChecklistItem(id) {
+  await API.deleteChecklistItem(id);
+  await evReloadTask();
+}
+async function evRemoveAssignee(userId) {
+  const res = await API.removeTaskAssignee(EV.task.id, userId);
+  if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Could not remove.', 'triangle-alert'); return; }
+  await evReloadTask();
+}
+
+// An external contact is keyed by its event_people row, not a user id.
+async function evRemoveAssigneePerson(personId) {
+  const res = await API.removeTaskPerson(EV.task.id, personId);
+  if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Could not remove.', 'triangle-alert'); return; }
+  await evReloadTask();
+}
+
+/* ─── Create / edit a task ─── */
+
+function evTaskForm(t) {
+  const isEdit = !!t;
+  return '<form onsubmit="evSubmitTask(event, ' + (isEdit ? t.id : 'null') + ')" class="ev-form">' +
+    '<div class="ev-field"><label class="ev-label" for="ev-t-title">Task title <span class="req">*</span></label>' +
+      '<input type="text" id="ev-t-title" class="form-input" required maxlength="200" ' +
+      'value="' + (isEdit ? escapeHtml(t.title) : '') + '" placeholder="Confirm venue booking" />' +
+      '<span class="ev-help">What needs to be done, in a few words.</span></div>' +
+
+    '<div class="ev-field"><label class="ev-label" for="ev-t-desc">Details</label>' +
+      '<textarea id="ev-t-desc" class="form-input" rows="3" maxlength="1000" ' +
+      'placeholder="Anything the person doing this needs to know">' + (isEdit ? escapeHtml(t.description || '') : '') + '</textarea></div>' +
+
+    '<div class="ev-grid2">' +
+      '<div class="ev-field"><label class="ev-label" for="ev-t-cat">Category</label>' +
+        '<select id="ev-t-cat" class="form-select">' +
+        EV_TASK_CATEGORIES.map(function (c) {
+          return '<option value="' + c + '"' + (isEdit && t.category === c ? ' selected' : '') + '>' + c + '</option>';
+        }).join('') + '</select></div>' +
+      '<div class="ev-field"><label class="ev-label" for="ev-t-prio">Priority</label>' +
+        '<select id="ev-t-prio" class="form-select">' +
+        EV_PRIORITIES.map(function (p) {
+          const sel = isEdit ? t.priority === p : p === 'medium';
+          return '<option value="' + p + '"' + (sel ? ' selected' : '') + '>' +
+                 p.charAt(0).toUpperCase() + p.slice(1) + '</option>';
+        }).join('') + '</select></div>' +
+    '</div>' +
+
+    '<div class="ev-field"><label class="ev-label" for="ev-t-due">Deadline</label>' +
+      '<input type="date" id="ev-t-due" class="form-input" value="' + (isEdit ? evDateInput(t.due_on) : '') + '" />' +
+      '<span class="ev-help">Optional. Overdue tasks are flagged automatically.</span></div>' +
+
+    '<div class="ev-modal-footer">' +
+      '<button type="button" class="btn btn-outline" onclick="' + (isEdit ? 'evRenderTaskModal()' : 'closeModal()') + '">' +
+        (isEdit ? 'Back' : 'Cancel') + '</button>' +
+      '<button type="submit" class="btn btn-primary">' + (isEdit ? 'Save changes' : 'Create task') + '</button>' +
+    '</div></form>';
+}
+
+function evNewTask() {
+  showModal('<div class="modal-header"><h2 class="modal-title">' + evIcon('plus') + ' New task</h2>' +
+    '<button type="button" class="modal-close" aria-label="Close">' + evIcon('x') + '</button></div>' +
+    evTaskForm(null));
+  evRefreshIcons();
+}
+
+function evEditTask() {
+  showModal('<div class="modal-header"><h2 class="modal-title">' + evIcon('pencil') + ' Edit task</h2>' +
+    '<button type="button" class="modal-close" aria-label="Close">' + evIcon('x') + '</button></div>' +
+    evTaskForm(EV.task));
+  evRefreshIcons();
+}
+
+async function evSubmitTask(e, taskId) {
+  if (e) e.preventDefault();
+  const payload = {
+    title: document.getElementById('ev-t-title').value.trim(),
+    description: document.getElementById('ev-t-desc').value.trim(),
+    category: document.getElementById('ev-t-cat').value,
+    priority: document.getElementById('ev-t-prio').value,
+    dueOn: document.getElementById('ev-t-due').value || null
+  };
+  if (!payload.title) { showToast('A task title is required.', 'triangle-alert'); return; }
+
+  const res = taskId ? await API.updateTask(taskId, payload) : await API.createTask(EV.event.id, payload);
+  if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Could not save the task.', 'triangle-alert'); return; }
+
+  if (taskId) { EV.task = res; showToast('Task updated.', 'circle-check-big'); await evReloadTask(); }
+  else { closeModal(); showToast('Task created.', 'circle-check-big'); await evTabTasks(); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   DIRECTORY PICKER  (desktop popover / mobile full-screen sheet)
+   ══════════════════════════════════════════════════════════ */
+
+function evOpenPicker(mode) {
+  EV.picker = { mode: mode, selected: [], results: [], query: '', timer: null,
+                role: 'member', source: 'directory', external: [] };
+  evRenderPicker();
+  evPickerSearch('');
+  // Assigning a task can also draw on the external contacts already on this
+  // event, so they are fetched alongside the directory search.
+  if (mode === 'task' && EV.event) {
+    API.getEventPeople(EV.event.id).then(function (rows) {
+      if (!apiFailed(rows) && EV.picker) {
+        EV.picker.external = rows.filter(function (r) { return r.person_type === 'external'; });
+        if (EV.picker.source === 'external') evRenderPickerResults();
+        evRenderPickerTabs();
+      }
+    });
+  }
+}
+
+function evSetPickerSource(src) {
+  if (!EV.picker) return;
+  EV.picker.source = src;
+  evRenderPickerTabs();
+  evRenderPickerResults();
+}
+
+function evRenderPickerTabs() {
+  const p = EV.picker;
+  const box = document.getElementById('ev-picker-tabs');
+  if (!p || !box) return;
+  if (p.mode !== 'task') { box.innerHTML = ''; return; }
+  const n = (p.external || []).length;
+  box.innerHTML =
+    '<div class="ev-filters" role="tablist" aria-label="Where the person comes from">' +
+      '<button type="button" class="ev-chip ' + (p.source === 'directory' ? 'active' : '') + '" role="tab" ' +
+        'aria-selected="' + (p.source === 'directory') + '" onclick="evSetPickerSource(\'directory\')">' +
+        evIcon('graduation-cap') + ' DIC directory</button>' +
+      '<button type="button" class="ev-chip ' + (p.source === 'external' ? 'active' : '') + '" role="tab" ' +
+        'aria-selected="' + (p.source === 'external') + '" onclick="evSetPickerSource(\'external\')">' +
+        evIcon('user-round') + ' External contacts<span class="ev-chip-count">' + n + '</span></button>' +
+    '</div>';
+  const search = document.getElementById('ev-picker-searchbox');
+  if (search) search.classList.toggle('hidden', p.source === 'external');
+  evRefreshIcons();
+}
+
+function evRenderPicker() {
+  const p = EV.picker;
+  if (!p) return;
+  const isPeople = p.mode === 'people';
+
+  showModal(
+    '<div class="modal-header">' +
+      '<h2 class="modal-title">' + evIcon('user-plus') + ' ' +
+        (isPeople ? 'Add people to this event' : 'Assign people to this task') + '</h2>' +
+      '<button type="button" class="modal-close" aria-label="Close">' + evIcon('x') + '</button>' +
+    '</div>' +
+    '<div class="ev-picker">' +
+      (isPeople
+        ? '<div class="ev-field"><label class="ev-label" for="ev-pk-role">Role on this event</label>' +
+          '<select id="ev-pk-role" class="form-select" onchange="EV.picker.role=this.value">' +
+          EV_PEOPLE_ROLES.map(function (r) {
+            return '<option value="' + r.key + '"' + (p.role === r.key ? ' selected' : '') + '>' + r.label + '</option>';
+          }).join('') + '</select></div>'
+        : '') +
+
+      '<div id="ev-picker-tabs"></div>' +
+
+      '<div class="ev-field" id="ev-picker-searchbox">' +
+        '<label class="ev-label" for="ev-pk-q">Search the directory</label>' +
+        '<div class="ev-search boxed">' + evIcon('search', 'ev-search-icon') +
+          '<input type="search" id="ev-pk-q" class="ev-search-input" autocomplete="off" ' +
+          'placeholder="Name, ID, phone, department or section" ' +
+          'oninput="evPickerSearch(this.value)" />' +
+        '</div>' +
+        '<span class="ev-help">Search by name, alumni/student ID, phone number, department or section.</span>' +
+      '</div>' +
+
+      '<div class="ev-picker-selected" id="ev-picker-selected"></div>' +
+      '<div class="ev-picker-results" id="ev-picker-results" role="listbox" aria-label="Search results"></div>' +
+
+      '<div class="ev-modal-footer sticky">' +
+        '<button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>' +
+        '<button type="button" class="btn btn-primary" id="ev-picker-confirm" onclick="evPickerConfirm()" disabled>' +
+          'Add people</button>' +
+      '</div>' +
+    '</div>');
+  evRefreshIcons();
+  evRenderPickerTabs();
+  evRenderPickerSelected();
+}
+
+function evPickerSearch(q) {
+  const p = EV.picker;
+  if (!p) return;
+  p.query = q;
+  clearTimeout(p.timer);
+  p.timer = setTimeout(async function () {
+    const box = document.getElementById('ev-picker-results');
+    if (box) box.innerHTML = '<p class="ev-muted">Searching…</p>';
+    const res = await API.searchDirectory({ q: q, limit: 25 });
+    if (apiFailed(res)) {
+      if (box) box.innerHTML = '<p class="ev-muted">' + escapeHtml(res && res.error ? res.error : 'Search failed.') + '</p>';
+      return;
+    }
+    p.results = res.results || [];
+    evRenderPickerResults();
+  }, 220);
+}
+
+function evRenderPickerResults() {
+  const p = EV.picker;
+  const box = document.getElementById('ev-picker-results');
+  if (!p || !box) return;
+
+  // External contacts are attached to this event, so the list is local rather
+  // than a search; DIC people come from the directory query.
+  const externalMode = p.mode === 'task' && p.source === 'external';
+  const rows = externalMode ? (p.external || []) : p.results;
+
+  const already = p.mode === 'task' && EV.task
+    ? (EV.task.assignees || []).map(function (a) {
+        return a.person_type === 'external' ? 'x' + a.event_person_id : 'u' + a.user_id; })
+    : (EV.people || []).map(function (x) { return 'u' + x.user_id; });
+
+  if (!rows.length) {
+    box.innerHTML = externalMode
+      ? '<div class="ev-picker-empty">' + evIcon('user-round') +
+        '<p>No external contacts on this event yet.</p>' +
+        '<button type="button" class="btn btn-outline btn-sm" onclick="evOpenExternalForm()">' +
+        evIcon('plus') + ' Add external person</button></div>'
+      : '<p class="ev-muted">No matching people.</p>';
+    evRefreshIcons();
+    return;
+  }
+
+  box.innerHTML = rows.map(function (r) {
+    const key = externalMode ? 'x' + r.id : 'u' + r.id;
+    const isSel = p.selected.some(function (s) { return s.key === key; });
+    const isOn = already.indexOf(key) !== -1;
+    const meta = externalMode
+      ? [r.role_title || r.role_label, r.organization].filter(Boolean).map(escapeHtml).join(' · ')
+      : evPersonMeta(r);
+    return '<button type="button" role="option" aria-selected="' + isSel + '" ' +
+      'class="ev-picker-row ' + (isSel ? 'selected' : '') + (isOn ? ' disabled' : '') + '" ' +
+      (isOn ? 'disabled ' : '') + 'onclick="evPickerToggle(\'' + key + '\')">' +
+      evAvatar(r, 40) +
+      '<span class="ev-picker-text">' +
+        '<span class="ev-person-name"><strong>' + escapeHtml(r.name) + '</strong>' +
+          evPersonBadge(externalMode ? 'external' : 'directory') + '</span>' +
+        '<span>' + (meta || '—') + '</span>' +
+        '<span class="ev-picker-contact">' +
+          (r.phone ? '<span>' + evIcon('phone') + escapeHtml(r.phone) + '</span>' : '') +
+          (r.whatsapp ? '<span>' + evIcon('message-circle') + escapeHtml(r.whatsapp) + '</span>' : '') +
+        '</span>' +
+      '</span>' +
+      '<span class="ev-picker-mark">' +
+        (isOn ? evIcon('check') + ' Added' : (isSel ? evIcon('circle-check-big') : evIcon('circle-plus'))) +
+      '</span></button>';
+  }).join('') +
+    (externalMode
+      ? '<button type="button" class="ev-picker-addnew" onclick="evOpenExternalForm()">' +
+        evIcon('plus') + ' Add another external person</button>'
+      : '');
+  evRefreshIcons();
+}
+
+function evPickerToggle(key) {
+  const p = EV.picker;
+  if (!p) return;
+  const idx = p.selected.findIndex(function (s) { return s.key === key; });
+  if (idx >= 0) {
+    p.selected.splice(idx, 1);
+  } else {
+    const isExternal = String(key).charAt(0) === 'x';
+    const id = parseInt(String(key).slice(1), 10);
+    const src = isExternal ? (p.external || []) : p.results;
+    const r = src.find(function (x) { return x.id === id; });
+    if (r) p.selected.push({ key: key, id: id, name: r.name, initials: r.initials,
+                             photo_url: r.photo_url, external: isExternal });
+  }
+  evRenderPickerResults();
+  evRenderPickerSelected();
+}
+
+function evRenderPickerSelected() {
+  const p = EV.picker;
+  const box = document.getElementById('ev-picker-selected');
+  const btn = document.getElementById('ev-picker-confirm');
+  if (!p || !box) return;
+
+  if (!p.selected.length) {
+    box.innerHTML = '<p class="ev-muted small">Nobody selected yet.</p>';
+  } else {
+    const externals = p.selected.filter(function (s) { return s.external; }).length;
+    box.innerHTML = '<div class="ev-chips">' + p.selected.map(function (s) {
+      return '<span class="ev-selchip ' + (s.external ? 'external' : '') + '">' +
+        evAvatar(s, 22) + escapeHtml(s.name) +
+        '<button type="button" onclick="evPickerToggle(\'' + s.key + '\')" ' +
+        'aria-label="Remove ' + escapeHtml(s.name) + '">' + evIcon('x') + '</button></span>';
+    }).join('') + '</div>' +
+    (externals
+      ? '<p class="ev-muted small">' + evIcon('info') + ' ' + externals +
+        ' external contact' + (externals === 1 ? '' : 's') +
+        ' selected — they have no in-app account and will not be notified.</p>'
+      : '');
+  }
+  if (btn) {
+    btn.disabled = p.selected.length === 0;
+    btn.textContent = p.selected.length
+      ? 'Add ' + p.selected.length + ' ' + (p.selected.length === 1 ? 'person' : 'people')
+      : 'Add people';
+  }
+  evRefreshIcons();
+}
+
+async function evPickerConfirm() {
+  const p = EV.picker;
+  if (!p || !p.selected.length) return;
+
+  if (p.mode === 'task') {
+    const userIds = p.selected.filter(function (s) { return !s.external; }).map(function (s) { return s.id; });
+    const eventPersonIds = p.selected.filter(function (s) { return s.external; }).map(function (s) { return s.id; });
+    const res = await API.addTaskAssignees(EV.task.id, { userIds: userIds, eventPersonIds: eventPersonIds });
+    if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Could not assign.', 'triangle-alert'); return; }
+    showToast(res.added + ' assigned' +
+      (res.notified ? ' · ' + res.notified + ' notified' : '') +
+      (res.externalAdded ? ' · ' + res.externalAdded + ' external (no notification)' : '') + '.',
+      'user-plus');
+    EV.picker = null;
+    await evReloadTask();
+  } else {
+    const ids = p.selected.filter(function (s) { return !s.external; }).map(function (s) { return s.id; });
+    const res = await API.addEventPeople(EV.event.id, { userIds: ids, roleInEvent: p.role });
+    if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Could not add people.', 'triangle-alert'); return; }
+    closeModal();
+    showToast(res.added + ' person' + (res.added === 1 ? '' : 's') + ' added to the team.', 'users');
+    EV.picker = null;
+    await evTabPeople();
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   TAB — TICKETS & ATTENDEES
+   ══════════════════════════════════════════════════════════ */
+
+async function evTabTickets() {
+  const el = document.getElementById('ev-tab-content');
+  if (!el || !EV.event) return;
+  el.innerHTML = renderSkeletonCards(2, 'planner');
+
+  const results = await Promise.all([
+    API.getTicketTypes(EV.event.id),
+    API.getAttendees(EV.event.id)
+  ]);
+  const types = results[0], attendees = results[1];
+
+  if (apiFailed(types) || apiFailed(attendees)) {
+    el.innerHTML = renderErrorState('Could not load tickets and attendees.', 'evTabTickets()');
+    evRefreshIcons();
+    return;
+  }
+  EV.ticketTypes = types;
+  EV.attendees = attendees;
+  evRenderTickets();
+}
+
+function evRenderTickets() {
+  const el = document.getElementById('ev-tab-content');
+  const e = EV.event;
+  if (!el || !e) return;
+
+  const rows = EV.attendees;
+  const confirmed = rows.filter(function (r) { return r.status === 'confirmed'; });
+  const waitlisted = rows.filter(function (r) { return r.status === 'waitlisted'; });
+  const cancelled = rows.filter(function (r) { return r.status === 'cancelled'; });
+  const checkedIn = rows.filter(function (r) { return r.checked_in; });
+  const available = Math.max(0, (e.capacity || 0) - confirmed.length);
+
+  el.innerHTML =
+    '<div class="ev-stats">' +
+      evStat('users', confirmed.length, 'Confirmed', 'info') +
+      evStat('hourglass', waitlisted.length, 'Waitlisted', waitlisted.length ? 'warn' : '') +
+      evStat('circle-check-big', checkedIn.length, 'Checked in', 'success') +
+      evStat('armchair', available, 'Available') +
+    '</div>' +
+
+    /* ── Ticket types ── */
+    '<section class="ev-panel">' +
+      '<div class="ev-panel-head"><h2 class="ev-panel-title">Ticket types</h2>' +
+        '<button class="btn btn-outline btn-sm" onclick="evAddTicketType()">' + evIcon('plus') + ' Add type</button></div>' +
+      (EV.ticketTypes.length
+        ? '<ul class="ev-ticketlist">' + EV.ticketTypes.map(function (t) {
+            const quota = t.quota == null ? '∞' : t.quota;
+            const pct = t.quota ? Math.min(100, Math.round((t.sold / t.quota) * 100)) : 0;
+            return '<li class="ev-ticketrow">' +
+              '<div class="ev-ticketrow-main">' +
+                '<strong>' + escapeHtml(t.name) + '</strong>' +
+                '<span class="ev-ticketrow-price">' + (Number(t.price) > 0 ? evMoney(t.price) : 'Free') + '</span>' +
+              '</div>' +
+              '<div class="ev-ticketrow-quota">' +
+                '<div class="ev-capacity-track"><div class="ev-capacity-fill" style="width:' + pct + '%"></div></div>' +
+                '<span>' + t.sold + ' of ' + quota + ' issued</span>' +
+              '</div>' +
+              '<button type="button" class="ev-icon-btn" onclick="evEditTicketType(' + t.id + ')" ' +
+                'aria-label="Edit ticket type ' + escapeHtml(t.name) + '">' + evIcon('pencil') + '</button>' +
+              '<button type="button" class="ev-icon-btn danger" onclick="evDeleteTicketType(' + t.id + ')" ' +
+                'aria-label="Remove ticket type ' + escapeHtml(t.name) + '">' + evIcon('trash-2') + '</button>' +
+            '</li>'; }).join('') + '</ul>'
+        : '<p class="ev-muted">No ticket types yet.</p>') +
+    '</section>' +
+
+    /* ── Check-in ── */
+    '<section class="ev-panel">' +
+      '<h2 class="ev-panel-title">Check-in</h2>' +
+      '<p class="ev-help">Scan a ticket QR into the box, or type the code printed on it.</p>' +
+      '<form class="ev-checkin" onsubmit="evCheckIn(event)">' +
+        '<label class="sr-only" for="ev-checkin-code">Ticket code</label>' +
+        '<input type="text" id="ev-checkin-code" class="form-input" autocomplete="off" ' +
+          'placeholder="DIC-TKT-XXXXX-XXXXXX" required />' +
+        '<button type="submit" class="btn btn-primary">' + evIcon('scan-line') + ' Check in</button>' +
+      '</form>' +
+      '<div id="ev-checkin-result" aria-live="polite"></div>' +
+    '</section>' +
+
+    /* ── Registrations & waitlist ── */
+    '<section class="ev-panel">' +
+      '<div class="ev-panel-head"><h2 class="ev-panel-title">Registrations</h2>' +
+        '<a class="btn btn-outline btn-sm" href="' + API.attendeesCsvUrl(e.id) + '" download>' +
+          evIcon('download') + ' Export CSV</a></div>' +
+      (rows.length
+        ? (waitlisted.length
+            ? '<h3 class="ev-subhead">' + evIcon('hourglass') + ' Waitlist (' + waitlisted.length + ')' +
+              '<span class="ev-help inline">Promoted automatically when a confirmed ticket is cancelled.</span></h3>' +
+              '<ul class="ev-people">' + waitlisted.map(evAttendeeRow).join('') + '</ul>'
+            : '') +
+          '<h3 class="ev-subhead">' + evIcon('users') + ' Confirmed (' + confirmed.length + ')</h3>' +
+          (confirmed.length ? '<ul class="ev-people">' + confirmed.map(evAttendeeRow).join('') + '</ul>'
+                            : '<p class="ev-muted">Nobody has registered yet.</p>') +
+          (cancelled.length
+            ? '<h3 class="ev-subhead">' + evIcon('circle-x') + ' Cancelled (' + cancelled.length + ')</h3>' +
+              '<ul class="ev-people">' + cancelled.map(evAttendeeRow).join('') + '</ul>'
+            : '')
+        : renderEmptyState(evIcon('ticket'), 'No registrations yet',
+            'Tickets appear here as alumni register.')) +
+    '</section>';
+  evRefreshIcons();
+}
+
+function evAttendeeRow(a) {
+  return '<li class="ev-person">' + evAvatar(a, 38) +
+    '<div class="ev-person-text"><strong>' + escapeHtml(a.name) + '</strong>' +
+      '<span>' + evPersonMeta(a) + '</span>' +
+      '<span class="ev-mono">' + escapeHtml(a.ticket_code) +
+        (a.ticket_type_name ? ' · ' + escapeHtml(a.ticket_type_name) : '') +
+        (Number(a.amount_paid) > 0 ? ' · ' + evMoney(a.amount_paid) : '') + '</span>' +
+    '</div>' +
+    '<div class="ev-person-actions">' +
+      (a.checked_in
+        ? '<span class="ev-pill success">' + evIcon('circle-check-big') + ' Checked in</span>'
+        : a.status === 'waitlisted'
+          ? '<span class="ev-pill warn">' + evIcon('hourglass') + ' Waitlist</span>'
+          : a.status === 'cancelled'
+            ? '<span class="ev-pill muted">' + evIcon('circle-x') + ' Cancelled</span>'
+            : '<span class="ev-pill">' + evIcon('ticket') + ' Confirmed</span>') +
+      evContactButtons(a, true) +
+    '</div></li>';
+}
+
+async function evCheckIn(e) {
+  if (e) e.preventDefault();
+  const input = document.getElementById('ev-checkin-code');
+  const box = document.getElementById('ev-checkin-result');
+  const code = input ? input.value.trim() : '';
+  if (!code) return;
+
+  const res = await API.checkInTicket(code);
+  if (apiFailed(res)) {
+    box.innerHTML = '<p class="ev-banner danger">' + evIcon('circle-x') + ' ' +
+      escapeHtml(res && res.error ? res.error : 'Check-in failed') + '</p>';
+    evRefreshIcons();
+    return;
+  }
+  box.innerHTML = '<p class="ev-banner success">' + evIcon('circle-check-big') + ' ' +
+    escapeHtml(res.attendee) + ' checked in' + (res.batch ? ' · Batch ' + escapeHtml(String(res.batch)) : '') + '</p>';
+  input.value = '';
+  input.focus();
+  const rows = await API.getAttendees(EV.event.id);
+  if (!apiFailed(rows)) EV.attendees = rows;
+  evRefreshIcons();
+}
+
+function evAddTicketType() {
+  showModal('<div class="modal-header"><h2 class="modal-title">' + evIcon('ticket') + ' Add ticket type</h2>' +
+    '<button type="button" class="modal-close" aria-label="Close">' + evIcon('x') + '</button></div>' +
+    '<form class="ev-form" onsubmit="evSubmitTicketType(event, null)">' +
+      '<div class="ev-field"><label class="ev-label" for="ev-tt-name">Name <span class="req">*</span></label>' +
+        '<input type="text" id="ev-tt-name" class="form-input" required placeholder="Alumni" /></div>' +
+      '<div class="ev-grid2">' +
+        '<div class="ev-field"><label class="ev-label" for="ev-tt-price">Price (৳)</label>' +
+          '<input type="number" id="ev-tt-price" class="form-input" min="0" step="1" value="0" />' +
+          '<span class="ev-help">Use 0 for a free ticket.</span></div>' +
+        '<div class="ev-field"><label class="ev-label" for="ev-tt-quota">Quota</label>' +
+          '<input type="number" id="ev-tt-quota" class="form-input" min="0" step="1" placeholder="Unlimited" />' +
+          '<span class="ev-help">Leave blank for no per-type limit.</span></div>' +
+      '</div>' +
+      '<div class="ev-modal-footer">' +
+        '<button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>' +
+        '<button type="submit" class="btn btn-primary">Add ticket type</button></div>' +
+    '</form>');
+  evRefreshIcons();
+}
+
+function evEditTicketType(id) {
+  const t = EV.ticketTypes.find(function (x) { return x.id === id; });
+  if (!t) return;
+  showModal('<div class="modal-header"><h2 class="modal-title">' + evIcon('pencil') + ' Edit ticket type</h2>' +
+    '<button type="button" class="modal-close" aria-label="Close">' + evIcon('x') + '</button></div>' +
+    '<form class="ev-form" onsubmit="evSubmitTicketType(event, ' + id + ')">' +
+      '<div class="ev-field"><label class="ev-label" for="ev-tt-name">Name <span class="req">*</span></label>' +
+        '<input type="text" id="ev-tt-name" class="form-input" required value="' + escapeHtml(t.name) + '" /></div>' +
+      '<div class="ev-grid2">' +
+        '<div class="ev-field"><label class="ev-label" for="ev-tt-price">Price (৳)</label>' +
+          '<input type="number" id="ev-tt-price" class="form-input" min="0" value="' + Number(t.price) + '" /></div>' +
+        '<div class="ev-field"><label class="ev-label" for="ev-tt-quota">Quota</label>' +
+          '<input type="number" id="ev-tt-quota" class="form-input" min="' + t.sold + '" ' +
+          'value="' + (t.quota == null ? '' : t.quota) + '" placeholder="Unlimited" />' +
+          '<span class="ev-help">' + t.sold + ' already issued.</span></div>' +
+      '</div>' +
+      '<div class="ev-modal-footer">' +
+        '<button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>' +
+        '<button type="submit" class="btn btn-primary">Save changes</button></div>' +
+    '</form>');
+  evRefreshIcons();
+}
+
+async function evSubmitTicketType(e, id) {
+  if (e) e.preventDefault();
+  const quotaRaw = document.getElementById('ev-tt-quota').value;
+  const payload = {
+    name: document.getElementById('ev-tt-name').value.trim(),
+    price: Number(document.getElementById('ev-tt-price').value) || 0,
+    quota: quotaRaw === '' ? null : Number(quotaRaw)
+  };
+  const res = id ? await API.updateTicketType(id, payload) : await API.addTicketType(EV.event.id, payload);
+  if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Could not save.', 'triangle-alert'); return; }
+  closeModal();
+  showToast('Ticket type saved.', 'circle-check-big');
+  await evTabTickets();
+}
+
+async function evDeleteTicketType(id) {
+  if (!confirm('Remove this ticket type?')) return;
+  const res = await API.deleteTicketType(id);
+  if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Could not remove.', 'triangle-alert'); return; }
+  showToast('Ticket type removed.', 'trash-2');
+  await evTabTickets();
+}
+
+/* ══════════════════════════════════════════════════════════
+   PEOPLE — DIC members and external contacts, kept visibly apart
+   ══════════════════════════════════════════════════════════ */
+
+// Common roles for someone with no DIC account, offered as suggestions.
+const EV_EXTERNAL_ROLES = ['Decorator', 'Caterer', 'Photographer', 'Sound Engineer',
+                           'Security', 'Venue staff', 'External volunteer',
+                           'Vendor representative', 'Transport', 'Other'];
+
+function evPersonBadge(type) {
+  return type === 'external'
+    ? '<span class="ev-typebadge external">' + evIcon('user-round') + 'External</span>'
+    : '<span class="ev-typebadge dic">' + evIcon('graduation-cap') + 'DIC member</span>';
+}
+
+async function evTabPeople() {
+  const el = document.getElementById('ev-tab-content');
+  if (!el || !EV.event) return;
+  el.innerHTML = renderSkeletonCards(2, 'planner');
+
+  const people = await API.getEventPeople(EV.event.id);
+  if (apiFailed(people)) {
+    el.innerHTML = renderErrorState(people && people.error ? people.error : 'Could not load people.', 'evTabPeople()');
+    evRefreshIcons();
+    return;
+  }
+  EV.people = people;
+
+  const dic = people.filter(function (p) { return p.person_type !== 'external'; });
+  const ext = people.filter(function (p) { return p.person_type === 'external'; });
+
+  const dicGroups = EV_PEOPLE_ROLES.map(function (r) {
+    return { role: r, members: dic.filter(function (p) { return p.role_in_event === r.key; }) };
+  }).filter(function (g) { return g.members.length; });
+
+  el.innerHTML =
+    '<section class="ev-panel">' +
+      '<div class="ev-panel-head">' +
+        '<h2 class="ev-panel-title">Event team</h2>' +
+        '<button type="button" class="btn btn-primary btn-sm" onclick="evOpenAddPeople()">' +
+          evIcon('user-plus') + ' Add people</button>' +
+      '</div>' +
+
+      (people.length
+        ? '<div class="ev-stats compact">' +
+            evStat('graduation-cap', dic.length, 'DIC members', 'info') +
+            evStat('user-round', ext.length, 'External contacts') +
+          '</div>'
+        : '') +
+
+      /* ── DIC members ── */
+      '<h3 class="ev-subhead">' + evIcon('graduation-cap') + ' DIC members' +
+        (dic.length ? ' (' + dic.length + ')' : '') + '</h3>' +
+      (dic.length
+        ? dicGroups.map(function (g) {
+            return '<p class="ev-grouplabel">' + escapeHtml(g.role.label) + '</p>' +
+              '<ul class="ev-people">' + g.members.map(evPersonRow).join('') + '</ul>';
+          }).join('')
+        : '<p class="ev-muted">No DIC members on this event yet.</p>') +
+
+      /* ── External contacts ── */
+      '<h3 class="ev-subhead">' + evIcon('user-round') + ' External contacts' +
+        (ext.length ? ' (' + ext.length + ')' : '') +
+        '<span class="ev-help inline">People with no DIC account — decorators, caterers, vendors.</span></h3>' +
+      (ext.length
+        ? '<ul class="ev-people">' + ext.map(evPersonRow).join('') + '</ul>'
+        : '<p class="ev-muted">No external contacts yet.</p>') +
+    '</section>';
+  evRefreshIcons();
+}
+
+function evPersonRow(p) {
+  const isExternal = p.person_type === 'external';
+  const meta = isExternal
+    ? [p.organization, p.dept].filter(Boolean).map(escapeHtml).join(' · ')
+    : evPersonMeta(p);
+
+  return '<li class="ev-person">' + evAvatar(p, 42) +
+    '<div class="ev-person-text">' +
+      '<div class="ev-person-name"><strong>' + escapeHtml(p.name) + '</strong>' + evPersonBadge(p.person_type) + '</div>' +
+      (p.role_label ? '<span class="ev-person-role">' + escapeHtml(p.role_label) + '</span>' : '') +
+      (meta ? '<span>' + meta + '</span>' : '') +
+      (p.committee ? '<span class="ev-tag">' + escapeHtml(p.committee) + '</span>' : '') +
+      (isExternal
+        ? '<span class="ev-muted small">' + evIcon('info') + ' External contact · No in-app account</span>'
+        : (p.task_count ? '<span class="ev-muted small">' + p.task_count +
+            ' task' + (p.task_count === 1 ? '' : 's') + ' on this event</span>' : '')) +
+      (isExternal && p.notes ? '<span class="ev-muted small">' + escapeHtml(p.notes) + '</span>' : '') +
+    '</div>' +
+    '<div class="ev-person-actions">' + evContactButtons(p, true) +
+      (isExternal
+        ? '<button type="button" class="ev-contact-btn sm" onclick="evEditExternalPerson(' + p.id + ')" ' +
+          'aria-label="Edit ' + escapeHtml(p.name) + '">' + evIcon('pencil') + '<span>Edit</span></button>'
+        : '') +
+      '<button type="button" class="ev-contact-btn sm danger" onclick="evRemovePerson(' + p.id + ')" ' +
+        'aria-label="Remove ' + escapeHtml(p.name) + ' from the team">' +
+        evIcon('user-minus') + '<span>Remove</span></button>' +
+    '</div></li>';
+}
+
+async function evRemovePerson(personId) {
+  if (!confirm('Remove this person from the event team?')) return;
+  const res = await API.removeEventPerson(personId);
+  if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Could not remove.', 'triangle-alert'); return; }
+  showToast('Removed from the team.', 'user-minus');
+  await evTabPeople();
+}
+
+/* ── Choose a source before searching, so the two flows never mix ── */
+function evOpenAddPeople(mode) {
+  showModal(
+    '<div class="modal-header">' +
+      '<h2 class="modal-title">' + evIcon('user-plus') + ' Add people</h2>' +
+      '<button type="button" class="modal-close" aria-label="Close">' + evIcon('x') + '</button>' +
+    '</div>' +
+    '<p class="ev-help">Choose where this person comes from.</p>' +
+    '<div class="ev-sourcechoice">' +
+      '<button type="button" class="ev-source" onclick="evOpenPicker(\'people\')">' +
+        '<span class="ev-source-icon">' + evIcon('graduation-cap') + '</span>' +
+        '<span class="ev-source-text"><strong>Search DIC directory</strong>' +
+        '<span>Alumni, staff and students with a DIC account. They can be ' +
+        'assigned tasks and receive in-app notifications.</span></span>' +
+        evIcon('chevron-right', 'ev-source-chevron') + '</button>' +
+      '<button type="button" class="ev-source" onclick="evOpenExternalForm()">' +
+        '<span class="ev-source-icon">' + evIcon('user-round') + '</span>' +
+        '<span class="ev-source-text"><strong>Add external person</strong>' +
+        '<span>A decorator, caterer, photographer or vendor with no DIC ' +
+        'account. Contactable by phone and WhatsApp only.</span></span>' +
+        evIcon('chevron-right', 'ev-source-chevron') + '</button>' +
+    '</div>');
+  evRefreshIcons();
+}
+
+/* ── External person form ── */
+function evOpenExternalForm(person) {
+  const p = person || {};
+  const isEdit = !!person;
+  showModal(
+    '<div class="modal-header">' +
+      '<h2 class="modal-title">' + evIcon(isEdit ? 'pencil' : 'user-round') + ' ' +
+        (isEdit ? 'Edit external contact' : 'Add external person') + '</h2>' +
+      '<button type="button" class="modal-close" aria-label="Close">' + evIcon('x') + '</button>' +
+    '</div>' +
+    '<p class="ev-callout-plain">' + evIcon('info') +
+      ' This person is recorded on this event only. No DIC account is created and they ' +
+      'do not appear in the alumni directory.</p>' +
+    '<form class="ev-form" onsubmit="evSubmitExternalPerson(event, ' + (isEdit ? p.id : 'null') + ')">' +
+      '<div class="ev-field">' +
+        '<label class="ev-label" for="ev-x-name">Full name <span class="req">*</span></label>' +
+        '<input type="text" id="ev-x-name" class="form-input" required maxlength="150" ' +
+          'value="' + escapeHtml(p.name || '') + '" placeholder="Rahim Decorators" /></div>' +
+
+      '<div class="ev-field">' +
+        '<label class="ev-label" for="ev-x-role">Role on event <span class="req">*</span></label>' +
+        '<input type="text" id="ev-x-role" class="form-input" required maxlength="120" list="ev-x-roles" ' +
+          'value="' + escapeHtml(p.role_title || '') + '" placeholder="Event Decorator" />' +
+        '<datalist id="ev-x-roles">' +
+          EV_EXTERNAL_ROLES.map(function (r) { return '<option value="' + r + '"></option>'; }).join('') +
+        '</datalist>' +
+        '<span class="ev-help">What they are doing for this event.</span></div>' +
+
+      '<div class="ev-grid2">' +
+        '<div class="ev-field"><label class="ev-label" for="ev-x-phone">Phone</label>' +
+          '<input type="tel" id="ev-x-phone" class="form-input" maxlength="50" ' +
+            'value="' + escapeHtml(p.phone || '') + '" placeholder="01711 223344" />' +
+          '<span class="ev-help">Adds a Call button.</span></div>' +
+        '<div class="ev-field"><label class="ev-label" for="ev-x-wa">WhatsApp</label>' +
+          '<input type="tel" id="ev-x-wa" class="form-input" maxlength="50" ' +
+            'value="' + escapeHtml(p.whatsapp || '') + '" placeholder="01711 223344" />' +
+          '<span class="ev-help">Adds a WhatsApp button.</span></div>' +
+      '</div>' +
+
+      '<div class="ev-grid2">' +
+        '<div class="ev-field"><label class="ev-label" for="ev-x-org">Organization / company</label>' +
+          '<input type="text" id="ev-x-org" class="form-input" maxlength="150" ' +
+            'value="' + escapeHtml(p.organization || '') + '" placeholder="Rahim Decor Ltd" /></div>' +
+        '<div class="ev-field"><label class="ev-label" for="ev-x-area">Department / area</label>' +
+          '<input type="text" id="ev-x-area" class="form-input" maxlength="150" ' +
+            'value="' + escapeHtml(p.department_area || '') + '" placeholder="Stage &amp; decor" /></div>' +
+      '</div>' +
+
+      '<div class="ev-field"><label class="ev-label" for="ev-x-notes">Notes</label>' +
+        '<textarea id="ev-x-notes" class="form-input" rows="2" maxlength="500" ' +
+          'placeholder="Anything the team should know">' + escapeHtml(p.notes || '') + '</textarea></div>' +
+
+      '<p class="ev-inline-error hidden" id="ev-x-error" role="alert"></p>' +
+      '<div class="ev-modal-footer">' +
+        '<button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>' +
+        '<button type="submit" class="btn btn-primary">' +
+          (isEdit ? 'Save changes' : 'Add to event') + '</button>' +
+      '</div>' +
+    '</form>');
+  evRefreshIcons();
+}
+
+function evEditExternalPerson(personId) {
+  const p = (EV.people || []).find(function (x) { return x.id === personId; });
+  if (!p) return;
+  evOpenExternalForm({ id: p.id, name: p.name, role_title: p.role_title || p.role_label,
+                       phone: p.phone, whatsapp: p.whatsapp, organization: p.organization,
+                       department_area: p.dept, notes: p.notes });
+}
+
+async function evSubmitExternalPerson(e, personId) {
+  if (e) e.preventDefault();
+  const err = document.getElementById('ev-x-error');
+  const val = function (id) { return document.getElementById(id).value.trim(); };
+  const payload = {
+    name: val('ev-x-name'), roleTitle: val('ev-x-role'),
+    phone: val('ev-x-phone'), whatsapp: val('ev-x-wa'),
+    organization: val('ev-x-org'), departmentArea: val('ev-x-area'),
+    notes: val('ev-x-notes')
+  };
+  const fail = function (msg) {
+    if (err) { err.textContent = msg; err.classList.remove('hidden'); }
+    else showToast(msg, 'triangle-alert');
+  };
+  if (!payload.name) return fail('Please enter the person’s full name.');
+  if (!payload.roleTitle) return fail('Please say what their role on this event is.');
+
+  const res = personId
+    ? await API.updateExternalPerson(personId, payload)
+    : await API.addExternalPerson(EV.event.id, payload);
+
+  if (apiFailed(res)) return fail((res && res.error) || 'Could not save this contact.');
+
+  closeModal();
+  showToast(personId ? 'External contact updated.' : payload.name + ' added to the team.', 'user-plus');
+  await evTabPeople();
+}
+
+/* ══════════════════════════════════════════════════════════
+   TAB — REPORTS
+   ══════════════════════════════════════════════════════════ */
+
+async function evTabReports() {
+  const el = document.getElementById('ev-tab-content');
+  const e = EV.event;
+  if (!el || !e) return;
+  el.innerHTML = renderSkeletonCards(2, 'analytics');
+
+  const results = await Promise.all([
+    API.getEventOverview(e.id),
+    API.getPlannerAnalytics(e.id)
+  ]);
+  const o = results[0], a = results[1];
+  if (apiFailed(o)) {
+    el.innerHTML = renderErrorState('Could not load the report.', 'evTabReports()');
+    evRefreshIcons();
+    return;
+  }
+  // Refresh the cached event too: counters move while the workspace is open
+  // (a check-in on the Tickets tab, a registration elsewhere), and reading the
+  // stale copy made Reports contradict what Tickets had just shown.
+  EV.overview = o;
+  EV.event = o.event;
+  const ev = o.event;
+  renderEventContextHeader();
+
+  const fill = ev.capacity ? Math.round(((ev.registered || 0) / ev.capacity) * 100) : 0;
+  const spend = apiFailed(a) ? null : a.budget.actual;
+  const net = spend === null ? null : o.revenue - spend;
+
+  el.innerHTML =
+    '<section class="ev-panel">' +
+      '<h2 class="ev-panel-title">Attendance</h2>' +
+      '<div class="ev-stats">' +
+        evStat('users', (ev.registered || 0).toLocaleString(), 'Registered', 'info') +
+        evStat('hourglass', (ev.waitlisted || 0).toLocaleString(), 'Waitlisted') +
+        evStat('circle-check-big', (ev.checked_in || 0).toLocaleString(), 'Checked in', 'success') +
+        evStat('percent', fill + '%', 'Capacity filled') +
+      '</div>' +
+    '</section>' +
+
+    '<section class="ev-panel">' +
+      '<h2 class="ev-panel-title">Tasks</h2>' +
+      '<div class="ev-stats">' +
+        evStat('clipboard-list', o.tasks.total, 'Total') +
+        evStat('circle-check-big', o.tasks.completed, 'Done', 'success') +
+        evStat('octagon-alert', o.tasks.blocked, 'Blocked', o.tasks.blocked ? 'danger' : '') +
+        evStat('triangle-alert', o.tasks.overdue, 'Overdue', o.tasks.overdue ? 'danger' : '') +
+      '</div>' +
+      '<div class="ev-capacity"><div class="ev-capacity-track">' +
+        '<div class="ev-capacity-fill" style="width:' + o.tasks.completionRate + '%"></div></div>' +
+        '<div class="ev-capacity-meta"><span>Completion</span><span>' + o.tasks.completionRate + '%</span></div></div>' +
+    '</section>' +
+
+    '<section class="ev-panel">' +
+      '<div class="ev-panel-head"><h2 class="ev-panel-title">Money</h2>' +
+        '<div class="ev-panel-actions">' +
+          '<a class="btn btn-outline btn-sm" href="' + API.attendeesCsvUrl(ev.id) + '" download>' +
+            evIcon('download') + ' Attendees CSV</a>' +
+          '<a class="btn btn-outline btn-sm" href="' + API.plannerReportUrl(ev.id, 'full') + '" download>' +
+            evIcon('file-text') + ' Full report CSV</a>' +
+        '</div></div>' +
+      '<div class="ev-stats">' +
+        evStat('banknote', evMoney(o.revenue), 'Ticket revenue', 'success') +
+        (spend !== null ? evStat('receipt', evMoney(spend), 'Recorded spend') : '') +
+        (net !== null ? evStat(net >= 0 ? 'trending-up' : 'trending-down', evMoney(net),
+                               'Net', net >= 0 ? 'success' : 'danger') : '') +
+      '</div>' +
+      (spend === null ? '<p class="ev-muted small">Spend is recorded under Advanced → Budget.</p>' : '') +
+    '</section>';
+  evRefreshIcons();
+}
+
+/* ══════════════════════════════════════════════════════════
+   TAB — ADVANCED  (budget, vendors, sponsors, marketing, meetings, risks)
+   ══════════════════════════════════════════════════════════ */
+
+const EV_ADVANCED = [
+  { key: 'budget',    label: 'Budget',    icon: 'circle-dollar-sign' },
+  { key: 'vendors',   label: 'Vendors',   icon: 'store' },
+  { key: 'sponsors',  label: 'Sponsors',  icon: 'handshake' },
+  { key: 'marketing', label: 'Marketing', icon: 'megaphone' },
+  { key: 'meetings',  label: 'Meetings',  icon: 'calendar-check' },
+  { key: 'risks',     label: 'Risks',     icon: 'shield-alert' }
+];
+
+async function evTabAdvanced() {
+  const el = document.getElementById('ev-tab-content');
+  if (!el || !EV.event) return;
+  el.innerHTML = renderSkeletonCards(2, 'planner');
+
+  const data = await API.getPlannerWorkspace(EV.event.id);
+  if (apiFailed(data)) {
+    el.innerHTML = renderErrorState(data && data.error ? data.error : 'Could not load the advanced modules.', 'evTabAdvanced()');
+    evRefreshIcons();
+    return;
+  }
+  EV.advanced = data;
+  evRenderAdvanced();
+}
+
+function evSetAdvancedTab(k) { EV.advancedTab = k; evRenderAdvanced(); }
+
+function evRenderAdvanced() {
+  const el = document.getElementById('ev-tab-content');
+  const d = EV.advanced;
+  if (!el || !d) return;
+
+  const nav = '<div class="ev-filters" role="tablist" aria-label="Advanced modules">' +
+    EV_ADVANCED.map(function (a) {
+      const on = EV.advancedTab === a.key;
+      return '<button type="button" class="ev-chip ' + (on ? 'active' : '') + '" role="tab" ' +
+        'aria-selected="' + on + '" onclick="evSetAdvancedTab(\'' + a.key + '\')">' +
+        evIcon(a.icon) + ' ' + a.label + '</button>';
+    }).join('') + '</div>';
+
+  el.innerHTML =
+    '<section class="ev-panel">' +
+      '<h2 class="ev-panel-title">Advanced</h2>' +
+      '<p class="ev-help">Optional modules for larger events. A small event does not need any of these.</p>' +
+      nav + '<div id="ev-advanced-body"></div>' +
+    '</section>';
+
+  const body = document.getElementById('ev-advanced-body');
+  const k = EV.advancedTab;
+
+  if (k === 'budget') {
+    const b = d.budgets || [], proc = d.procurement || [];
+    const est = b.reduce(function (a, r) { return a + Number(r.estimated_cost || 0); }, 0);
+    const act = b.reduce(function (a, r) { return a + Number(r.actual_cost || 0); }, 0);
+    const procSpend = proc.reduce(function (a, r) { return a + Number(r.actual_price || 0) * (r.quantity || 1); }, 0);
+    body.innerHTML =
+      '<div class="ev-stats">' +
+        evStat('calculator', evMoney(est), 'Estimated') +
+        evStat('receipt', evMoney(act), 'Actual spend') +
+        evStat(est - act >= 0 ? 'trending-up' : 'trending-down', evMoney(est - act), 'Remaining',
+               est - act >= 0 ? 'success' : 'danger') +
+        evStat('shopping-cart', evMoney(procSpend), 'Procurement') +
+      '</div>' +
+      evAdvToolbar('budgets', 'Budget line') +
+      evAdvTable(['Category', 'Vendor', 'Estimated', 'Actual', 'Status', ''], b, function (r) {
+        return ['<strong>' + escapeHtml(r.category) + '</strong>', escapeHtml(r.vendor_name || '—'),
+                evMoney(r.estimated_cost), evMoney(r.actual_cost),
+                '<span class="ev-pill ' + (r.payment_status === 'paid' ? 'success' : 'warn') + '">' +
+                  escapeHtml(r.payment_status || '—') + '</span>',
+                evAdvDelete('budgets', r.id)];
+      }, 'No budget lines yet') +
+      '<h3 class="ev-subhead">' + evIcon('shopping-cart') + ' Procurement</h3>' +
+      evAdvToolbar('procurement', 'Item') +
+      evAdvTable(['Item', 'Category', 'Qty', 'Actual', 'Vendor', 'Status', ''], proc, function (r) {
+        return ['<strong>' + escapeHtml(r.item_name) + '</strong>', escapeHtml(r.category || '—'),
+                String(r.quantity || 1), evMoney(r.actual_price), escapeHtml(r.vendor_name || '—'),
+                '<span class="ev-pill">' + escapeHtml(r.delivery_status || '—') + '</span>',
+                evAdvDelete('procurement', r.id)];
+      }, 'No procurement items yet');
+
+  } else if (k === 'vendors') {
+    const v = d.vendors || [];
+    body.innerHTML = evAdvToolbar('vendors', 'Vendor') +
+      evAdvTable(['Vendor', 'Category', 'Contact', 'Contract', 'Status', ''], v, function (r) {
+        return ['<strong>' + escapeHtml(r.name) + '</strong>', escapeHtml(r.category || '—'),
+                escapeHtml(r.contact_person || '—') + (r.phone ? '<br><span class="ev-muted small">' +
+                  escapeHtml(r.phone) + '</span>' : ''),
+                evMoney(r.contract_value),
+                '<span class="ev-pill ' + (r.status === 'paid' ? 'success' : 'warn') + '">' +
+                  escapeHtml(r.status || '—') + '</span>',
+                evAdvDelete('vendors', r.id)];
+      }, 'No vendors yet');
+
+  } else if (k === 'sponsors') {
+    const s = d.sponsors || [];
+    const secured = s.filter(function (r) { return ['agreed', 'received'].indexOf(r.pipeline_status) !== -1; })
+                     .reduce(function (a, r) { return a + Number(r.contribution_amount || 0); }, 0);
+    body.innerHTML = '<div class="ev-stats">' +
+        evStat('handshake', s.length, 'Sponsors') +
+        evStat('banknote', evMoney(secured), 'Secured', 'success') + '</div>' +
+      evAdvToolbar('sponsors', 'Sponsor') +
+      evAdvTable(['Company', 'Contact', 'Tier', 'Amount', 'Status', ''], s, function (r) {
+        return ['<strong>' + escapeHtml(r.company) + '</strong>', escapeHtml(r.contact_person || '—'),
+                escapeHtml(r.package_tier || '—'), evMoney(r.contribution_amount),
+                '<span class="ev-pill">' + escapeHtml(r.pipeline_status || '—') + '</span>',
+                evAdvDelete('sponsors', r.id)];
+      }, 'No sponsors yet');
+
+  } else if (k === 'marketing') {
+    const m = d.marketing || [];
+    body.innerHTML = evAdvToolbar('marketing', 'Campaign') +
+      evAdvTable(['Channel', 'Campaign', 'Budget', 'Reach', 'Conversions', 'Status', ''], m, function (r) {
+        return [escapeHtml(r.channel), '<strong>' + escapeHtml(r.campaign_name) + '</strong>',
+                evMoney(r.budget), Number(r.reach || 0).toLocaleString(),
+                Number(r.conversions || 0).toLocaleString(),
+                '<span class="ev-pill">' + escapeHtml(r.status || '—') + '</span>',
+                evAdvDelete('marketing', r.id)];
+      }, 'No campaigns yet');
+
+  } else if (k === 'meetings') {
+    const mt = d.meetings || [];
+    body.innerHTML = evAdvToolbar('meetings', 'Meeting') +
+      evAdvTable(['Meeting', 'Date', 'Location', 'Attendees', 'Status', ''], mt, function (r) {
+        return ['<strong>' + escapeHtml(r.title) + '</strong>', escapeHtml(evDate(r.meeting_date)),
+                escapeHtml(r.location || '—'), escapeHtml(r.attendees || '—'),
+                '<span class="ev-pill">' + escapeHtml(r.status || '—') + '</span>',
+                evAdvDelete('meetings', r.id)];
+      }, 'No meetings scheduled');
+
+  } else if (k === 'risks') {
+    const r = d.risks || [];
+    body.innerHTML = evAdvToolbar('risks', 'Risk') +
+      evAdvTable(['Risk', 'Category', 'Severity', 'Contingency', ''], r, function (x) {
+        return ['<strong>' + escapeHtml(x.risk_title) + '</strong>', escapeHtml(x.category || '—'),
+                '<span class="ev-pill ' + (x.severity === 'high' ? 'danger' : 'warn') + '">' +
+                  escapeHtml(x.severity) + '</span>',
+                escapeHtml(x.contingency_plan || '—'), evAdvDelete('risks', x.id)];
+      }, 'No risks recorded');
+  }
+  evRefreshIcons();
+}
+
+function evAdvToolbar(kind, label) {
+  return '<div class="ev-panel-actions right"><button class="btn btn-outline btn-sm" ' +
+    'onclick="showPlannerItemModal(\'' + kind + '\')">' + evIcon('plus') + ' Add ' + label + '</button></div>';
+}
+function evAdvDelete(kind, id) {
+  return '<button type="button" class="ev-icon-btn danger" onclick="deletePlannerItem(\'' + kind + '\', ' + id + ')" ' +
+    'aria-label="Delete">' + evIcon('trash-2') + '</button>';
+}
+function evAdvTable(cols, rows, rowFn, emptyText) {
+  if (!rows.length) return '<p class="ev-muted">' + escapeHtml(emptyText) + '</p>';
+  return '<div class="ev-table" style="--ev-cols:' + cols.length + '">' +
+    '<div class="ev-table-head">' + cols.map(function (c) { return '<div>' + escapeHtml(c) + '</div>'; }).join('') + '</div>' +
+    rows.map(function (r) {
+      return '<div class="ev-table-row">' + rowFn(r).map(function (cell, i) {
+        return '<div data-label="' + escapeHtml(cols[i]) + '">' + cell + '</div>';
+      }).join('') + '</div>';
+    }).join('') + '</div>';
+}
+
+/* ══════════════════════════════════════════════════════════
+   CREATION WIZARD — Basics → Tickets → Review
+   ══════════════════════════════════════════════════════════ */
+
+function openEventWizard() {
+  if (!evCanManage()) { showToast('Only organisers can create events.', 'lock'); return; }
+  EV.wizard = {
+    step: 1,
+    basics: {
+      title: '', description: '', eventType: 'Reunion', startsOn: '', startTime: '', endTime: '',
+      venue: '', organizerDepartment: (state.currentUser && state.currentUser.dept) || '',
+      visibility: 'alumni', capacity: 100
+    },
+    tickets: { isPaid: false, waitlistEnabled: true,
+               opensDate: '', opensTime: '', closesDate: '', closesTime: '',
+               types: [{ name: 'Alumni', price: 500, quota: '' }] },
+    error: ''
+  };
+  evRenderWizard();
+}
+
+const EV_WIZARD_STEPS = ['Event basics', 'Tickets & Registration', 'Review & Create'];
+
+function evWizardStepper(step) {
+  // Desktop shows all three labels in full — nothing is ellipsised. Narrow
+  // screens drop to "Step n of 3" plus the current label, which is readable
+  // where three labels side by side would not be.
+  return '<ol class="ev-stepper" aria-label="Progress">' +
+    EV_WIZARD_STEPS.map(function (label, i) {
+      const n = i + 1;
+      const cls = n === step ? 'current' : (n < step ? 'done' : '');
+      return '<li class="' + cls + '" ' + (n === step ? 'aria-current="step"' : '') + '>' +
+        '<span class="ev-stepper-num">' + (n < step ? evIcon('check') : n) + '</span>' +
+        '<span class="ev-stepper-label">' + label + '</span></li>';
+    }).join('') + '</ol>' +
+    '<p class="ev-stepper-compact" aria-hidden="true">' +
+      '<span class="ev-stepper-count">Step ' + step + ' of 3</span>' +
+      '<span class="ev-stepper-current">' + EV_WIZARD_STEPS[step - 1] + '</span></p>';
+}
+
+function evRenderWizard() {
+  const w = EV.wizard;
+  if (!w) return;
+  let bodyHtml = '';
+  if (w.step === 1) bodyHtml = evWizardStep1();
+  else if (w.step === 2) bodyHtml = evWizardStep2();
+  else bodyHtml = evWizardStep3();
+
+  showModal(
+    '<div class="modal-header">' +
+      '<h2 class="modal-title">' + evIcon('calendar-plus') + ' New event</h2>' +
+      '<button type="button" class="modal-close" aria-label="Close">' + evIcon('x') + '</button>' +
+    '</div>' +
+    evWizardStepper(w.step) +
+    (w.error ? '<p class="ev-banner danger" role="alert">' + evIcon('triangle-alert') + ' ' + escapeHtml(w.error) + '</p>' : '') +
+    '<div class="ev-wizard-body">' + bodyHtml + '</div>',
+    { wide: true });
+  evRefreshIcons();
+}
+
+function evWizardStep1() {
+  const b = EV.wizard.basics;
+  return '<div class="ev-form">' +
+    '<div class="ev-field"><label class="ev-label" for="ev-w-title">Event title <span class="req">*</span></label>' +
+      '<input type="text" id="ev-w-title" class="form-input" maxlength="200" required ' +
+      'value="' + escapeHtml(b.title) + '" placeholder="DIC Annual Alumni Reunion 2026" />' +
+      '<span class="ev-help">The name alumni will see.</span></div>' +
+
+    '<div class="ev-field"><label class="ev-label" for="ev-w-desc">Description</label>' +
+      '<textarea id="ev-w-desc" class="form-input" rows="3" maxlength="2000" ' +
+      'placeholder="What the event is, who it is for, what to expect">' + escapeHtml(b.description) + '</textarea></div>' +
+
+    '<div class="ev-grid2">' +
+      '<div class="ev-field"><label class="ev-label" for="ev-w-type">Event type <span class="req">*</span></label>' +
+        '<select id="ev-w-type" class="form-select">' + EV_TYPES.map(function (t) {
+          return '<option value="' + t + '"' + (b.eventType === t ? ' selected' : '') + '>' + t + '</option>';
+        }).join('') + '</select>' +
+        '<span class="ev-help">Chooses the icon shown on the event card.</span></div>' +
+      '<div class="ev-field"><label class="ev-label" for="ev-w-date">Date <span class="req">*</span></label>' +
+        '<input type="date" id="ev-w-date" class="form-input" required value="' + escapeHtml(b.startsOn) + '" /></div>' +
+    '</div>' +
+
+    '<div class="ev-grid2">' +
+      '<div class="ev-field"><label class="ev-label" for="ev-w-start">Start time</label>' +
+        '<input type="time" id="ev-w-start" class="form-input" value="' + escapeHtml(b.startTime) + '" /></div>' +
+      '<div class="ev-field"><label class="ev-label" for="ev-w-end">End time</label>' +
+        '<input type="time" id="ev-w-end" class="form-input" value="' + escapeHtml(b.endTime) + '" /></div>' +
+    '</div>' +
+
+    '<div class="ev-field"><label class="ev-label" for="ev-w-venue">Venue <span class="req">*</span></label>' +
+      '<input type="text" id="ev-w-venue" class="form-input" required maxlength="200" ' +
+      'value="' + escapeHtml(b.venue) + '" placeholder="DIC Main Campus Auditorium" /></div>' +
+
+    '<div class="ev-grid2">' +
+      '<div class="ev-field"><label class="ev-label" for="ev-w-org">Organiser / department</label>' +
+        '<input type="text" id="ev-w-org" class="form-input" maxlength="150" ' +
+        'value="' + escapeHtml(b.organizerDepartment) + '" placeholder="DIC Alumni Relations" /></div>' +
+      '<div class="ev-field"><label class="ev-label" for="ev-w-cap">Total capacity</label>' +
+        '<input type="number" id="ev-w-cap" class="form-input" min="1" value="' + (b.capacity || 100) + '" />' +
+        '<span class="ev-help">Total seats. Ticket quotas can be set on the next step.</span></div>' +
+    '</div>' +
+
+    '<fieldset class="ev-field ev-fieldset">' +
+      '<legend class="ev-label">Who can see this event</legend>' +
+      evRadioCard('ev-w-vis', 'visibility', 'public', 'Public', 'Anyone can see it', b.visibility === 'public') +
+      evRadioCard('ev-w-vis', 'visibility', 'alumni', 'Alumni only', 'Signed-in alumni only', b.visibility === 'alumni') +
+      evRadioCard('ev-w-vis', 'visibility', 'invite', 'Invite only', 'Hidden from the public list', b.visibility === 'invite') +
+    '</fieldset>' +
+
+    '<div class="ev-modal-footer">' +
+      '<button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>' +
+      '<button type="button" class="btn btn-primary" onclick="evWizardNext()">Next: Tickets ' + evIcon('arrow-right') + '</button>' +
+    '</div></div>';
+}
+
+function evRadioCard(idBase, name, value, label, help, checked) {
+  const id = idBase + '-' + value;
+  return '<label class="ev-radio" for="' + id + '">' +
+    '<input type="radio" id="' + id + '" name="' + name + '" value="' + value + '"' + (checked ? ' checked' : '') + ' />' +
+    '<span><strong>' + label + '</strong><span>' + help + '</span></span></label>';
+}
+
+function evWizardStep2() {
+  const t = EV.wizard.tickets;
+  return '<div class="ev-form">' +
+    '<fieldset class="ev-field ev-fieldset">' +
+      '<legend class="ev-label">Registration</legend>' +
+      '<label class="ev-radio" for="ev-w-free"><input type="radio" id="ev-w-free" name="paid" value="free"' +
+        (t.isPaid ? '' : ' checked') + ' onchange="evWizardSetPaid(false)" />' +
+        '<span><strong>Free</strong><span>Alumni register at no cost</span></span></label>' +
+      '<label class="ev-radio" for="ev-w-paid"><input type="radio" id="ev-w-paid" name="paid" value="paid"' +
+        (t.isPaid ? ' checked' : '') + ' onchange="evWizardSetPaid(true)" />' +
+        '<span><strong>Paid</strong><span>One or more ticket types with prices</span></span></label>' +
+    '</fieldset>' +
+
+    (t.isPaid
+      ? '<div class="ev-field"><div class="ev-field-head"><span class="ev-label">Ticket types</span>' +
+          '<button type="button" class="btn btn-ghost btn-sm" onclick="evWizardAddType()">' +
+            evIcon('plus') + ' Add type</button></div>' +
+        '<div class="ev-tickettypes">' +
+          '<div class="ev-tt-head"><span>Name</span><span>Price (৳)</span><span>Quota</span><span></span></div>' +
+          t.types.map(function (row, i) {
+            return '<div class="ev-tt-row">' +
+              evWizTicketCell(i, 'n', 'Ticket name', 'text', row.name, 'name', 'Alumni') +
+              evWizTicketCell(i, 'p', 'Price', 'number', row.price, 'price', '0') +
+              evWizTicketCell(i, 'q', 'Quota', 'number', row.quota, 'quota', 'No limit') +
+              (t.types.length > 1
+                ? '<button type="button" class="ev-icon-btn danger" onclick="evWizardRemoveType(' + i + ')" ' +
+                  'aria-label="Remove ticket type">' + evIcon('x') + '</button>'
+                : '<span></span>') +
+            '</div>'; }).join('') +
+        '</div>' +
+        '<span class="ev-help">Leave a quota blank for no per-type limit. Quotas are enforced on top of total capacity.</span></div>'
+      : '<p class="ev-callout-plain">' + evIcon('info') +
+        ' Everyone gets one free ticket, limited by the total capacity you set on the previous step.</p>') +
+
+    '<fieldset class="ev-field ev-fieldset ev-regwindow">' +
+      '<legend class="ev-label">Registration window</legend>' +
+      '<div class="ev-regrow">' +
+        '<span class="ev-reglabel" id="ev-reg-open-lbl">Registration opens</span>' +
+        '<div class="ev-regpair" role="group" aria-labelledby="ev-reg-open-lbl">' +
+          '<div class="ev-regcell">' +
+            '<label class="ev-sublabel" for="ev-w-open-date">Date</label>' +
+            '<input type="date" id="ev-w-open-date" class="form-input" value="' + escapeHtml(t.opensDate) + '" ' +
+              'oninput="evWizardWindowChanged()" />' +
+          '</div>' +
+          '<div class="ev-regcell">' +
+            '<label class="ev-sublabel" for="ev-w-open-time">Time</label>' +
+            '<input type="time" id="ev-w-open-time" class="form-input" value="' + escapeHtml(t.opensTime) + '" ' +
+              'oninput="evWizardWindowChanged()" />' +
+          '</div>' +
+        '</div>' +
+        '<span class="ev-help">Optional — leave blank to open registration immediately.</span>' +
+      '</div>' +
+
+      '<div class="ev-regrow">' +
+        '<span class="ev-reglabel" id="ev-reg-close-lbl">Registration closes</span>' +
+        '<div class="ev-regpair" role="group" aria-labelledby="ev-reg-close-lbl">' +
+          '<div class="ev-regcell">' +
+            '<label class="ev-sublabel" for="ev-w-close-date">Date</label>' +
+            '<input type="date" id="ev-w-close-date" class="form-input" value="' + escapeHtml(t.closesDate) + '" ' +
+              'oninput="evWizardWindowChanged()" />' +
+          '</div>' +
+          '<div class="ev-regcell">' +
+            '<label class="ev-sublabel" for="ev-w-close-time">Time</label>' +
+            '<input type="time" id="ev-w-close-time" class="form-input" value="' + escapeHtml(t.closesTime) + '" ' +
+              'oninput="evWizardWindowChanged()" />' +
+          '</div>' +
+        '</div>' +
+        '<span class="ev-help">Optional — leave blank to keep registration open.</span>' +
+      '</div>' +
+      '<p class="ev-inline-error hidden" id="ev-reg-error" role="alert"></p>' +
+    '</fieldset>' +
+
+    '<label class="ev-switch" for="ev-w-wait">' +
+      '<input type="checkbox" id="ev-w-wait"' + (t.waitlistEnabled ? ' checked' : '') + ' />' +
+      '<span><strong>Keep a waitlist when the event is full</strong>' +
+      '<span>People are promoted automatically when someone cancels.</span></span></label>' +
+
+    '<div class="ev-modal-footer">' +
+      '<button type="button" class="btn btn-outline" onclick="evWizardBack()">' + evIcon('arrow-left') + ' Back</button>' +
+      '<button type="button" class="btn btn-primary" onclick="evWizardNext()">Next: Review ' + evIcon('arrow-right') + '</button>' +
+    '</div></div>';
+}
+
+// One labelled field in a ticket-type row. The .ev-tt-head row supplies the
+// column names on wide screens; once the grid stacks those disappear, so each
+// input keeps its own label rather than leaving a bare "500" next to "150".
+function evWizTicketCell(i, slot, label, type, value, key, placeholder) {
+  const id = 'ev-tt-' + slot + '-' + i;
+  return '<div class="ev-tt-cell">' +
+    '<label class="ev-tt-label" for="' + id + '">' + label + '</label>' +
+    '<input type="' + type + '" id="' + id + '" class="form-input"' +
+      (type === 'number' ? ' min="0"' : '') +
+      ' placeholder="' + placeholder + '"' +
+      ' value="' + escapeHtml(String(value == null ? '' : value)) + '"' +
+      ' oninput="evWizardType(' + i + ', \'' + key + '\', this.value)" /></div>';
+}
+
+/* A date with no time is ambiguous, so an opening date defaults to the start
+   of that day and a closing date to the end of it — which is what an organiser
+   means by "closes on the 10th". Returns null when no date was given. */
+function evRegInstant(date, time, fallbackTime) {
+  if (!date) return null;
+  return date + 'T' + (time && time.length >= 4 ? time : fallbackTime);
+}
+
+function evRegWindowError(t) {
+  if (t.opensTime && !t.opensDate) return 'Registration opens: please choose a date, or clear the time.';
+  if (t.closesTime && !t.closesDate) return 'Registration closes: please choose a date, or clear the time.';
+  const open = evRegInstant(t.opensDate, t.opensTime, '00:00');
+  const close = evRegInstant(t.closesDate, t.closesTime, '23:59');
+  if (open && close && close <= open) {
+    return 'Registration must close after it opens.';
+  }
+  return '';
+}
+
+function evRegWindowSummary(t) {
+  const open = evRegInstant(t.opensDate, t.opensTime, '00:00');
+  const close = evRegInstant(t.closesDate, t.closesTime, '23:59');
+  const fmt = function (iso) {
+    const parts = String(iso).split('T');
+    return evDate(parts[0]) + (parts[1] ? ' at ' + evTime(parts[1]) : '');
+  };
+  if (!open && !close) return 'Opens immediately · no closing date';
+  if (open && !close) return 'Opens ' + fmt(open) + ' · no closing date';
+  if (!open && close) return 'Opens immediately · closes ' + fmt(close);
+  return 'Opens ' + fmt(open) + ' · closes ' + fmt(close);
+}
+
+/* Inline validation as the organiser types, so the problem is shown next to
+   the fields rather than only when Next is pressed. */
+function evWizardWindowChanged() {
+  const w = EV.wizard;
+  if (!w) return;
+  evWizardCapture();
+  const box = document.getElementById('ev-reg-error');
+  if (!box) return;
+  const msg = evRegWindowError(w.tickets);
+  box.textContent = msg;
+  box.classList.toggle('hidden', !msg);
+}
+
+function evWizardSetPaid(paid) {
+  evWizardCapture();
+  EV.wizard.tickets.isPaid = paid;
+  evRenderWizard();
+}
+function evWizardType(i, field, value) {
+  EV.wizard.tickets.types[i][field] = value;
+}
+function evWizardAddType() {
+  evWizardCapture();
+  EV.wizard.tickets.types.push({ name: '', price: 0, quota: '' });
+  evRenderWizard();
+}
+function evWizardRemoveType(i) {
+  evWizardCapture();
+  EV.wizard.tickets.types.splice(i, 1);
+  evRenderWizard();
+}
+
+function evWizardStep3() {
+  const w = EV.wizard, b = w.basics, t = w.tickets;
+  const u = state.currentUser || {};
+  const needsApproval = !evIsAdmin();
+  const quotaSum = t.isPaid
+    ? t.types.reduce(function (a, r) { return a + (parseInt(r.quota, 10) || 0); }, 0) : 0;
+  const capacity = parseInt(b.capacity, 10) || quotaSum || 100;
+
+  const row = function (label, value) {
+    return '<div><dt>' + label + '</dt><dd>' + value + '</dd></div>';
+  };
+
+  return '<div class="ev-review">' +
+    '<div class="ev-review-head">' +
+      '<span class="ev-card-icon">' + evIcon(evTypeIcon(b.eventType)) + '</span>' +
+      '<div><h3>' + escapeHtml(b.title) + '</h3>' +
+      '<p>' + escapeHtml(b.eventType) + ' · ' + (t.isPaid ? 'Paid' : 'Free') + '</p></div>' +
+    '</div>' +
+    (b.description ? '<p class="ev-prose">' + escapeHtml(b.description) + '</p>' : '') +
+    '<dl class="ev-deflist">' +
+      row('Date', escapeHtml(evDate(b.startsOn))) +
+      row('Time', escapeHtml(
+        b.startTime ? evTime(b.startTime) + (b.endTime ? ' – ' + evTime(b.endTime) : '') : 'Not set')) +
+      row('Venue', escapeHtml(b.venue)) +
+      row('Capacity', capacity.toLocaleString() + ' seats') +
+      row('Organiser', b.organizerDepartment ? escapeHtml(b.organizerDepartment)
+                                             : '<span class="ev-notset">Not set</span>') +
+      row('Visibility', b.visibility === 'public' ? 'Public'
+                      : b.visibility === 'invite' ? 'Invite only' : 'Alumni only') +
+      row('Registration', escapeHtml(evRegWindowSummary(t))) +
+      row('Waitlist', t.waitlistEnabled ? 'Enabled' : 'Off') +
+    '</dl>' +
+
+    '<h4 class="ev-subhead">' + evIcon('ticket') + ' Tickets</h4>' +
+    (t.isPaid
+      ? '<ul class="ev-review-tickets">' + t.types.map(function (r) {
+          return '<li><strong>' + escapeHtml(r.name || 'Unnamed') + '</strong>' +
+            '<span>' + evMoney(r.price) + '</span>' +
+            '<span>' + (r.quota === '' || r.quota == null ? 'No limit' : r.quota + ' available') + '</span></li>';
+        }).join('') + '</ul>'
+      : '<p class="ev-muted">One free ticket per person, limited to ' + capacity.toLocaleString() + ' seats.</p>') +
+
+    '<div class="ev-createdby">' +
+      evIcon('user-round-pen') +
+      '<div><span class="ev-label">Created by</span>' +
+        '<strong>' + escapeHtml(u.name || 'You') + '</strong>' +
+        '<span>' + escapeHtml(u.roleLabel || u.role || '') + ' · ' +
+          escapeHtml(evDate(new Date().toISOString())) + '</span></div>' +
+    '</div>' +
+
+    '<p class="ev-banner ' + (needsApproval ? 'warn' : 'success') + '">' +
+      evIcon(needsApproval ? 'clock' : 'circle-check-big') + ' ' +
+      (needsApproval
+        ? 'This event will be submitted for approval.'
+        : 'This event will be published immediately.') + '</p>' +
+
+    '<div class="ev-modal-footer">' +
+      '<button type="button" class="btn btn-outline" onclick="evWizardBack()">' + evIcon('arrow-left') + ' Back</button>' +
+      '<button type="button" class="btn btn-primary" id="ev-w-submit" onclick="evWizardSubmit()">Create event</button>' +
+    '</div></div>';
+}
+
+// Reads whatever is on screen back into wizard state before re-rendering.
+function evWizardCapture() {
+  const w = EV.wizard;
+  if (!w) return;
+  const val = function (id) { const el = document.getElementById(id); return el ? el.value : undefined; };
+
+  if (w.step === 1) {
+    const b = w.basics;
+    if (val('ev-w-title') !== undefined) {
+      b.title = val('ev-w-title').trim();
+      b.description = val('ev-w-desc').trim();
+      b.eventType = val('ev-w-type');
+      b.startsOn = val('ev-w-date');
+      b.startTime = val('ev-w-start');
+      b.endTime = val('ev-w-end');
+      b.venue = val('ev-w-venue').trim();
+      b.organizerDepartment = val('ev-w-org').trim();
+      b.capacity = val('ev-w-cap');
+      const vis = document.querySelector('input[name="visibility"]:checked');
+      if (vis) b.visibility = vis.value;
+    }
+  } else if (w.step === 2) {
+    const t = w.tickets;
+    if (val('ev-w-open-date') !== undefined) {
+      t.opensDate = val('ev-w-open-date');
+      t.opensTime = val('ev-w-open-time');
+      t.closesDate = val('ev-w-close-date');
+      t.closesTime = val('ev-w-close-time');
+      const wait = document.getElementById('ev-w-wait');
+      if (wait) t.waitlistEnabled = wait.checked;
+    }
+  }
+}
+
+function evWizardBack() {
+  evWizardCapture();
+  EV.wizard.error = '';
+  EV.wizard.step = Math.max(1, EV.wizard.step - 1);
+  evRenderWizard();
+}
+
+function evWizardNext() {
+  evWizardCapture();
+  const w = EV.wizard;
+  w.error = '';
+
+  if (w.step === 1) {
+    const b = w.basics;
+    if (!b.title) w.error = 'Please give the event a title.';
+    else if (!b.startsOn) w.error = 'Please choose the event date.';
+    else if (!b.venue) w.error = 'Please enter the venue.';
+    else if (b.startTime && b.endTime && b.endTime <= b.startTime)
+      w.error = 'The end time must be after the start time.';
+    if (w.error) { evRenderWizard(); return; }
+  }
+
+  if (w.step === 2) {
+    if (w.tickets.isPaid) {
+      const bad = w.tickets.types.find(function (r) { return !String(r.name || '').trim(); });
+      if (bad) { w.error = 'Every ticket type needs a name.'; evRenderWizard(); return; }
+    }
+    const windowError = evRegWindowError(w.tickets);
+    if (windowError) { w.error = windowError; evRenderWizard(); return; }
+  }
+
+  w.step = Math.min(3, w.step + 1);
+  evRenderWizard();
+}
+
+async function evWizardSubmit() {
+  const w = EV.wizard;
+  if (!w) return;
+  const btn = document.getElementById('ev-w-submit');
+  if (btn) { btn.disabled = true; btn.textContent = 'Creating…'; }
+
+  const b = w.basics, t = w.tickets;
+  const payload = {
+    title: b.title, description: b.description || null, eventType: b.eventType,
+    startsOn: b.startsOn, startTime: b.startTime || null, endTime: b.endTime || null,
+    venue: b.venue, capacity: parseInt(b.capacity, 10) || null,
+    organizerDepartment: b.organizerDepartment || null, visibility: b.visibility,
+    isPaid: t.isPaid, waitlistEnabled: t.waitlistEnabled,
+    registrationOpensAt: evRegInstant(t.opensDate, t.opensTime, '00:00'),
+    registrationClosesAt: evRegInstant(t.closesDate, t.closesTime, '23:59'),
+    ticketTypes: t.isPaid
+      ? t.types.map(function (r) {
+          return { name: String(r.name).trim(), price: Number(r.price) || 0,
+                   quota: r.quota === '' || r.quota == null ? null : Number(r.quota) };
+        })
+      : []
+  };
+
+  const res = await API.createEvent(payload);
+  if (apiFailed(res)) {
+    w.error = (res && res.error) || 'Could not create the event.';
+    evRenderWizard();
+    return;
+  }
+
+  closeModal();
+  EV.wizard = null;
+  showToast(res.approval_status === 'pending_approval'
+    ? '"' + res.title + '" submitted for approval.'
+    : '"' + res.title + '" created and published.', 'circle-check-big');
+  await openEventWorkspace(res.id, 'overview');
+}
+
+/* ══════════════════════════════════════════════════════════
+   EVENT ACTIONS
+   ══════════════════════════════════════════════════════════ */
+
+function evEditEvent() {
+  const e = EV.event;
+  if (!e) return;
+  showModal('<div class="modal-header"><h2 class="modal-title">' + evIcon('pencil') + ' Edit event</h2>' +
+    '<button type="button" class="modal-close" aria-label="Close">' + evIcon('x') + '</button></div>' +
+    '<form class="ev-form" onsubmit="evSubmitEditEvent(event)">' +
+      '<div class="ev-field"><label class="ev-label" for="ev-e-title">Title <span class="req">*</span></label>' +
+        '<input type="text" id="ev-e-title" class="form-input" required value="' + escapeHtml(e.title) + '" /></div>' +
+      '<div class="ev-field"><label class="ev-label" for="ev-e-desc">Description</label>' +
+        '<textarea id="ev-e-desc" class="form-input" rows="3">' + escapeHtml(e.description || '') + '</textarea></div>' +
+      '<div class="ev-grid2">' +
+        '<div class="ev-field"><label class="ev-label" for="ev-e-type">Type</label>' +
+          '<select id="ev-e-type" class="form-select">' + EV_TYPES.map(function (t) {
+            return '<option value="' + t + '"' + (e.event_type === t ? ' selected' : '') + '>' + t + '</option>';
+          }).join('') + '</select></div>' +
+        '<div class="ev-field"><label class="ev-label" for="ev-e-date">Date <span class="req">*</span></label>' +
+          '<input type="date" id="ev-e-date" class="form-input" required value="' + evDateInput(e.starts_on) + '" /></div>' +
+      '</div>' +
+      '<div class="ev-grid2">' +
+        '<div class="ev-field"><label class="ev-label" for="ev-e-start">Start time</label>' +
+          '<input type="time" id="ev-e-start" class="form-input" value="' + evTimeInput(e.start_time) + '" /></div>' +
+        '<div class="ev-field"><label class="ev-label" for="ev-e-end">End time</label>' +
+          '<input type="time" id="ev-e-end" class="form-input" value="' + evTimeInput(e.end_time) + '" /></div>' +
+      '</div>' +
+      '<div class="ev-field"><label class="ev-label" for="ev-e-venue">Venue <span class="req">*</span></label>' +
+        '<input type="text" id="ev-e-venue" class="form-input" required value="' + escapeHtml(e.venue) + '" /></div>' +
+      '<div class="ev-grid2">' +
+        '<div class="ev-field"><label class="ev-label" for="ev-e-cap">Capacity</label>' +
+          '<input type="number" id="ev-e-cap" class="form-input" min="1" value="' + (e.capacity || 0) + '" /></div>' +
+        '<div class="ev-field"><label class="ev-label" for="ev-e-org">Organiser</label>' +
+          '<input type="text" id="ev-e-org" class="form-input" value="' + escapeHtml(e.organizer_department || '') + '" /></div>' +
+      '</div>' +
+      '<div class="ev-field"><label class="ev-label" for="ev-e-vis">Visibility</label>' +
+        '<select id="ev-e-vis" class="form-select">' +
+          '<option value="public"' + (e.visibility === 'public' ? ' selected' : '') + '>Public</option>' +
+          '<option value="alumni"' + (e.visibility === 'alumni' ? ' selected' : '') + '>Alumni only</option>' +
+          '<option value="invite"' + (e.visibility === 'invite' ? ' selected' : '') + '>Invite only</option>' +
+        '</select></div>' +
+      '<div class="ev-modal-footer">' +
+        '<button type="button" class="btn btn-outline" onclick="closeModal()">Cancel</button>' +
+        '<button type="submit" class="btn btn-primary">Save changes</button></div>' +
+    '</form>');
+  evRefreshIcons();
+}
+
+async function evSubmitEditEvent(e) {
+  if (e) e.preventDefault();
+  const payload = {
+    title: document.getElementById('ev-e-title').value.trim(),
+    description: document.getElementById('ev-e-desc').value.trim(),
+    eventType: document.getElementById('ev-e-type').value,
+    startsOn: document.getElementById('ev-e-date').value,
+    startTime: document.getElementById('ev-e-start').value || null,
+    endTime: document.getElementById('ev-e-end').value || null,
+    venue: document.getElementById('ev-e-venue').value.trim(),
+    capacity: parseInt(document.getElementById('ev-e-cap').value, 10) || null,
+    organizerDepartment: document.getElementById('ev-e-org').value.trim(),
+    visibility: document.getElementById('ev-e-vis').value
+  };
+  const res = await API.updateEvent(EV.event.id, payload);
+  if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Could not save.', 'triangle-alert'); return; }
+  closeModal();
+  showToast('Event updated.', 'circle-check-big');
+  await evReloadWorkspace();
+}
+
+async function evApprove(id) {
+  const res = await API.approveEvent(id);
+  if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Could not approve.', 'triangle-alert'); return; }
+  showToast('Event approved and published.', 'circle-check-big');
+  if (EV.event && EV.event.id === id) await evReloadWorkspace(); else await loadEventList();
+}
+
+async function evReject(id) {
+  const reason = prompt('Why is this event being sent back? The organiser will see this.');
+  if (reason === null) return;
+  if (!reason.trim()) { showToast('A reason is required.', 'triangle-alert'); return; }
+  const res = await API.rejectEvent(id, reason.trim());
+  if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Could not send back.', 'triangle-alert'); return; }
+  showToast('Sent back to the organiser.', 'undo-2');
+  if (EV.event && EV.event.id === id) await evReloadWorkspace(); else await loadEventList();
+}
+
+async function evCancelEvent() {
+  const e = EV.event;
+  if (!e) return;
+  const reason = prompt('Why is "' + e.title + '" being cancelled? Everyone holding a ticket will be told.');
+  if (reason === null) return;
+  if (!reason.trim()) { showToast('A reason is required.', 'triangle-alert'); return; }
+  const res = await API.cancelEvent(e.id, reason.trim());
+  if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Could not cancel.', 'triangle-alert'); return; }
+  showToast('Event cancelled and ticket holders notified.', 'calendar-x');
+  await evReloadWorkspace();
+}
+
+function evPreviewPublic() {
+  const e = EV.event;
+  if (!e) return;
+  const reg = e.registered || 0;
+  const full = e.capacity ? reg >= e.capacity : false;
+  showModal(
+    '<div class="modal-header"><h2 class="modal-title">' + evIcon('eye') + ' Public preview</h2>' +
+      '<button type="button" class="modal-close" aria-label="Close">' + evIcon('x') + '</button></div>' +
+    '<p class="ev-help">This is how the event appears to alumni.</p>' +
+    '<div class="ev-preview">' + evPublicCard(Object.assign({}, e, { is_registered: false })) + '</div>' +
+    (e.visibility === 'invite'
+      ? '<p class="ev-banner warn">' + evIcon('eye-off') +
+        ' This event is invite only, so it does not appear in the public list.</p>' : '') +
+    (e.approval_status !== 'approved'
+      ? '<p class="ev-banner warn">' + evIcon('clock') +
+        ' Not approved yet, so alumni cannot see it.</p>' : ''),
+    { dismissable: true });
+  evRefreshIcons();
+}
+
+/* ══════════════════════════════════════════════════════════
+   ALUMNI-FACING TICKET ACTIONS
+   ══════════════════════════════════════════════════════════ */
+
+async function evRegister(eventId) {
+  const e = EV.list.find(function (x) { return x.id === eventId; });
+  const types = e && e.is_paid ? await API.getTicketTypes(eventId) : null;
+
+  if (types && !apiFailed(types) && types.length > 1) {
+    showModal('<div class="modal-header"><h2 class="modal-title">' + evIcon('ticket') + ' Choose a ticket</h2>' +
+      '<button type="button" class="modal-close" aria-label="Close">' + evIcon('x') + '</button></div>' +
+      '<div class="ev-ticketchoices">' + types.map(function (t) {
+        const left = t.quota == null ? null : Math.max(0, t.quota - t.sold);
+        const soldOut = left === 0;
+        return '<button type="button" class="ev-ticketchoice" ' + (soldOut ? 'disabled' : '') + ' ' +
+          'onclick="evDoRegister(' + eventId + ',' + t.id + ')">' +
+          '<span class="ev-ticketchoice-name"><strong>' + escapeHtml(t.name) + '</strong>' +
+          '<span>' + (left == null ? 'No limit' : (soldOut ? 'Sold out' : left + ' left')) + '</span></span>' +
+          '<span class="ev-ticketchoice-price">' + (Number(t.price) > 0 ? evMoney(t.price) : 'Free') + '</span>' +
+          '</button>'; }).join('') + '</div>');
+    evRefreshIcons();
+    return;
+  }
+  await evDoRegister(eventId, types && !apiFailed(types) && types[0] ? types[0].id : null);
+}
+
+async function evDoRegister(eventId, ticketTypeId) {
+  const body = { clientMutationId: 'reg-' + eventId + '-' + (state.currentUser ? state.currentUser.id : 0) + '-' + Date.now() };
+  if (ticketTypeId) body.ticketTypeId = ticketTypeId;
+
+  const res = await API.registerForEvent(eventId, body);
+  if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Registration failed.', 'triangle-alert'); return; }
+  closeModal();
+  showToast(res.status === 'waitlisted'
+    ? 'That event is full — you are on the waitlist.'
+    : 'Ticket confirmed for "' + res.event + '".', res.status === 'waitlisted' ? 'hourglass' : 'ticket-check');
+  await loadEventList();
+  if (typeof renderNotifications === 'function') renderNotifications();
+  if (res.status === 'confirmed') evViewTicket(eventId);
+}
+
+async function evCancelTicket(eventId) {
+  if (!confirm('Cancel your ticket for this event?')) return;
+  const res = await API.cancelRegistration(eventId);
+  if (apiFailed(res)) { showToast(res && res.error ? res.error : 'Could not cancel.', 'triangle-alert'); return; }
+  showToast(res.promoted ? 'Ticket cancelled — a waitlisted alumnus was promoted.' : 'Ticket cancelled.', 'circle-check-big');
+  await loadEventList();
+}
+
+async function evViewTicket(eventId) {
+  const t = await API.getMyTicket(eventId);
+  if (apiFailed(t) || !t) { showToast('No ticket found for this event.', 'triangle-alert'); return; }
+
+  showModal('<div class="modal-header"><h2 class="modal-title">' + evIcon('ticket') + ' Your ticket</h2>' +
+    '<button type="button" class="modal-close" aria-label="Close">' + evIcon('x') + '</button></div>' +
+    '<div class="ev-ticket">' +
+      '<div class="ev-ticket-event">' +
+        '<strong>' + escapeHtml(t.event_title || '') + '</strong>' +
+        '<span>' + escapeHtml(evDate(t.starts_on)) +
+          (t.start_time ? ' · ' + escapeHtml(evTime(t.start_time)) : '') + '</span>' +
+        '<span>' + escapeHtml(t.venue || '') + '</span>' +
+      '</div>' +
+      '<div id="ev-ticket-qr" class="ev-ticket-qr"></div>' +
+      '<p class="ev-ticket-code">' + escapeHtml(t.ticket_code) + '</p>' +
+      '<p class="ev-ticket-status">' +
+        (t.status === 'waitlisted'
+          ? evIcon('hourglass') + ' Waitlisted — you will be told if a seat opens'
+          : evIcon('circle-check-big') + ' Confirmed') +
+        (t.ticket_type_name ? ' · ' + escapeHtml(t.ticket_type_name) : '') +
+        (t.checked_in ? ' · ' + evIcon('check') + ' Checked in' : '') + '</p>' +
+      (Number(t.amount_paid) > 0
+        ? '<p class="ev-muted small">Paid ' + evMoney(t.amount_paid) + '</p>' : '') +
+      '<p class="ev-help">Show this QR code at the entrance.</p>' +
+    '</div>', { dismissable: true });
+  evRefreshIcons();
+
+  const holder = document.getElementById('ev-ticket-qr');
+  if (holder && typeof QRCode !== 'undefined') {
+    try {
+      new QRCode(holder, { text: t.qr_payload, width: 176, height: 176,
+                           colorDark: '#0B3897', colorLight: '#ffffff' });
+    } catch (err) {
+      holder.innerHTML = '<p class="ev-muted small">QR code unavailable — use the code below.</p>';
+    }
+  } else if (holder) {
+    holder.innerHTML = '<p class="ev-muted small">QR code unavailable — use the code below.</p>';
+  }
+}

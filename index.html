@@ -73,13 +73,13 @@
           
           <!-- QUICK DEMO LOGINS -->
           <div class="demo-logins-container">
-            <div class="demo-logins-title">⚡ Instant Demo Login by Role</div>
+            <div class="demo-logins-title"><i data-lucide="zap" class="ui-icon"></i> Instant Demo Login by Role</div>
             <div class="demo-role-grid">
-              <button class="demo-role-btn" onclick="loginAsRole('alumni')"><span class="demo-role-icon">🎓</span> Alumni</button>
-              <button class="demo-role-btn" onclick="loginAsRole('moderator')"><span class="demo-role-icon">🛡</span> Moderator</button>
-              <button class="demo-role-btn" onclick="loginAsRole('dept_admin')"><span class="demo-role-icon">🏢</span> Dept Admin</button>
-              <button class="demo-role-btn" onclick="loginAsRole('univ_admin')"><span class="demo-role-icon">🏛</span> College Admin</button>
-              <button class="demo-role-btn" style="grid-column:span 2" onclick="loginAsRole('super_admin')"><span class="demo-role-icon">👑</span> Super Admin (Full Access)</button>
+              <button class="demo-role-btn" onclick="loginAsRole('alumni')"><span class="demo-role-icon"><i data-lucide="graduation-cap" class="ui-icon"></i></span> Alumni</button>
+              <button class="demo-role-btn" onclick="loginAsRole('moderator')"><span class="demo-role-icon"><i data-lucide="shield" class="ui-icon"></i></span> Moderator</button>
+              <button class="demo-role-btn" onclick="loginAsRole('dept_admin')"><span class="demo-role-icon"><i data-lucide="building-2" class="ui-icon"></i></span> Dept Admin</button>
+              <button class="demo-role-btn" onclick="loginAsRole('univ_admin')"><span class="demo-role-icon"><i data-lucide="landmark" class="ui-icon"></i></span> College Admin</button>
+              <button class="demo-role-btn" style="grid-column:span 2" onclick="loginAsRole('super_admin')"><span class="demo-role-icon"><i data-lucide="crown" class="ui-icon"></i></span> Super Admin (Full Access)</button>
             </div>
           </div>
           <p class="login-footer" style="margin-top:12px">DIC Official Alumni System | PDPA 2026 Compliant</p>
@@ -164,7 +164,7 @@
       <div class="sidebar-brand">
         <img src="assets/dic-logo.png" onerror="this.onerror=null;this.src='assets/daffodil-logo.svg'"
              alt="Daffodil International College" class="sidebar-brand-logo" />
-        <button class="sidebar-close" onclick="toggleSidebar()">✕</button>
+        <button class="sidebar-close" onclick="toggleSidebar()"><i data-lucide="x" class="ui-icon"></i></button>
       </div>
       <div class="tenant-pill">
         <span class="tenant-dot" style="background:var(--diu-green)"></span>
@@ -178,15 +178,14 @@
       <div class="sidebar-controls" id="sidebar-controls">
         <label class="sidebar-controls-label" for="drawer-role-select">Viewing as</label>
         <select class="role-switcher-select drawer" id="drawer-role-select" onchange="switchCurrentRole(this.value)">
-          <option value="super_admin">👑 Super Admin</option>
-          <option value="univ_admin">🏛 College Admin</option>
-          <option value="dept_admin">🏢 Dept Admin (CSE)</option>
-          <option value="moderator">🛡 Moderator</option>
-          <option value="alumni">🎓 Alumni</option>
+          <option value="super_admin">Super Admin</option>
+          <option value="univ_admin">College Admin</option>
+          <option value="dept_admin">Dept Admin (CSE)</option>
+          <option value="moderator">Moderator</option>
+          <option value="alumni">Alumni</option>
         </select>
         <div class="sidebar-controls-row">
-          <button class="drawer-btn" onclick="toggleAppTheme()" id="drawer-theme-btn">🌙 Theme</button>
-          <button class="drawer-btn" onclick="toggleSidebar(); showBroadcastModal();">📢 Broadcast</button>
+          <button class="drawer-btn" style="grid-column:span 2" onclick="toggleSidebar(); showBroadcastModal();"><i data-lucide="megaphone" class="ui-icon"></i> Broadcast</button>
         </div>
         <div class="offline-status online drawer" id="drawer-offline-status">
           <span class="status-dot"></span>
@@ -200,37 +199,36 @@
           <div class="user-name" id="sidebar-user-name">System Administrator</div>
           <div class="user-role" id="sidebar-user-role">Super Admin</div>
         </div>
-        <button class="logout-btn" onclick="logout()" title="Sign Out">⏻</button>
+        <button class="logout-btn" onclick="logout()" title="Sign Out"><i data-lucide="log-out" class="ui-icon"></i></button>
       </div>
     </aside>
 
     <!-- TOPBAR (DAFFODIL BRAND #0B3897) -->
     <div class="topbar">
-      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <button class="hamburger" onclick="toggleSidebar()"><i data-lucide="menu" class="ui-icon"></i></button>
       <div class="topbar-brand-logo">
         <img src="assets/dic-logo.png" onerror="this.onerror=null;this.src='assets/daffodil-logo.svg'"
              alt="Daffodil International College" />
       </div>
       <div class="topbar-search">
-        <span class="search-icon">🔍</span>
+        <span class="search-icon"><i data-lucide="search" class="ui-icon"></i></span>
         <input type="text" class="topbar-search-input" placeholder="Ask DIC AI — find alumni, jobs, or events…" id="global-search" oninput="handleGlobalSearch(this.value)" />
       </div>
       <div class="topbar-actions">
         <!-- TOPBAR ROLE SWITCHER -->
         <select class="role-switcher-select" id="topbar-role-select" onchange="switchCurrentRole(this.value)">
-          <option value="super_admin">👑 Super Admin</option>
-          <option value="univ_admin">🏛 College Admin</option>
-          <option value="dept_admin">🏢 Dept Admin (CSE)</option>
-          <option value="moderator">🛡 Moderator</option>
-          <option value="alumni">🎓 Alumni</option>
+          <option value="super_admin">Super Admin</option>
+          <option value="univ_admin">College Admin</option>
+          <option value="dept_admin">Dept Admin (CSE)</option>
+          <option value="moderator">Moderator</option>
+          <option value="alumni">Alumni</option>
         </select>
         <div class="offline-status online" id="offline-status" title="PostgreSQL 16 Engine Connected · PDPA 2026 Compliant">
           <span class="status-dot"></span>
           <span class="status-text">PostgreSQL 16 · Live</span>
         </div>
-        <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleAppTheme()" title="Toggle Light / Dark Theme">🌙</button>
-        <button class="topbar-btn alert-btn" onclick="showBroadcastModal()" title="Send a broadcast">📢<span class="alert-btn-label"> Broadcast</span></button>
-        <button class="topbar-btn notif-btn" onclick="showNotifications()">🔔 <span class="notif-count">7</span></button>
+        <button class="topbar-btn alert-btn" onclick="showBroadcastModal()" title="Send a broadcast"><i data-lucide="megaphone" class="ui-icon"></i><span class="alert-btn-label"> Broadcast</span></button>
+        <button class="topbar-btn notif-btn" onclick="showNotifications()"><i data-lucide="bell" class="ui-icon"></i> <span class="notif-count">7</span></button>
         <div class="topbar-avatar" id="topbar-user-avatar" onclick="showPage('profile')">SA</div>
       </div>
     </div>
@@ -256,11 +254,11 @@
         <!-- KPI TILES -->
         <div class="kpi-grid">
           <div class="kpi-card indigo">
-            <div class="kpi-icon">👥</div>
+            <div class="kpi-icon"><i data-lucide="users" class="ui-icon"></i></div>
             <div class="kpi-body">
               <div class="kpi-value" data-target="12847" id="kpi-alumni">0</div>
               <div class="kpi-label">Total Verified Alumni</div>
-              <div class="kpi-trend up">↑ 8.4% this month</div>
+              <div class="kpi-trend up"><i data-lucide="trending-up" class="ui-icon"></i> 8.4% this month</div>
             </div>
           </div>
           <div class="kpi-card teal">
@@ -268,11 +266,11 @@
             <div class="kpi-body">
               <div class="kpi-value" id="kpi-funds">৳0</div>
               <div class="kpi-label">FY Funds Collected</div>
-              <div class="kpi-trend up">↑ 35.2% YoY</div>
+              <div class="kpi-trend up"><i data-lucide="trending-up" class="ui-icon"></i> 35.2% YoY</div>
             </div>
           </div>
           <div class="kpi-card purple">
-            <div class="kpi-icon">🤝</div>
+            <div class="kpi-icon"><i data-lucide="handshake" class="ui-icon"></i></div>
             <div class="kpi-body">
               <div class="kpi-value" data-target="1203" id="kpi-mentors">0</div>
               <div class="kpi-label">Active Mentorships</div>
@@ -280,7 +278,7 @@
             </div>
           </div>
           <div class="kpi-card amber">
-            <div class="kpi-icon">🎫</div>
+            <div class="kpi-icon"><i data-lucide="ticket" class="ui-icon"></i></div>
             <div class="kpi-body">
               <div class="kpi-value" data-target="47" id="kpi-events">0</div>
               <div class="kpi-label">Upcoming Events</div>
@@ -339,7 +337,7 @@
               <button class="btn btn-outline btn-full mt-8" onclick="showPage('admin')">View All in Admin →</button>
             </div>
             <div class="glass-card mt-16">
-              <div class="card-header"><h3 class="card-title">🏆 Top Donors Leaderboard</h3><span class="card-badge amber">FY 2026</span></div>
+              <div class="card-header"><h3 class="card-title"><i data-lucide="trophy" class="ui-icon"></i> Top Donors Leaderboard</h3><span class="card-badge amber">FY 2026</span></div>
               <div id="donor-leaderboard"></div>
             </div>
             <div class="glass-card mt-16">
@@ -391,29 +389,29 @@
         </div>
         <!-- Search Bar -->
         <div class="ai-search-bar glass-card">
-          <span class="ai-search-icon">🤖</span>
+          <span class="ai-search-icon"><i data-lucide="bot" class="ui-icon"></i></span>
           <input type="text" class="ai-search-input" id="dir-search" placeholder="Ask ConnectAI — 'Find software engineers in Dhaka class of 2019'" oninput="filterDirectory(this.value)" />
-          <button class="voice-btn" title="Voice Input">🎙</button>
+          <button class="voice-btn" title="Voice Input"><i data-lucide="mic" class="ui-icon"></i></button>
           <div class="search-indicator" id="search-indicator" style="display:none;">
             <div class="typing-dots"><span></span><span></span><span></span></div>
             <span>Searching vectors…</span>
           </div>
         </div>
         <div class="transliteration-badge hidden" id="transliteration-badge">
-          🔤 Bangla detected — passing through transliteration layer… <span class="tl-latency">&lt;150ms</span>
+          <i data-lucide="languages" class="ui-icon"></i> Bangla detected — passing through transliteration layer… <span class="tl-latency">&lt;150ms</span>
         </div>
         <!-- Filters -->
         <div class="filter-chips" id="filter-chips">
           <button class="chip active" onclick="toggleChip(this,'all')">All</button>
-          <button class="chip" onclick="toggleChip(this,'mentor')">🤝 Mentors</button>
+          <button class="chip" onclick="toggleChip(this,'mentor')"><i data-lucide="handshake" class="ui-icon"></i> Mentors</button>
           <button class="chip" onclick="toggleChip(this,'2020')">Batch 2020</button>
           <button class="chip" onclick="toggleChip(this,'2019')">Batch 2019</button>
           <button class="chip" onclick="toggleChip(this,'2018')">Batch 2018</button>
-          <button class="chip" onclick="toggleChip(this,'tech')">💻 Tech</button>
-          <button class="chip" onclick="toggleChip(this,'finance')">📊 Finance</button>
-          <button class="chip" onclick="toggleChip(this,'dhaka')">📍 Dhaka</button>
-          <button class="chip" onclick="toggleChip(this,'uk')">🇬🇧 UK</button>
-          <button class="chip" onclick="toggleChip(this,'usa')">🇺🇸 USA</button>
+          <button class="chip" onclick="toggleChip(this,'tech')"><i data-lucide="laptop" class="ui-icon"></i> Tech</button>
+          <button class="chip" onclick="toggleChip(this,'finance')"><i data-lucide="bar-chart-3" class="ui-icon"></i> Finance</button>
+          <button class="chip" onclick="toggleChip(this,'dhaka')"><i data-lucide="map-pin" class="ui-icon"></i> Dhaka</button>
+          <button class="chip" onclick="toggleChip(this,'uk')"><i data-lucide="flag" class="ui-icon"></i> UK</button>
+          <button class="chip" onclick="toggleChip(this,'usa')"><i data-lucide="flag" class="ui-icon"></i> USA</button>
         </div>
         <div class="directory-stats-bar">
           <span id="dir-count">Showing 24 of 12,847 profiles</span>
@@ -555,54 +553,45 @@
       </div>
 
       <!-- ============ EVENTS PAGE ============ -->
-      <!-- ============ EVENTS & PLANNER PAGE ============ -->
       <div class="page hidden" id="page-events">
-        <div class="page-header">
-          <div>
-            <h1 class="page-title">Event Management Planner &amp; Workspace</h1>
-            <p class="page-subtitle">Full Event Lifecycle Operating System · Budgeting · Sponsor CRM · Kanban · Procurement · Volunteers · EventAI</p>
+
+        <!-- ─── EVENT LIST ─── -->
+        <div id="ev-list-view">
+          <div class="page-header">
+            <div>
+              <h1 class="page-title">Events</h1>
+              <p class="page-subtitle" id="ev-list-subtitle">Browse and register for college events</p>
+            </div>
+            <div class="page-header-actions" id="ev-list-actions"></div>
           </div>
-          <div class="page-header-actions">
-            <button class="btn btn-outline" onclick="showCreateProposalModal()">➕ Proposal Form</button>
-            <button class="btn btn-primary" onclick="showCreateEventModal()">+ Create Event</button>
+
+          <!-- One toolbar row on desktop: compact search on the left, status
+               filters on the right. Stacks on narrow screens. -->
+          <div class="ev-toolbar">
+            <div class="ev-search">
+              <i data-lucide="search" class="ui-icon ev-search-icon" aria-hidden="true"></i>
+              <label class="sr-only" for="ev-search-input">Search events</label>
+              <input type="search" id="ev-search-input" class="ev-search-input"
+                     placeholder="Search events by name or venue"
+                     oninput="onEventSearch(this.value)" autocomplete="off" />
+            </div>
+            <div class="ev-filters" id="ev-filters" role="tablist" aria-label="Filter events by status"></div>
           </div>
+
+          <div class="ev-grid" id="ev-list"></div>
         </div>
 
-        <!-- WORKSPACE MODE SWITCHER -->
-        <div class="events-tabs mb-16">
-          <button class="chart-tab active" id="btn-mode-planner" onclick="switchEventWorkspaceMode('planner', this)">📋 Event Planner Workspace</button>
-          <button class="chart-tab" id="btn-mode-public" onclick="switchEventWorkspaceMode('public', this)">🎪 Public Event Directory &amp; Tickets</button>
-        </div>
+        <!-- ─── SINGLE EVENT WORKSPACE ─── -->
+        <div id="ev-workspace-view" class="hidden">
+          <button class="ev-back" onclick="closeEventWorkspace()">
+            <i data-lucide="arrow-left" class="ui-icon" aria-hidden="true"></i> All events
+          </button>
 
-        <!-- PLANNER WORKSPACE CONTAINER -->
-        <div id="planner-workspace-view">
-          <div class="analytics-tabs mb-16" style="overflow-x:auto;white-space:nowrap">
-            <button class="chart-tab active" onclick="switchPlannerTab('overview', this)">🚀 Proposal &amp; Overview</button>
-            <button class="chart-tab" onclick="switchPlannerTab('budget', this)">💰 Budget &amp; Revenue</button>
-            <button class="chart-tab" onclick="switchPlannerTab('sponsors', this)">🤝 Sponsor CRM</button>
-            <button class="chart-tab" onclick="switchPlannerTab('tasks', this)">📋 Task Kanban Board</button>
-            <button class="chart-tab" onclick="switchPlannerTab('procurement', this)">🛒 Procurement &amp; Vendors</button>
-            <button class="chart-tab" onclick="switchPlannerTab('volunteers', this)">🛡 Volunteers &amp; Risks</button>
-            <button class="chart-tab" onclick="switchPlannerTab('vendors', this)">🏪 Vendors</button>
-            <button class="chart-tab" onclick="switchPlannerTab('timeline', this)">🗓 Timeline</button>
-            <button class="chart-tab" onclick="switchPlannerTab('logistics', this)">🚚 Logistics</button>
-            <button class="chart-tab" onclick="switchPlannerTab('marketing', this)">📢 Marketing &amp; Meetings</button>
-            <button class="chart-tab" onclick="switchPlannerTab('analytics', this)">📈 Analytics &amp; Reports</button>
-            <button class="chart-tab" onclick="switchPlannerTab('ai', this)">🤖 EventAI Assistant</button>
-          </div>
+          <!-- Event context header — present on every tab -->
+          <div id="ev-context-header"></div>
 
-          <div id="planner-tab-content"></div>
-        </div>
-
-        <!-- PUBLIC EVENT DIRECTORY & TICKETS -->
-        <div id="public-events-view" class="hidden">
-          <div class="events-tabs">
-            <button class="chart-tab active" onclick="filterEvents('upcoming', this)">Upcoming</button>
-            <button class="chart-tab" onclick="filterEvents('past', this)">Past Events</button>
-            <button class="chart-tab" onclick="filterEvents('checkin', this)">Check-In Scanner</button>
-            <button class="chart-tab" onclick="filterEvents('waitlist', this)">Waitlist Manager</button>
-          </div>
-          <div class="events-grid" id="events-grid"></div>
+          <nav class="ev-tabs" id="ev-tabs" role="tablist" aria-label="Event sections"></nav>
+          <div id="ev-tab-content" role="tabpanel"></div>
         </div>
       </div>
 
@@ -616,7 +605,7 @@
           <button class="btn btn-primary" onclick="showPostJobModal()">+ Post a Job</button>
         </div>
         <div class="alumni-only-banner">
-          🔒 Closed-Loop Network — Only verified alumni can post and apply. Non-alumni access is restricted.
+          <i data-lucide="lock" class="ui-icon"></i> Closed-Loop Network — Only verified alumni can post and apply. Non-alumni access is restricted.
         </div>
         <div class="jobs-layout">
           <div class="jobs-main">
@@ -642,7 +631,7 @@
             <div class="glass-card">
               <div class="card-header"><h3 class="card-title">Your Resume</h3></div>
               <div class="resume-upload-zone" onclick="triggerResumeUpload()">
-                <div class="upload-icon">📄</div>
+                <div class="upload-icon"><i data-lucide="file-text" class="ui-icon"></i></div>
                 <div class="upload-text">Upload Resume (PDF)</div>
                 <div class="upload-sub">AI will extract skills & match jobs</div>
               </div>
@@ -664,8 +653,6 @@
             <p class="page-subtitle">Impact dashboard · Exportable reports</p>
           </div>
           <div class="page-header-actions">
-            <button class="btn btn-outline" onclick="exportPDF()">📄 Export PDF</button>
-            <button class="btn btn-outline" onclick="exportExcel()">📊 Export Excel</button>
           </div>
         </div>
         <div class="analytics-tabs">
@@ -733,7 +720,7 @@
           </div>
           <div class="chapter-detail glass-card" id="chapter-detail">
             <div class="empty-state">
-              <div class="empty-icon">⬡</div>
+              <div class="empty-icon"><i data-lucide="hexagon" class="ui-icon"></i></div>
               <div class="empty-text">Select a chapter to view details</div>
             </div>
           </div>
@@ -831,7 +818,7 @@
             <h1 class="page-title">My DIC Profile</h1>
             <p class="page-subtitle">Complete 10-Section Digital Identity · Field Privacy Controls · Verification Badges</p>
           </div>
-          <button class="btn btn-primary" onclick="showEditProfileV2()">✎ Edit Profile</button>
+          <button class="btn btn-primary" onclick="showEditProfileV2()"><i data-lucide="pen-line" class="ui-icon"></i> Edit Profile</button>
         </div>
         <!-- Profile Completeness Score Banner -->
         <div class="profile-completeness-banner glass-card" id="profile-completeness">
@@ -841,31 +828,31 @@
             <div class="pc-sub" id="profile-completeness-text">85% complete — Gold Tier Alumni Identity</div>
           </div>
           <div class="pc-score-ring">
-            <div class="pc-ring-val" id="profile-completeness-ring" style="color:var(--teal)">85%</div>
+            <div class="pc-ring-val" id="profile-completeness-ring" style="color:var(--daffodil-primary)">85%</div>
           </div>
           <div class="pc-items" id="profile-completeness-items">
-            <div class="pc-item done">✓ Basic Info</div>
-            <div class="pc-item done">✓ Academic Record</div>
-            <div class="pc-item done">✓ Professional Info</div>
-            <div class="pc-item done">✓ Contact &amp; Emergency</div>
-            <div class="pc-item missing">○ Social Profiles</div>
-            <div class="pc-item missing">○ Custom Fields</div>
+            <div class="pc-item done"><i data-lucide="check" class="ui-icon"></i> Basic Info</div>
+            <div class="pc-item done"><i data-lucide="check" class="ui-icon"></i> Academic Record</div>
+            <div class="pc-item done"><i data-lucide="check" class="ui-icon"></i> Professional Info</div>
+            <div class="pc-item done"><i data-lucide="check" class="ui-icon"></i> Contact &amp; Emergency</div>
+            <div class="pc-item missing"><i data-lucide="circle" class="ui-icon"></i> Social Profiles</div>
+            <div class="pc-item missing"><i data-lucide="circle" class="ui-icon"></i> Custom Fields</div>
           </div>
         </div>
 
         <!-- 10-SECTION NAVIGATION TABS -->
         <div class="profile-hub-tabs">
-          <button class="profile-hub-tab active" onclick="switchProfileHubSection('all', this)">📌 Overview</button>
-          <button class="profile-hub-tab" onclick="switchProfileHubSection('basic', this)">👤 Basic Info</button>
-          <button class="profile-hub-tab" onclick="switchProfileHubSection('contact', this)">📱 Contact &amp; Emergency</button>
-          <button class="profile-hub-tab" onclick="switchProfileHubSection('location', this)">📍 Address &amp; Location</button>
-          <button class="profile-hub-tab" onclick="switchProfileHubSection('academic', this)">🎓 Academic Record</button>
-          <button class="profile-hub-tab" onclick="switchProfileHubSection('professional', this)">💼 Professional &amp; CV</button>
-          <button class="profile-hub-tab" onclick="switchProfileHubSection('networking', this)">🤝 Networking &amp; Hiring</button>
-          <button class="profile-hub-tab" onclick="switchProfileHubSection('social', this)">🌐 Social Profiles</button>
-          <button class="profile-hub-tab" onclick="switchProfileHubSection('interests', this)">⭐ Skills &amp; Interests</button>
-          <button class="profile-hub-tab" onclick="switchProfileHubSection('privacy', this)">🔒 Privacy Controls</button>
-          <button class="profile-hub-tab" onclick="switchProfileHubSection('custom', this)">⚙ Custom Fields</button>
+          <button class="profile-hub-tab active" onclick="switchProfileHubSection('all', this)"><i data-lucide="pin" class="ui-icon"></i> Overview</button>
+          <button class="profile-hub-tab" onclick="switchProfileHubSection('basic', this)"><i data-lucide="user" class="ui-icon"></i> Basic Info</button>
+          <button class="profile-hub-tab" onclick="switchProfileHubSection('contact', this)"><i data-lucide="smartphone" class="ui-icon"></i> Contact &amp; Emergency</button>
+          <button class="profile-hub-tab" onclick="switchProfileHubSection('location', this)"><i data-lucide="map-pin" class="ui-icon"></i> Address &amp; Location</button>
+          <button class="profile-hub-tab" onclick="switchProfileHubSection('academic', this)"><i data-lucide="graduation-cap" class="ui-icon"></i> Academic Record</button>
+          <button class="profile-hub-tab" onclick="switchProfileHubSection('professional', this)"><i data-lucide="briefcase" class="ui-icon"></i> Professional &amp; CV</button>
+          <button class="profile-hub-tab" onclick="switchProfileHubSection('networking', this)"><i data-lucide="handshake" class="ui-icon"></i> Networking &amp; Hiring</button>
+          <button class="profile-hub-tab" onclick="switchProfileHubSection('social', this)"><i data-lucide="globe" class="ui-icon"></i> Social Profiles</button>
+          <button class="profile-hub-tab" onclick="switchProfileHubSection('interests', this)"><i data-lucide="star" class="ui-icon"></i> Skills &amp; Interests</button>
+          <button class="profile-hub-tab" onclick="switchProfileHubSection('privacy', this)"><i data-lucide="lock" class="ui-icon"></i> Privacy Controls</button>
+          <button class="profile-hub-tab" onclick="switchProfileHubSection('custom', this)"><i data-lucide="settings" class="ui-icon"></i> Custom Fields</button>
         </div>
 
         <div id="profile-hub-content">
@@ -894,23 +881,23 @@
                 <div class="id-meta">
                   <div class="id-number">ID: DIC-2020-0847</div>
                   <div class="id-valid">Valid through Dec 2027</div>
-                  <div class="id-verified-badge">✓ Anti-Spoofing QR</div>
+                  <div class="id-verified-badge"><i data-lucide="check" class="ui-icon"></i> Anti-Spoofing QR</div>
                 </div>
               </div>
               <div class="id-hologram"></div>
             </div>
             <div class="id-wallet-btns">
-              <button class="wallet-btn apple" onclick="showToast('🍎 Added to Apple Wallet')">🍎 Add to Apple Wallet</button>
+              <button class="wallet-btn apple" onclick="showToast('🍎 Added to Apple Wallet')"><i data-lucide="wallet" class="ui-icon"></i> Add to Apple Wallet</button>
               <button class="wallet-btn google" onclick="showToast('G Added to Google Wallet')">G Add to Google Wallet</button>
             </div>
             <!-- Verification Badges Card -->
             <div class="glass-card mt-16">
-              <div class="card-header"><h3 class="card-title">🛡 Verification Badges</h3></div>
+              <div class="card-header"><h3 class="card-title"><i data-lucide="shield" class="ui-icon"></i> Verification Badges</h3></div>
               <div class="verification-badges-grid">
-                <span class="verify-pill">✓ Email Verified</span>
-                <span class="verify-pill">✓ Phone Verified</span>
-                <span class="verify-pill">✓ Student ID Verified</span>
-                <span class="verify-pill">✓ Alumni Board Verified</span>
+                <span class="verify-pill"><i data-lucide="check" class="ui-icon"></i> Email Verified</span>
+                <span class="verify-pill"><i data-lucide="check" class="ui-icon"></i> Phone Verified</span>
+                <span class="verify-pill"><i data-lucide="check" class="ui-icon"></i> Student ID Verified</span>
+                <span class="verify-pill"><i data-lucide="check" class="ui-icon"></i> Alumni Board Verified</span>
               </div>
             </div>
           </div>
@@ -929,9 +916,9 @@
               <div class="dsar-section">
                 <p class="dsar-desc">PDPA 2026 — You have the right to access, export, and delete your personal data.</p>
                 <div class="dsar-actions">
-                  <button class="btn btn-outline" onclick="exportUserData('json')">📦 Export JSON</button>
-                  <button class="btn btn-outline" onclick="exportUserData('csv')">📋 Export CSV</button>
-                  <button class="btn btn-danger" onclick="showDeleteAccount()">🗑 Request Deletion</button>
+                  <button class="btn btn-outline" onclick="exportUserData('json')"><i data-lucide="package" class="ui-icon"></i> Export JSON</button>
+                  <button class="btn btn-outline" onclick="exportUserData('csv')"><i data-lucide="clipboard-list" class="ui-icon"></i> Export CSV</button>
+                  <button class="btn btn-danger" onclick="showDeleteAccount()"><i data-lucide="trash-2" class="ui-icon"></i> Request Deletion</button>
                 </div>
               </div>
             </div>
@@ -1016,12 +1003,12 @@
             <p class="page-subtitle">AI-enriched employment histories · Opt-out privacy controls · Self-reporting prompts</p>
           </div>
           <div class="page-header-actions">
-            <button class="btn btn-outline" onclick="showSelfReportPrompt()">✎ Update My Career</button>
-            <button class="btn btn-primary" onclick="showCareerPrivacyModal()">🔒 Privacy Controls</button>
+            <button class="btn btn-outline" onclick="showSelfReportPrompt()"><i data-lucide="pen-line" class="ui-icon"></i> Update My Career</button>
+            <button class="btn btn-primary" onclick="showCareerPrivacyModal()"><i data-lucide="lock" class="ui-icon"></i> Privacy Controls</button>
           </div>
         </div>
         <div class="career-tracker-banner glass-card">
-          <div class="ct-banner-icon">🤖</div>
+          <div class="ct-banner-icon"><i data-lucide="bot" class="ui-icon"></i></div>
           <div class="ct-banner-body">
             <div class="ct-banner-title">AI Career Enrichment Active</div>
             <div class="ct-banner-sub">System auto-updates alumni employment data via opt-in SSO. Last run: <strong>2026-07-30 03:00 UTC</strong> · <strong>847 profiles updated</strong></div>
@@ -1042,9 +1029,9 @@
                   </select>
                   <select class="form-select sm" onchange="filterCareerStatus(this.value)">
                     <option value="">All Statuses</option>
-                    <option value="auto">🤖 AI Auto-Updated</option>
-                    <option value="self">✎ Self-Reported</option>
-                    <option value="pending">⏳ Pending</option>
+                    <option value="auto">AI Auto-Updated</option>
+                    <option value="self">Self-Reported</option>
+                    <option value="pending">Pending</option>
                   </select>
                 </div>
               </div>
@@ -1072,12 +1059,12 @@
             <p class="page-subtitle">OpenAPI-compliant · OAuth2 application access · SIS/ERP integration · Enterprise Tier</p>
           </div>
           <div class="page-header-actions">
-            <button class="btn btn-outline" onclick="showApiDocs()">📄 OpenAPI Docs</button>
+            <button class="btn btn-outline" onclick="showApiDocs()"><i data-lucide="file-text" class="ui-icon"></i> OpenAPI Docs</button>
             <button class="btn btn-primary" onclick="showCreateApiApp()">+ New Application</button>
           </div>
         </div>
         <div class="api-enterprise-badge glass-card">
-          <span style="font-size:20px">⟁</span>
+          <span style="font-size:20px"><i data-lucide="webhook" class="ui-icon"></i></span>
           <div style="flex:1"><div style="font-weight:700">Enterprise Tier — External API Access</div><div style="font-size:12px;color:var(--text-secondary)">OAuth2 scoped credentials · Rate-limited 1,000 req/min · Webhook HMAC-SHA256 signed payloads</div></div>
           <span class="card-badge teal">Active</span>
         </div>
@@ -1140,7 +1127,7 @@
                  #pages container, where the intersection observer did not fire
                  and the mark never rendered. At 21KB on every page, deferring
                  it buys nothing. -->
-            <img src="assets/nimikh-logo.png" alt="Nimikh" class="nimikh-logo" width="360" height="88"
+            <img src="assets/nimikh-logo.svg" alt="Nimikh" class="nimikh-logo" width="360" height="100"
                  decoding="async" />
           </a>
         </div>
@@ -1152,26 +1139,28 @@
 
     <nav class="bottom-nav">
       <a class="bottom-nav-item active" onclick="showPage('dashboard')" id="bnav-dashboard">
-        <span class="bnav-icon">⊞</span><span class="bnav-label">Home</span>
+        <span class="bnav-icon"><i data-lucide="layout-dashboard" class="ui-icon"></i></span><span class="bnav-label">Home</span>
       </a>
       <a class="bottom-nav-item" onclick="showPage('directory')" id="bnav-directory">
-        <span class="bnav-icon">◉</span><span class="bnav-label">Directory</span>
+        <span class="bnav-icon"><i data-lucide="users" class="ui-icon"></i></span><span class="bnav-label">Directory</span>
       </a>
       <a class="bottom-nav-item" onclick="showPage('mentorship')" id="bnav-mentorship">
-        <span class="bnav-icon">🤖</span><span class="bnav-label">ConnectAI</span>
+        <span class="bnav-icon"><i data-lucide="bot" class="ui-icon"></i></span><span class="bnav-label">ConnectAI</span>
       </a>
       <a class="bottom-nav-item" onclick="showPage('events')" id="bnav-events">
-        <span class="bnav-icon">◈</span><span class="bnav-label">Events</span>
+        <span class="bnav-icon"><i data-lucide="calendar-days" class="ui-icon"></i></span><span class="bnav-label">Events</span>
       </a>
       <a class="bottom-nav-item" onclick="showPage('profile')" id="bnav-profile">
-        <span class="bnav-icon">◎</span><span class="bnav-label">Profile</span>
+        <span class="bnav-icon"><i data-lucide="id-card" class="ui-icon"></i></span><span class="bnav-label">Profile</span>
       </a>
     </nav>
   </div>
 
   <!-- MODALS -->
-  <div class="modal-overlay hidden" id="modal-overlay" onclick="closeModal(event)">
-    <div class="modal-content glass-card" id="modal-content" onclick="event.stopPropagation()">
+  <!-- Backdrop clicks are handled in app.js: a data-entry form ignores them so
+       a stray click cannot discard what the user typed. -->
+  <div class="modal-overlay hidden" id="modal-overlay">
+    <div class="modal-content glass-card" id="modal-content">
       <div id="modal-body"></div>
     </div>
   </div>
@@ -1182,12 +1171,13 @@
       <h3>Notifications</h3>
       <div class="notif-header-actions">
         <button class="notif-readall" onclick="markAllNotificationsRead()">Mark all read</button>
-        <button onclick="closeNotifications()">✕</button>
+        <button onclick="closeNotifications()"><i data-lucide="x" class="ui-icon"></i></button>
       </div>
     </div>
     <div id="notif-list"></div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.474.0/dist/umd/lucide.js"></script>
   <script src="api.js"></script>
   <script src="app.js"></script>
 </body>

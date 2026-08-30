@@ -654,11 +654,20 @@ app.get('/api/moderation', requireRole(...MODERATOR_ROLES), async (req, res) => 
   try {
     const pendingChapters = await db.query('SELECT * FROM chapters WHERE status = $1 ORDER BY id DESC', ['pending_review']);
     const pendingStories = await db.query('SELECT * FROM stories WHERE status = $1 ORDER BY id DESC', ['pending_review']);
-    const pendingProposals = await db.query('SELECT * FROM event_proposals WHERE status = $1 ORDER BY id DESC', ['pending_approval']);
+    // v5: events carry their own approval status; there is no separate
+    // proposal queue any more.
+    const pendingEvents = await db.query(`
+      SELECT e.id, e.title, e.description, e.starts_on, e.venue, e.capacity,
+             e.event_type, e.organizer_department, e.created_at,
+             u.full_name AS created_by_name, u.role_label AS created_by_role
+        FROM events e
+        LEFT JOIN users u ON u.id = e.created_by
+       WHERE e.approval_status = 'pending_approval'
+       ORDER BY e.created_at DESC`);
     res.json({
       pendingChapters: pendingChapters.rows,
       pendingStories: pendingStories.rows,
-      pendingProposals: pendingProposals.rows
+      pendingEvents: pendingEvents.rows
     });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -711,31 +720,8 @@ app.post('/api/moderation/story/:id/:action', requireRole(...MODERATOR_ROLES), a
   }
 });
 
-app.post('/api/moderation/proposal/:id/:action', requireRole(...ADMIN_ROLES), async (req, res) => {
-  const id = parseInt(req.params.id);
-  const approve = req.params.action === 'approve';
-  const newStatus = approve ? 'approved' : 'draft';
-
-  try {
-    const result = await db.query(
-      'UPDATE event_proposals SET status = $1 WHERE id = $2 RETURNING *',
-      [newStatus, id]
-    );
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Proposal not found' });
-
-    await db.query(`
-      INSERT INTO notifications (target_role, icon, title, subtitle)
-      VALUES ('alumni', '🎪', $1, $2)
-    `, [
-      `Event Proposal ${approve ? 'Approved ✓' : 'Sent Back ↩'}`,
-      `"${result.rows[0].name}" was ${approve ? 'approved and moved into planning' : 'returned to draft for revision'}.`
-    ]);
-
-    res.json({ success: true, proposal: result.rows[0] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+// Event approval moved onto the event itself in v5:
+//   PUT /api/events/:id/approve  ·  PUT /api/events/:id/reject
 
 // ─── 7. NOTIFICATIONS ───
 // Scoped to the caller: direct notifications (user_id), role broadcasts
@@ -1049,156 +1035,13 @@ app.get('/api/import-history', requireRole(...ADMIN_ROLES), async (req, res) => 
   }
 });
 
-// ─── 10. EVENT MANAGEMENT PLANNER WORKSPACE ENDPOINTS ───
-app.get('/api/events/planner/:id', async (req, res) => {
-  const eventId = parseInt(req.params.id) || 1;
-  try {
-    const proposal = await db.query('SELECT * FROM event_proposals WHERE id = $1 LIMIT 1', [eventId]);
-    const budgets = await db.query('SELECT * FROM event_budgets WHERE event_id = $1 ORDER BY id ASC', [eventId]);
-    const sponsors = await db.query('SELECT * FROM event_sponsors WHERE event_id = $1 ORDER BY id ASC', [eventId]);
-    const committees = await db.query('SELECT * FROM event_committees WHERE event_id = $1 ORDER BY id ASC', [eventId]);
-    const tasks = await db.query('SELECT * FROM event_tasks WHERE event_id = $1 ORDER BY id ASC', [eventId]);
-    const procurement = await db.query('SELECT * FROM event_procurement WHERE event_id = $1 ORDER BY id ASC', [eventId]);
-    const volunteers = await db.query('SELECT * FROM event_volunteers WHERE event_id = $1 ORDER BY id ASC', [eventId]);
-    const risks = await db.query('SELECT * FROM event_risks WHERE event_id = $1 ORDER BY id ASC', [eventId]);
-
-    res.json({
-      proposal: proposal.rows[0] || null,
-      budgets: budgets.rows,
-      sponsors: sponsors.rows,
-      committees: committees.rows,
-      tasks: tasks.rows,
-      procurement: procurement.rows,
-      volunteers: volunteers.rows,
-      risks: risks.rows
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/events/proposals', requireAuth, async (req, res) => {
-  const { name, description, objectives, category, type, venue, eventDate, expectedAttendance } = req.body;
-  try {
-    const result = await db.query(`
-      INSERT INTO event_proposals (name, description, objectives, category, type, venue, event_date, expected_attendance, status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending_approval')
-      RETURNING *
-    `, [name, description, objectives, category || 'Alumni Gala', type || 'Reunion', venue || 'DIC Auditorium', eventDate || 'Aug 15, 2026', expectedAttendance || 500]);
-
-    await db.query(`
-      INSERT INTO notifications (target_role, icon, title, subtitle)
-      VALUES ('super_admin', '🎪', 'New Event Proposal Awaiting Approval', $1)
-    `, [`Event proposal "${name}" was submitted for review.`]);
-
-    res.json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/events/budgets', requireRole(...MODERATOR_ROLES), async (req, res) => {
-  const { eventId, category, estimatedCost, actualCost, vendorName } = req.body;
-  try {
-    const result = await db.query(`
-      INSERT INTO event_budgets (event_id, category, estimated_cost, actual_cost, vendor_name)
-      VALUES ($1, $2, $3, $4, $5)
-      RETURNING *
-    `, [eventId || 1, category, estimatedCost || 0, actualCost || 0, vendorName || 'Direct Vendor']);
-    res.json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/events/sponsors', requireRole(...MODERATOR_ROLES), async (req, res) => {
-  const { eventId, company, contactPerson, packageTier, contributionAmount, pipelineStatus } = req.body;
-  try {
-    const result = await db.query(`
-      INSERT INTO event_sponsors (event_id, company, contact_person, package_tier, contribution_amount, pipeline_status)
-      VALUES ($1, $2, $3, $4, $5, $6)
-      RETURNING *
-    `, [eventId || 1, company, contactPerson || 'Contact Lead', packageTier || 'gold', contributionAmount || 100000, pipelineStatus || 'agreed']);
-    res.json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/events/tasks', requireRole(...MODERATOR_ROLES), async (req, res) => {
-  const { eventId, committeeName, title, description, priority, status, assignedTo, deadline } = req.body;
-  try {
-    const result = await db.query(`
-      INSERT INTO event_tasks (event_id, committee_name, title, description, priority, status, assigned_to, deadline)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING *
-    `, [eventId || 1, committeeName || 'General', title, description || '', priority || 'medium', status || 'todo', assignedTo || 'Unassigned', deadline || 'Aug 10, 2026']);
-    res.json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.put('/api/events/tasks/:id/status', requireRole(...MODERATOR_ROLES), async (req, res) => {
-  const taskId = parseInt(req.params.id);
-  const { status } = req.body;
-  try {
-    const result = await db.query('UPDATE event_tasks SET status = $1 WHERE id = $2 RETURNING *', [status, taskId]);
-    res.json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/events/procurement', requireRole(...MODERATOR_ROLES), async (req, res) => {
-  const { eventId, itemName, category, quantity, estimatedPrice, actualPrice, vendorName, deliveryStatus } = req.body;
-  try {
-    const result = await db.query(`
-      INSERT INTO event_procurement (event_id, item_name, category, quantity, estimated_price, actual_price, vendor_name, delivery_status)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-      RETURNING *
-    `, [eventId || 1, itemName, category || 'General', quantity || 1, estimatedPrice || 0, actualPrice || 0, vendorName || 'Vendor', deliveryStatus || 'delivered']);
-    res.json(result.rows[0]);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/events/ai-estimate', (req, res) => {
-  const { attendance, eventType } = req.body;
-  const pax = parseInt(attendance) || 500;
-  
-  const estimatedBudget = pax * 450; // ৳450 per head
-  const venueCost = Math.round(estimatedBudget * 0.25);
-  const foodCost = Math.round(estimatedBudget * 0.40);
-  const techCost = Math.round(estimatedBudget * 0.15);
-  const merchandiseCost = Math.round(estimatedBudget * 0.10);
-  const miscCost = Math.round(estimatedBudget * 0.10);
-
-  res.json({
-    recommendedBudget: estimatedBudget,
-    breakdown: {
-      venue: venueCost,
-      food: foodCost,
-      stageTech: techCost,
-      merchandise: merchandiseCost,
-      miscellaneous: miscCost
-    },
-    suggestedTimeline: [
-      { week: 'Week 1', milestone: 'Submit Proposal & Confirm Venue Booking' },
-      { week: 'Week 2', milestone: 'Finalize Title & Gold Sponsors (Target: ৳5L+)' },
-      { week: 'Week 3', milestone: 'Launch Ticketing & Omnichannel Campaign' },
-      { week: 'Week 4', milestone: 'Procure Welcome Kits, Badges & T-Shirts' },
-      { week: 'Week 5', milestone: 'Volunteer Shift Briefing & Stage Sound Check' },
-      { week: 'Week 6', milestone: 'Event Execution Day & Live QR Registration' }
-    ],
-    riskRecommendations: [
-      'Ensure 250kVA standby diesel generator is reserved for evening keynote.',
-      'Deploy 25+ volunteers for check-in to maintain <45s queue times.',
-      'Prepare indoor gym backup location in case of monsoon rain.'
-    ]
-  });
-});
+/* ─── 10. EVENTS ───
+   Events, ticketing, check-in, tasks, people and the directory lookup all
+   live in routes_events.js as of v5. The endpoints that used to sit here
+   (/api/events/planner/:id, /api/events/proposals, /api/events/budgets,
+   /api/events/sponsors, /api/events/tasks, /api/events/procurement and
+   /api/events/ai-estimate) were a second, older implementation of the same
+   features and have been removed so there is one source of truth. */
 
 /* ============================================================
    MOUNTED ROUTE MODULES
@@ -1212,7 +1055,12 @@ const guards = { requireAuth, requireRole, ADMIN_ROLES, MODERATOR_ROLES };
 const v2 = require('./routes_v2')(app, guards);
 _writeAudit = v2.writeAudit;   // late-bind the audit writer declared above
 
-// Event Management Planner (Phase 6).
+// Events, tickets, tasks, people, directory (v5). Mounted before the planner
+// so the /api/events/* namespace resolves here.
+require('./routes_events')(app, { ...guards, writeAudit: v2.writeAudit });
+
+// Event "Advanced" modules: budget, sponsors, vendors, marketing, meetings,
+// risks, committees, volunteers, logistics, timeline. Staff-only.
 require('./routes_planner')(app, { ...guards, writeAudit: v2.writeAudit });
 
 // PDPA 2026 / CA 2023 compliance: consent, encrypted vault, DSAR.
