@@ -5532,3 +5532,20 @@ textarea.form-input { resize: vertical; min-height: 100px; }
 @media (max-width: 900px) {
   .modal-content.modal-wide { max-width: 540px; }
 }
+
+/* Role is displayed, not selected. This replaces .role-switcher-select, which
+   was a dropdown that re-authenticated as any role from the browser. */
+.role-display {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-btn);
+  background: var(--bg-deep);
+  color: var(--text-secondary);
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.role-display.drawer { width: 100%; justify-content: center; }

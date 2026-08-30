@@ -70,19 +70,7 @@
             <div class="login-error hidden" id="login-error" role="alert"></div>
             <button type="submit" class="btn btn-primary btn-full" id="login-submit-btn">Sign In to DIC →</button>
           </form>
-          
-          <!-- QUICK DEMO LOGINS -->
-          <div class="demo-logins-container">
-            <div class="demo-logins-title"><i data-lucide="zap" class="ui-icon"></i> Instant Demo Login by Role</div>
-            <div class="demo-role-grid">
-              <button class="demo-role-btn" onclick="loginAsRole('alumni')"><span class="demo-role-icon"><i data-lucide="graduation-cap" class="ui-icon"></i></span> Alumni</button>
-              <button class="demo-role-btn" onclick="loginAsRole('moderator')"><span class="demo-role-icon"><i data-lucide="shield" class="ui-icon"></i></span> Moderator</button>
-              <button class="demo-role-btn" onclick="loginAsRole('dept_admin')"><span class="demo-role-icon"><i data-lucide="building-2" class="ui-icon"></i></span> Dept Admin</button>
-              <button class="demo-role-btn" onclick="loginAsRole('univ_admin')"><span class="demo-role-icon"><i data-lucide="landmark" class="ui-icon"></i></span> College Admin</button>
-              <button class="demo-role-btn" style="grid-column:span 2" onclick="loginAsRole('super_admin')"><span class="demo-role-icon"><i data-lucide="crown" class="ui-icon"></i></span> Super Admin (Full Access)</button>
-            </div>
-          </div>
-          <p class="login-footer" style="margin-top:12px">DIC Official Alumni System | PDPA 2026 Compliant</p>
+          <p class="login-footer" style="margin-top:16px">DIC Official Alumni System | PDPA 2026 Compliant</p>
           </div><!-- /auth-panel-signin -->
 
           <!-- SIGN UP -->
@@ -176,14 +164,8 @@
 
       <!-- MOBILE-ONLY CONTROL DECK (relocated from topbar so it fits a phone) -->
       <div class="sidebar-controls" id="sidebar-controls">
-        <label class="sidebar-controls-label" for="drawer-role-select">Viewing as</label>
-        <select class="role-switcher-select drawer" id="drawer-role-select" onchange="switchCurrentRole(this.value)">
-          <option value="super_admin">Super Admin</option>
-          <option value="univ_admin">College Admin</option>
-          <option value="dept_admin">Dept Admin (CSE)</option>
-          <option value="moderator">Moderator</option>
-          <option value="alumni">Alumni</option>
-        </select>
+        <span class="sidebar-controls-label">Signed in as</span>
+        <span class="role-display drawer" id="drawer-role-display"></span>
         <div class="sidebar-controls-row">
           <button class="drawer-btn" style="grid-column:span 2" onclick="toggleSidebar(); showBroadcastModal();"><i data-lucide="megaphone" class="ui-icon"></i> Broadcast</button>
         </div>
@@ -215,14 +197,10 @@
         <input type="text" class="topbar-search-input" placeholder="Ask DIC AI — find alumni, jobs, or events…" id="global-search" oninput="handleGlobalSearch(this.value)" />
       </div>
       <div class="topbar-actions">
-        <!-- TOPBAR ROLE SWITCHER -->
-        <select class="role-switcher-select" id="topbar-role-select" onchange="switchCurrentRole(this.value)">
-          <option value="super_admin">Super Admin</option>
-          <option value="univ_admin">College Admin</option>
-          <option value="dept_admin">Dept Admin (CSE)</option>
-          <option value="moderator">Moderator</option>
-          <option value="alumni">Alumni</option>
-        </select>
+        <!-- Role is decided by the authenticated server-side user record and is
+             shown read-only. It was a <select> that re-authenticated as any
+             role using credentials shipped in app.js. -->
+        <span class="role-display" id="topbar-role-display"></span>
         <div class="offline-status online" id="offline-status" title="PostgreSQL 16 Engine Connected · PDPA 2026 Compliant">
           <span class="status-dot"></span>
           <span class="status-text">PostgreSQL 16 · Live</span>

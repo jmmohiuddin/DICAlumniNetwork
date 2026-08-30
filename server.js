@@ -13,6 +13,10 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 8000;
 
+// Behind Vercel (and any reverse proxy) the socket address is the proxy's.
+// Trusting one hop makes req.ip the real client, which the login throttle needs.
+app.set('trust proxy', 1);
+
 app.use(cors());
 app.use(bodyParser.json());
 app.use(express.static(__dirname));
@@ -39,6 +43,10 @@ function hashPassword(plain) {
 
 function verifyPassword(plain, stored) {
   if (!stored) return false;
+  // A LOCKED$ sentinel is not a password and can never be matched. Seeded
+  // accounts ship locked so a fresh database has no known default credential;
+  // `node rotate_credentials.js` sets a real one.
+  if (stored.startsWith('LOCKED$')) return false;
   if (!stored.startsWith('scrypt$')) {
     // Legacy plaintext row — constant-time compare, then caller upgrades it.
     const a = Buffer.from(String(plain));
@@ -79,9 +87,30 @@ function readToken(req) {
   return header.startsWith('Bearer ') ? header.slice(7) : null;
 }
 
-// Attaches req.user when a valid token is present; never rejects.
-function attachUser(req, res, next) {
-  req.user = verifyToken(readToken(req));
+/* Attaches req.user when a valid token is present; never rejects.
+
+   The signed token carries the role that was current when it was issued, but
+   that value is only a hint: the role used for every authorisation decision is
+   re-read from the users row on each request. Two consequences that the
+   previous token-only version got wrong — demoting a user took effect
+   immediately rather than up to SESSION_TTL_MS later, and a deleted account's
+   outstanding token stops working at once instead of staying valid until it
+   expires. A user still cannot influence their own role: the token is
+   HMAC-signed, and the column behind it is writable only by an administrator. */
+async function attachUser(req, res, next) {
+  const payload = verifyToken(readToken(req));
+  if (!payload) { req.user = null; return next(); }
+
+  try {
+    const r = await db.query('SELECT id, role FROM users WHERE id = $1', [payload.uid]);
+    // Account deleted since the token was issued — the token is now inert.
+    if (r.rows.length === 0) { req.user = null; return next(); }
+    req.user = { ...payload, role: r.rows[0].role };
+  } catch {
+    // The database is unreachable. Fail closed rather than fall back to the
+    // role asserted by the token.
+    req.user = null;
+  }
   next();
 }
 app.use(attachUser);
@@ -104,9 +133,21 @@ function requireRole(...roles) {
 const ADMIN_ROLES = ['super_admin', 'univ_admin'];
 const MODERATOR_ROLES = ['super_admin', 'univ_admin', 'dept_admin', 'moderator'];
 
-// Shared initial credential for bulk-imported accounts. Stored only as a
-// scrypt hash; every imported user is flagged must_change_password.
-const DEFAULT_IMPORT_PASSWORD = '12345678';
+// Initial credential for bulk-imported accounts. This used to be the constant
+// '12345678', which was also the label of the only option in the wizard's
+// dropdown in app.js — so the starting password of every imported alumnus was
+// readable by anyone who opened the page source. It is now generated per import
+// batch, returned once to the administrator who ran the import, and never
+// stored in plaintext or written to a log. Every imported user is still flagged
+// must_change_password.
+function generateImportPassword() {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+  let out = '';
+  for (const byte of crypto.randomBytes(48)) {
+    if (byte < 232) { out += alphabet[byte % alphabet.length]; if (out.length === 12) break; }
+  }
+  return out;
+}
 
 // routes_v2 owns the hash-chained audit writer but is mounted after these
 // routes are declared, so calls are routed through this late-bound shim.
@@ -157,12 +198,106 @@ app.post('/api/seed-db', requireRole('super_admin'), async (req, res) => {
   }
 });
 
+/* ─── LOGIN THROTTLING ───
+   Small in-process limiter for POST /api/auth/login. Two counters so neither
+   attack shape works: repeated guesses at one account, and one guess sprayed
+   across many accounts from the same address.
+
+   Deployment note: this is per-process. Running `node server.js` that means
+   one shared counter. On Vercel each warm lambda keeps its own, so a spread-out
+   attacker gets `attempts x instances` before being locked — still a large
+   reduction, but not a hard ceiling. A durable limit needs shared storage
+   (a table or Redis); that is deliberately out of scope for this pass. */
+
+const RL_MAX_PER_ACCOUNT = 5;        // failures against one email from one IP
+const RL_MAX_PER_IP = 20;            // failures from one IP across any emails
+const RL_WINDOW_MS = 15 * 60 * 1000; // rolling window
+const RL_LOCK_MS = 15 * 60 * 1000;   // how long a tripped counter stays locked
+const RL_MAX_ENTRIES = 10000;        // hard cap so the map cannot grow forever
+
+const loginAttempts = new Map();     // key -> { count, first, lockedUntil }
+
+function rlSweep(now) {
+  for (const [key, rec] of loginAttempts) {
+    const dead = (rec.lockedUntil && rec.lockedUntil <= now) ||
+                 (!rec.lockedUntil && now - rec.first > RL_WINDOW_MS);
+    if (dead) loginAttempts.delete(key);
+  }
+  // Still oversized (sustained distributed attack): drop the oldest entries.
+  if (loginAttempts.size > RL_MAX_ENTRIES) {
+    const excess = loginAttempts.size - RL_MAX_ENTRIES;
+    let i = 0;
+    for (const key of loginAttempts.keys()) {
+      loginAttempts.delete(key);
+      if (++i >= excess) break;
+    }
+  }
+}
+
+function clientIp(req) {
+  // trust proxy is enabled, so req.ip already honours X-Forwarded-For.
+  return req.ip || req.socket?.remoteAddress || 'unknown';
+}
+
+/* Returns { limited: true, retryAfter } when the caller should be refused. */
+function loginRateCheck(req, email) {
+  const now = Date.now();
+  rlSweep(now);
+
+  const ip = clientIp(req);
+  const keys = [
+    { key: `a:${ip}:${String(email || '').toLowerCase()}`, max: RL_MAX_PER_ACCOUNT },
+    { key: `i:${ip}`, max: RL_MAX_PER_IP }
+  ];
+
+  for (const { key } of keys) {
+    const rec = loginAttempts.get(key);
+    if (rec?.lockedUntil && rec.lockedUntil > now) {
+      return { limited: true, retryAfter: Math.ceil((rec.lockedUntil - now) / 1000) };
+    }
+  }
+  return { limited: false };
+}
+
+function loginRecordFailure(req, email) {
+  const now = Date.now();
+  const ip = clientIp(req);
+  const targets = [
+    { key: `a:${ip}:${String(email || '').toLowerCase()}`, max: RL_MAX_PER_ACCOUNT },
+    { key: `i:${ip}`, max: RL_MAX_PER_IP }
+  ];
+
+  for (const { key, max } of targets) {
+    let rec = loginAttempts.get(key);
+    if (!rec || now - rec.first > RL_WINDOW_MS) rec = { count: 0, first: now, lockedUntil: 0 };
+    rec.count += 1;
+    if (rec.count >= max) rec.lockedUntil = now + RL_LOCK_MS;
+    loginAttempts.set(key, rec);
+  }
+}
+
+function loginRecordSuccess(req, email) {
+  const ip = clientIp(req);
+  loginAttempts.delete(`a:${ip}:${String(email || '').toLowerCase()}`);
+  loginAttempts.delete(`i:${ip}`);
+}
+
 // ─── 2. AUTHENTICATION ───
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body || {};
 
   if (!email || !password) {
     return res.status(400).json({ error: 'Email and password are required' });
+  }
+
+  // Refuse before touching the database so a locked-out attacker costs nothing.
+  const gate = loginRateCheck(req, email);
+  if (gate.limited) {
+    res.set('Retry-After', String(gate.retryAfter));
+    return res.status(429).json({
+      error: 'Too many sign-in attempts. Please try again later.',
+      retryAfter: gate.retryAfter
+    });
   }
 
   try {
@@ -172,9 +307,11 @@ app.post('/api/auth/login', async (req, res) => {
     // endpoint cannot be used to enumerate accounts. The previous version
     // returned a super_admin session for any unrecognised address.
     if (result.rows.length === 0 || !verifyPassword(password, result.rows[0].password_hash)) {
+      loginRecordFailure(req, email);
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
+    loginRecordSuccess(req, email);
     const row = result.rows[0];
 
     // Transparently upgrade legacy plaintext rows on first successful login.
@@ -584,9 +721,22 @@ app.post('/api/chapters/:id/join', requireAuth, async (req, res) => {
   }
 });
 
-app.get('/api/chapters/:id/members', async (req, res) => {
+/* This endpoint was unauthenticated and returned real alumni names, employers,
+   job titles, batches and departments to anyone. Worse, an empty or unknown
+   chapter fell through to `SELECT ... FROM users LIMIT 4`, so a chapter that
+   did not exist still answered with four real people. Both are fixed: sign-in
+   is required, an unknown chapter is a 404, and an empty chapter is an empty
+   list rather than borrowed strangers. */
+app.get('/api/chapters/:id/members', requireAuth, async (req, res) => {
   const chapterId = parseInt(req.params.id);
+  if (!chapterId) return res.status(400).json({ error: 'A valid chapter id is required' });
+
   try {
+    const chapter = await db.query('SELECT id FROM chapters WHERE id = $1', [chapterId]);
+    if (chapter.rows.length === 0) {
+      return res.status(404).json({ error: 'Chapter not found' });
+    }
+
     const result = await db.query(`
       SELECT u.id, u.full_name as name, u.initials, ap.job_title as role, ap.current_company as company,
              ap.batch, ap.department as dept
@@ -594,13 +744,9 @@ app.get('/api/chapters/:id/members', async (req, res) => {
       JOIN users u ON cm.user_id = u.id
       LEFT JOIN alumni_profiles ap ON u.id = ap.user_id
       WHERE cm.chapter_id = $1
+      ORDER BY u.full_name
     `, [chapterId]);
 
-    if (result.rows.length === 0) {
-      // Return default members
-      const defaults = await db.query('SELECT u.id, u.full_name as name, u.initials, ap.job_title as role, ap.current_company as company, ap.batch, ap.department as dept FROM users u LEFT JOIN alumni_profiles ap ON u.id = ap.user_id LIMIT 4');
-      return res.json(defaults.rows);
-    }
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -884,7 +1030,8 @@ app.post('/api/bulk-import', requireRole(...ADMIN_ROLES), async (req, res) => {
                              "photoUrl","facebook"];
     const seenEmail = new Set(), seenMobile = new Set();
     const strategy = (req.body.dupResolution || "skip").toLowerCase();
-    const passwordHash = hashPassword(DEFAULT_IMPORT_PASSWORD);
+    const batchPassword = generateImportPassword();
+    const passwordHash = hashPassword(batchPassword);
 
     for (const r of records) {
       const rowNo = r.row || 0;
@@ -1015,7 +1162,10 @@ app.post('/api/bulk-import', requireRole(...ADMIN_ROLES), async (req, res) => {
       count: created, created, updated,
       skipped: skippedDuplicate, duplicates: skippedDuplicate,
       rejected, rejectedRows: rejectedRows.slice(0, 100),
-      withMissingOptional, missingFieldCounts
+      withMissingOptional, missingFieldCounts,
+      // Shown once, to the administrator who ran this import, so they can pass
+      // it on. Omitted when the batch created nobody.
+      temporaryPassword: created > 0 ? batchPassword : null
     });
   } catch (err) {
     await client.query("ROLLBACK");

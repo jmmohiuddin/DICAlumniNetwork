@@ -5,14 +5,10 @@
 
 'use strict';
 
-// ─── DEMO ACCOUNTS (5 RBAC HIERARCHY LEVELS) ────────────────
-const MOCK_USERS = {
-  super_admin: { email: 'admin@dic.edu.bd', name: 'Super Admin', initials: 'SA', role: 'super_admin', roleLabel: 'Super Admin', dept: 'System & Security', icon: '👑' },
-  univ_admin: { email: 'collegeadmin@dic.edu.bd', name: 'College Admin', initials: 'CA', role: 'univ_admin', roleLabel: 'College Admin', dept: 'DIC Administration', icon: '🏛' },
-  dept_admin: { email: 'departmentadmin@dic.edu.bd', name: 'Dr. Shahabuddin', initials: 'DA', role: 'dept_admin', roleLabel: 'Dept Admin (CSE)', dept: 'CSE Department', icon: '🏢' },
-  moderator: { email: 'moderator@dic.edu.bd', name: 'Content Moderator', initials: 'CM', role: 'moderator', roleLabel: 'Moderator', dept: 'DIC Community', icon: '🛡' },
-  alumni: { email: 'alumni@dic.edu.bd', name: 'Mohiuddin Rahman', initials: 'MR', role: 'alumni', roleLabel: 'Alumni', dept: 'BSc CSE (2020)', icon: '🎓' }
-};
+/* A map of real administrator e-mail addresses next to a shared password used
+   to live here, in a file served unauthenticated to every visitor. Anyone
+   reading View Source could sign in as super_admin. Identity now comes only
+   from POST /api/auth/login, and those accounts have been rotated. */
 
 
 const MOCK_CAMPAIGNS = [
@@ -180,11 +176,9 @@ function renderErrorState(message, retryFn) {
   `;
 }
 
-// ─── AUTHENTICATION & DEMO LOGIN HANDLERS ───────────────────
-// Every path below authenticates against PostgreSQL via /api/auth/login and
-// stores a signed session token. The client no longer invents a user object.
-
-const DEMO_PASSWORD = '12345678';
+// ─── AUTHENTICATION ─────────────────────────────────────────
+// The only way into the app is POST /api/auth/login with credentials the user
+// types. The client never holds a password and never chooses a role.
 
 function showLoginError(message) {
   const el = document.getElementById('login-error');
@@ -220,39 +214,12 @@ async function handleLoginSubmit(e) {
   if (result.mustChangePassword) setTimeout(() => showChangePasswordModal(true), 700);
 }
 
-// Demo shortcuts still go through the real endpoint with real credentials.
-async function loginAsRole(roleKey) {
-  const account = MOCK_USERS[roleKey];
-  if (!account) return;
-
-  showLoginError('');
-  const result = await API.login(account.email, DEMO_PASSWORD);
-
-  if (!result || result.error) {
-    showLoginError(result?.error || `Demo login for ${roleKey} failed.`);
-    return;
-  }
-  enterAuthenticatedApp(result.user);
-}
-
-// Switching role re-authenticates as that account so the session token, and
-// therefore every server-side permission check, actually changes.
-async function switchCurrentRole(roleKey) {
-  const account = MOCK_USERS[roleKey];
-  if (!account) return;
-
-  const result = await API.login(account.email, DEMO_PASSWORD);
-  if (!result || result.error) {
-    showToast('⚠ Could not switch role — please sign in again.');
-    return;
-  }
-
-  state.currentUser = result.user;
-  updateUserUI();
-  renderSidebarNav(result.user.role);
-  showToast(`🔄 Signed in as: ${result.user.roleLabel}`);
-  showPage('dashboard');
-}
+/* The two instant-role-switch helpers that used to sit here were removed. Both
+   signed in with the hardcoded administrator credentials above, so any visitor
+   — or any alumnus from the browser console — could obtain a super_admin
+   session. A user role is now whatever the server says it is on
+   /api/auth/login and /api/auth/me, read from the users row on every request;
+   changing it requires an administrator changing users.role. */
 
 function enterAuthenticatedApp(user) {
   state.currentUser = user;
@@ -285,15 +252,16 @@ function updateUserUI() {
   const sidebarAvatar = document.getElementById('sidebar-user-avatar');
   const sidebarName = document.getElementById('sidebar-user-name');
   const sidebarRole = document.getElementById('sidebar-user-role');
-  const topbarSelect = document.getElementById('topbar-role-select');
-  const drawerSelect = document.getElementById('drawer-role-select');
+  // Read-only: the role is reported by the server, not chosen in the browser.
+  const topbarRole = document.getElementById('topbar-role-display');
+  const drawerRole = document.getElementById('drawer-role-display');
 
   if (topbarAvatar) topbarAvatar.textContent = u.initials;
   if (sidebarAvatar) sidebarAvatar.textContent = u.initials;
   if (sidebarName) sidebarName.textContent = u.name;
   if (sidebarRole) sidebarRole.textContent = u.roleLabel;
-  if (topbarSelect) topbarSelect.value = u.role;
-  if (drawerSelect) drawerSelect.value = u.role;
+  if (topbarRole) topbarRole.textContent = u.roleLabel;
+  if (drawerRole) drawerRole.textContent = u.roleLabel;
 }
 
 // ─── DYNAMIC SIDEBAR NAV PER ROLE ───────────────────────────
@@ -1339,6 +1307,14 @@ async function renderMentorships() {
 function filterJobs(value) { renderJobsEnhanced(value); }
 function filterJobType(v) {
   state.jobFilters = { ...(state.jobFilters || {}), type: v === 'all' ? '' : v };
+  renderJobsEnhanced();
+}
+
+// Restored verbatim from f293872. It sat between two event functions that were
+// deleted during the Events rework and was removed with them, leaving the
+// onchange handler at index.html:620 throwing a ReferenceError.
+function filterJobLocation(v) {
+  state.jobFilters = { ...(state.jobFilters || {}), location: v === 'all' ? '' : v };
   renderJobsEnhanced();
 }
 
@@ -3315,7 +3291,7 @@ async function loadImportHistory() {
 let currentImportState = {
   step: 1,
   filename: '',
-  strategy: 'temp12345',
+  strategy: 'generated',
   dupResolution: 'update',   // retain data by enriching existing profiles
   totalRows: 0,
   headers: [],        // raw CSV header cells
@@ -3449,10 +3425,12 @@ function renderWizardStepContent() {
         <div class="input-group">
           <label class="input-label">Initial Password Policy</label>
           <select class="form-select" id="password-strategy-select" onchange="currentImportState.strategy = this.value">
-            <option value="temp12345">Shared temporary password (12345678)</option>
+            <option value="generated">Generate a temporary password for this batch</option>
           </select>
           <div style="font-size:12px;color:var(--text-muted);margin-top:6px">
-            Stored as a scrypt hash. Every imported account is flagged to change it on first login.
+            The password is created when you confirm the import and shown to you once,
+            on the next screen. Stored only as a scrypt hash; every imported account is
+            flagged to change it on first login.
           </div>
         </div>
         <div class="input-group">
@@ -3620,8 +3598,22 @@ function renderWizardStepContent() {
         <div style="font-size:48px;margin-bottom:8px"><i data-lucide="party-popper" class="ui-icon"></i></div>
         <h2 style="color:var(--teal);font-size:22px;font-weight:800">Bulk Import &amp; Profile Generation Complete!</h2>
         <p style="color:var(--text-secondary);font-size:13px;max-width:500px;margin:8px auto 20px">
-          Successfully created <strong>${currentImportState.validRecords.length} User Accounts &amp; Alumni Profiles</strong> in the database. Account activation emails &amp; temporary credentials have been dispatched.
+          Successfully created <strong>${currentImportState.validRecords.length} User Accounts &amp; Alumni Profiles</strong> in the database.
         </p>
+
+        ${currentImportState.lastResult?.temporaryPassword ? `
+          <div style="max-width:520px;margin:0 auto 20px;padding:14px 16px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);text-align:left">
+            <div style="display:flex;align-items:center;gap:8px;font-weight:700;font-size:13px;color:var(--text-primary)">
+              <i data-lucide="key-round" class="ui-icon"></i> Temporary password for this batch
+            </div>
+            <div style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:18px;font-weight:700;letter-spacing:1px;margin:10px 0;color:var(--teal);user-select:all">${esc(currentImportState.lastResult.temporaryPassword)}</div>
+            <div style="font-size:12px;color:var(--text-secondary);line-height:1.5">
+              Every account created by this import signs in with this password once, then
+              has to choose their own. It is shown here only — it is not stored anywhere
+              you can read it back, and leaving this screen loses it. Copy it now.
+            </div>
+          </div>
+        ` : ''}
 
         <div style="display:inline-flex;gap:12px;justify-content:center">
           <button class="btn btn-primary" onclick="showPage('directory')"><i data-lucide="users" class="ui-icon"></i> View Alumni Directory</button>
@@ -5370,7 +5362,7 @@ async function handleSignupSubmit(e) {
   showToast('🎓 Account created. An administrator will verify your alumni status shortly.');
 }
 
-// Prompts bulk-imported users to replace the shared initial password.
+// Prompts users still on an issued temporary password to replace it.
 function showChangePasswordModal(forced = false) {
   showModal(`
     <div class="modal-header">
@@ -5378,7 +5370,7 @@ function showChangePasswordModal(forced = false) {
       ${forced ? '' : '<button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>'}
     </div>
     ${forced ? `<p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">
-      Your account was created by a bulk import and still uses the shared initial password.
+      Your account still uses the temporary password it was issued.
       Please choose your own before continuing.</p>` : ''}
     <form onsubmit="handleChangePassword(event)">
       <div class="input-group">
@@ -5734,6 +5726,29 @@ async function evEnsureIdentity() {
   if (sub) sub.textContent = '';
   evRefreshIcons();
   return false;
+}
+
+/* There is no scheduler in this deployment (single Express app, also deployed
+   serverless), so the calendar-driven event status roll-forward and the task
+   deadline/overdue reminders run once per session when a staff member opens
+   the Events page. Nothing else performs this maintenance.
+
+   Fire-and-forget: a failure here must never block the page. The definition
+   was lost in an earlier edit while its call site survived, which threw a
+   ReferenceError that aborted renderEventsPage() before the list loaded. */
+let _evSweptThisSession = false;
+
+function evRunMaintenanceSweep() {
+  if (_evSweptThisSession || !evCanManage()) return;
+  _evSweptThisSession = true;
+  Promise.resolve()
+    .then(() => API.runReminderSweep())
+    .then(res => {
+      if (!apiFailed(res) && res.sent > 0 && typeof renderNotifications === 'function') {
+        renderNotifications();
+      }
+    })
+    .catch(() => { /* best effort — never surfaces to the user */ });
 }
 
 function renderEventListChrome() {
