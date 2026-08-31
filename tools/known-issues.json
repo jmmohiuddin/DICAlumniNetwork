@@ -8,5 +8,62 @@
       "problem": "The 'Upload Resume (PDF)' zone on the Jobs page calls a function that is defined nowhere, so clicking it throws a ReferenceError and nothing happens.",
       "why_not_fixed": "There is no resume-upload endpoint and no file storage anywhere in the backend, and the job-application flow collects a resume URL instead (app.js:5205). Implementing upload would be a new feature; deleting the zone removes a user-visible affordance. Both are product decisions, not refactoring."
     }
+  ],
+
+  "securityFindings": [
+    {
+      "id": "SEC-1",
+      "severity": "HIGH",
+      "title": "A donor can mark their own donation as successful",
+      "where": "src/server/modules/giving/routes.js — POST /api/donations/:id/confirm",
+      "problem": "The endpoint authorises on `donor_user_id === req.user.uid`, i.e. it trusts the donor to confirm their own payment, and `success` defaults to true when the body omits it. Any authenticated user can POST to this route for their own pending donation and have it written as status SUCCESS with a receipt code, without any money moving. That also inflates the campaign totals and the donor leaderboard.",
+      "why_not_fixed": "Correct confirmation has to come from the payment gateway, not the browser — a signed bKash/Nagad/card webhook, or a service-role route keyed on a per-transaction token the gateway issues. That is a new integration and a change to how donations settle, so it needs a product decision rather than a refactor.",
+      "preexisting": "Yes — byte-identical at main:routes_v2.js:486-494. Carried over unchanged."
+    },
+    {
+      "id": "SEC-2",
+      "severity": "MEDIUM",
+      "title": "Event ticket signatures fall back to a hardcoded key",
+      "where": "src/server/modules/events/routes.js — ticket QR signing",
+      "problem": "`crypto.createHmac('sha256', ENCRYPTION_KEY || 'dic-ticket')`. If ENCRYPTION_KEY is unset the tickets are signed with the constant 'dic-ticket', which is in the source, so anyone can forge a valid ticket signature and check in.",
+      "why_not_fixed": "The fix is to fail closed when no key is configured — the same stance the identity-vault endpoints already take via `encryptionReady`. Doing that would stop ticket issuance on any deployment currently running without ENCRYPTION_KEY, so it needs to be sequenced with setting the key in the environment.",
+      "preexisting": "Yes — byte-identical at main:routes_v2.js:161. Carried over unchanged."
+    },
+    {
+      "id": "SEC-3",
+      "severity": "MEDIUM",
+      "title": "Two endpoints return data to unauthenticated callers",
+      "where": "GET /api/chapters/:id/members and GET /api/events/planner/:id",
+      "problem": "Both answer 200 with real rows and no token. Verified live: chapter members returns alumni names and ids; the planner endpoint returns an event's budgets, committees, sponsors, tasks and volunteers. Every sibling route in those families requires authentication.",
+      "why_not_fixed": "Adding requireAuth changes the API contract for any caller relying on the current behaviour, so it is flagged for approval rather than applied silently.",
+      "preexisting": "Yes — visible in the pre-refactor contract baseline."
+    },
+    {
+      "id": "SEC-4",
+      "severity": "LOW",
+      "title": "500 responses leak internal error text",
+      "where": "src/server/shared/http.js — ok()",
+      "problem": "`ok()` returns `err.message` to the client, so a failed query can expose SQL text, column names and constraint names.",
+      "why_not_fixed": "Behaviour preserved deliberately during the refactor. The fix is to log the detail server-side and return a generic message, which changes every 500 body.",
+      "preexisting": "Yes — identical in all four original copies of ok()."
+    },
+    {
+      "id": "SEC-5",
+      "severity": "LOW",
+      "title": "Database TLS certificate verification is disabled",
+      "where": "src/server/db/pool.js — ssl: { rejectUnauthorized: false }",
+      "problem": "The pool accepts any certificate, so the connection is not protected against an active man-in-the-middle.",
+      "why_not_fixed": "Carried over verbatim from db.js. Enabling verification needs the provider CA to be trusted first, which is an environment change.",
+      "preexisting": "Yes — identical at main:db.js."
+    },
+    {
+      "id": "SEC-6",
+      "severity": "INFO",
+      "title": "Vercel still serves backend source statically",
+      "where": "vercel.json / deployment layout",
+      "problem": "The Express allow-list in src/server/middleware/static-assets.js closes source disclosure for the Node server, but on Vercel the CDN serves the repository root itself before the function runs, so /server.js and similar may still be fetchable in production.",
+      "why_not_fixed": "The fix is to move the web assets into a public/ directory (Vercel then serves only that) or add a .vercelignore. Either changes deployment layout, which the user explicitly chose to keep unchanged in this pass.",
+      "preexisting": "Yes."
+    }
   ]
 }

@@ -1,0 +1,585 @@
+<title>DIC Alumni Codebase Reorganization</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  /* ── tokens: light ─────────────────────────────────────── */
+  :root {
+    --ink:        #12171b;
+    --ink-2:      #3d4a50;
+    --ink-3:      #6b7a80;
+    --ground:     #f6f5f1;
+    --surface:    #ffffff;
+    --surface-2:  #efeee9;
+    --line:       #ddddd5;
+    --line-2:     #c8c9bf;
+
+    --accent:     #0d7a4a;   /* deepened DIC green */
+    --accent-ink: #ffffff;
+    --accent-dim: #e2efe8;
+
+    --crit:       #a1231d;
+    --crit-bg:    #f8e6e4;
+    --high:       #a35a08;
+    --high-bg:    #fbeddc;
+    --med:        #6a5a12;
+    --med-bg:     #f5efd8;
+    --low:        #2f5d6b;
+    --low-bg:     #e3eef1;
+    --ok:         #1f6b46;
+    --ok-bg:      #dff0e6;
+
+    --shadow: 0 1px 2px rgba(18,23,27,.05), 0 4px 16px rgba(18,23,27,.05);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink:        #e8e9e4;
+      --ink-2:      #b0b6b2;
+      --ink-3:      #838c89;
+      --ground:     #0e1211;
+      --surface:    #161b19;
+      --surface-2:  #1d2321;
+      --line:       #2a312e;
+      --line-2:     #3b433f;
+
+      --accent:     #4bbd85;
+      --accent-ink: #06120c;
+      --accent-dim: #172c22;
+
+      --crit:       #f2938c; --crit-bg: #341a18;
+      --high:       #e0aa62; --high-bg: #33260f;
+      --med:        #d6c874; --med-bg:  #2c2812;
+      --low:        #8fc2d1; --low-bg:  #14262c;
+      --ok:         #6fc79a; --ok-bg:   #122a1e;
+
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 18px rgba(0,0,0,.3);
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink:#e8e9e4; --ink-2:#b0b6b2; --ink-3:#838c89;
+    --ground:#0e1211; --surface:#161b19; --surface-2:#1d2321;
+    --line:#2a312e; --line-2:#3b433f;
+    --accent:#4bbd85; --accent-ink:#06120c; --accent-dim:#172c22;
+    --crit:#f2938c; --crit-bg:#341a18;
+    --high:#e0aa62; --high-bg:#33260f;
+    --med:#d6c874;  --med-bg:#2c2812;
+    --low:#8fc2d1;  --low-bg:#14262c;
+    --ok:#6fc79a;   --ok-bg:#122a1e;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 4px 18px rgba(0,0,0,.3);
+  }
+
+  /* ── base ──────────────────────────────────────────────── */
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px 120px; }
+
+  h1, h2, h3 {
+    font-family: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+    font-weight: 700;
+    text-wrap: balance;
+    line-height: 1.12;
+    margin: 0;
+  }
+  h2 {
+    font-size: clamp(1.5rem, 2.6vw, 2rem);
+    margin: 72px 0 6px;
+    letter-spacing: -.015em;
+  }
+  h3 {
+    font-size: 1.12rem; font-weight: 600; letter-spacing: -.005em;
+    margin: 36px 0 10px;
+  }
+  p { margin: 0 0 16px; max-width: 68ch; }
+  a { color: var(--accent); }
+
+  code, .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: .88em; }
+  code {
+    background: var(--surface-2); border: 1px solid var(--line);
+    padding: .08em .38em; border-radius: 4px; white-space: nowrap;
+  }
+
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: .7rem; letter-spacing: .16em; text-transform: uppercase;
+    color: var(--ink-3); margin-bottom: 10px;
+  }
+  .lede { font-size: 1.075rem; color: var(--ink-2); max-width: 66ch; }
+
+  /* ── masthead ──────────────────────────────────────────── */
+  header.top {
+    border-bottom: 1px solid var(--line);
+    background: var(--surface);
+    padding: 52px 0 40px;
+    margin-bottom: 8px;
+  }
+  header.top .wrap { padding-bottom: 0; }
+  h1 { font-size: clamp(2rem, 5vw, 3.15rem); letter-spacing: -.03em; }
+  .sub { color: var(--ink-2); margin-top: 14px; max-width: 62ch; font-size: 1.08rem; }
+
+  .facts {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+    gap: 1px; background: var(--line); border: 1px solid var(--line);
+    border-radius: 10px; overflow: hidden; margin-top: 34px;
+  }
+  .fact { background: var(--surface); padding: 14px 16px; }
+  .fact b {
+    display: block; font-family: "Bricolage Grotesque", sans-serif;
+    font-size: 1.55rem; font-weight: 700; letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums; line-height: 1.1;
+  }
+  .fact span { font-size: .74rem; color: var(--ink-3); letter-spacing: .02em; }
+
+  /* ── blocks ────────────────────────────────────────────── */
+  .card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 20px 22px; box-shadow: var(--shadow);
+    margin: 20px 0;
+  }
+  .rule { height: 3px; width: 46px; background: var(--accent); border-radius: 2px; margin-bottom: 22px; }
+
+  pre {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 16px 18px; overflow-x: auto;
+    font-family: "IBM Plex Mono", monospace; font-size: .8rem; line-height: 1.55;
+    color: var(--ink-2); margin: 16px 0;
+  }
+  pre b { color: var(--accent); font-weight: 500; }
+  pre i { color: var(--ink-3); font-style: normal; }
+
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 760px) { .cols { grid-template-columns: 1fr; } }
+
+  table { width: 100%; border-collapse: collapse; font-size: .855rem; }
+  .scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); margin: 18px 0; }
+  th {
+    text-align: left; font-weight: 600; font-size: .7rem; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--ink-3);
+    padding: 11px 14px; border-bottom: 1px solid var(--line); white-space: nowrap;
+  }
+  td { padding: 11px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  td.mono, th.mono { font-family: "IBM Plex Mono", monospace; font-size: .8rem; }
+  .num { font-variant-numeric: tabular-nums; text-align: right; }
+
+  .chip {
+    display: inline-block; font-size: .68rem; font-weight: 600; letter-spacing: .05em;
+    text-transform: uppercase; padding: .2em .55em; border-radius: 4px; white-space: nowrap;
+  }
+  .c-crit { background: var(--crit-bg); color: var(--crit); }
+  .c-high { background: var(--high-bg); color: var(--high); }
+  .c-med  { background: var(--med-bg);  color: var(--med); }
+  .c-low  { background: var(--low-bg);  color: var(--low); }
+  .c-ok   { background: var(--ok-bg);   color: var(--ok); }
+
+  .finding { border-left: 3px solid var(--line-2); padding: 2px 0 2px 18px; margin: 26px 0; }
+  .finding.f-high { border-left-color: var(--high); }
+  .finding.f-med  { border-left-color: var(--med); }
+  .finding.f-low  { border-left-color: var(--low); }
+  .finding h3 { margin-top: 0; }
+  .finding p { margin-bottom: 10px; }
+  .ev {
+    font-family: "IBM Plex Mono", monospace; font-size: .78rem;
+    color: var(--ink-3); background: var(--surface-2);
+    border-radius: 6px; padding: 9px 12px; margin: 10px 0 0; max-width: none;
+    overflow-x: auto; white-space: pre;
+  }
+
+  .score { display: flex; align-items: center; gap: 12px; margin: 9px 0; }
+  .score .lbl { flex: 0 0 178px; font-size: .875rem; }
+  .bar { flex: 1; height: 7px; background: var(--surface-2); border-radius: 4px; overflow: hidden; border: 1px solid var(--line); }
+  .bar i { display: block; height: 100%; background: var(--accent); }
+  .bar.was i { background: var(--line-2); }
+  .score .val { flex: 0 0 74px; font-family: "IBM Plex Mono", monospace; font-size: .8rem; color: var(--ink-2); text-align: right; font-variant-numeric: tabular-nums; }
+
+  ul { padding-left: 20px; max-width: 68ch; }
+  li { margin-bottom: 7px; }
+
+  .note {
+    background: var(--accent-dim); border: 1px solid var(--line);
+    border-left: 3px solid var(--accent);
+    border-radius: 8px; padding: 14px 18px; margin: 20px 0;
+  }
+  .note p { margin: 0; }
+  .note p + p { margin-top: 10px; }
+
+  footer { border-top: 1px solid var(--line); margin-top: 80px; padding-top: 22px; color: var(--ink-3); font-size: .82rem; }
+</style>
+
+<header class="top">
+  <div class="wrap">
+    <div class="eyebrow">Daffodil International College · Alumni Platform</div>
+    <h1>Codebase Reorganization</h1>
+    <p class="sub">What the code looked like, what was actually wrong with it, what changed, and how every change was proven not to alter behaviour.</p>
+
+    <div class="facts">
+      <div class="fact"><b>6,396</b><span>lines in app.js</span></div>
+      <div class="fact"><b>127</b><span>API routes</span></div>
+      <div class="fact"><b>39</b><span>database tables</span></div>
+      <div class="fact"><b>121</b><span>inline handlers</span></div>
+      <div class="fact"><b>0</b><span>tests before</span></div>
+      <div class="fact"><b>194</b><span>live users</span></div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+<h2>Executive summary</h2>
+<div class="rule"></div>
+
+<p>The platform works and is in production. Nothing about its behaviour needed changing — the problem was that everything lived in one flat directory, in a handful of very large files, with no way to tell whether a change had broken anything.</p>
+
+<p>Three things mattered most, and all three are now fixed:</p>
+
+<ul>
+  <li><b>The whole repository was being served over HTTP.</b> <code>express.static(__dirname)</code> pointed at the repo root, so <code>/server.js</code>, <code>/db.js</code>, <code>/schema.sql</code> and <code>/seed.sql</code> were all publicly readable — the entire authentication implementation and the seed credentials among them. This was verified live, not inferred.</li>
+  <li><b>There was no way to verify a refactor.</b> No tests, no scripts, no type checking. Any restructuring would have been done blind against a live production database.</li>
+  <li><b>Files were organised by accident.</b> <code>app.js</code> had grown to 6,396 lines by appending each new phase to the end, so every feature was scattered across four to six non-adjacent regions of the file.</li>
+</ul>
+
+<p>The work was done on a branch, in four verified commits. Because route order and the auth matrix are load-bearing in this codebase, both were captured as machine-checkable baselines <em>before</em> anything moved, and every commit was checked against them.</p>
+
+<div class="note">
+  <p><b>The headline result:</b> the backend went from 5 flat files to a layered <code>src/server/</code> tree, the 825-line route grab-bag became 7 domain modules, and source-code disclosure is closed — with the API contract proven byte-identical at every step: <b>134 router layers in the same order, 127 routes with the same auth matrix and the same response shapes.</b></p>
+</div>
+
+<h2>What was there before</h2>
+<div class="rule"></div>
+
+<p>Thirty tracked files, almost all in the repository root, with no separation between what the browser downloads and what the server runs.</p>
+
+<pre><i>repository root — everything, flat</i>
+├── index.html          1,194   SPA shell, 14 page containers
+├── app.js              <b>6,396</b>   all frontend logic, one file
+├── api.js                528   fetch client
+├── styles.css          <b>4,467</b>   all styling, one file
+├── server.js           1,256   Express app + ~36 routes + auth + RBAC
+├── routes_v2.js          825   events, jobs, giving, mentorship, polls…
+├── routes_planner.js     303   event planner CRUD
+├── routes_compliance.js  266   consent, vault, DSAR
+├── db.js                 106   pool + a hand-rolled .env parser
+├── schema.sql / schema_v2 / schema_v3, seed.sql
+├── migrate_alumni.js / migrate_v2.js / migrate_v3.js / seed_cloud.js
+├── test_e2e_crud.js      136   the only test, not runnable via npm
+└── package.json            8   four dependencies, no name, no scripts</pre>
+
+<p>The frontend has no build step and no bundler. <code>index.html</code> loads <code>api.js</code> then <code>app.js</code> as classic script tags, so everything shares one global scope and roughly 121 inline <code>onclick=</code> attributes resolve function names against <code>window</code>. That single fact constrains every decision below.</p>
+
+<h2>What was actually wrong</h2>
+<div class="rule"></div>
+
+<p>Each item here was verified by running something, not by reading code and guessing.</p>
+
+<div class="finding f-high">
+  <h3><span class="chip c-high">Critical</span> &nbsp;The entire repository was readable over HTTP</h3>
+  <p><code>express.static(__dirname)</code> served the repo root as the web root. Backend source, the schema, and the seed file with its credentials were all fetchable.</p>
+  <p class="ev">GET /db.js      -> 200   3,308 b   full source
+GET /server.js  -> 200  52,210 b   entire auth implementation
+GET /seed.sql   -> 200  14,513 b   seed data incl. credentials
+GET /schema.sql -> 200  12,063 b   full schema</p>
+  <p style="margin-top:12px"><code>.env</code> itself was <em>not</em> exposed — dotfiles fall through to the SPA shell — but everything else was.</p>
+</div>
+
+<div class="finding f-med">
+  <h3><span class="chip c-med">Structural</span> &nbsp;Every feature was scattered across the file</h3>
+  <p><code>app.js</code> grew by appending: each phase (<span class="mono">REQ-xx</span>, "Phase 6", "was a toast-only shell") went on the end rather than next to related code. The result is that no feature lives in one place.</p>
+  <p class="ev">Event Planner  ~1,604 loc across 5 ranges  1373-2262, 5424-5484, 5701-5797, 5798-5872, 5873-6353
+Giving           ~400 loc across 6 ranges  2525-2586, 2914-3002, 3640-3668, 5023-5165, 5485-5535
+Jobs             ~304 loc across 4 ranges  2623-2771, 3003-3080, 5191-5267
+Events           ~284 loc across 4 ranges  1290-1372, 2587-2622, 4718-4756, 4897-5022</p>
+</div>
+
+<div class="finding f-med">
+  <h3><span class="chip c-med">Duplication</span> &nbsp;The same response wrapper, written four times</h3>
+  <p><code>ok(res, fn)</code> appeared in three files, four times, byte-identical. Confirmed identical before consolidating — a subtle difference would have made merging them a behaviour change.</p>
+  <p class="ev">routes_v2.js:62   routes_planner.js:17   routes_planner.js:69   routes_compliance.js:18
+const ok = (res, fn) =&gt; fn().catch(err =&gt; res.status(500).json({ error: err.message }));</p>
+</div>
+
+<div class="finding f-med">
+  <h3><span class="chip c-med">Dead code</span> &nbsp;Three functions defined twice, later definition silently winning</h3>
+  <p><code>showEditProfile</code>, <code>showEditProfileV2</code> and <code>handleSaveProfileV2</code> each had two definitions. The earlier ones rendered hardcoded mock data; the later, API-backed ones win at load time. The earlier bodies were unreachable and are removed.</p>
+</div>
+
+<div class="finding f-low">
+  <h3><span class="chip c-low">Trap</span> &nbsp;Four <em>more</em> functions are defined twice — and must stay that way</h3>
+  <p>These look identical to the case above and are not. They are decorator wrappers: the second definition captures the first and delegates back to it.</p>
+  <p class="ev">function filterDirectory(value) { … }        // app.js:1004   original
+const _origFilterDir = filterDirectory;      // app.js:2900   captures it
+filterDirectory = function (value) {         // app.js:2902   replaces it
+  …; _origFilterDir(value);                  //               and calls the original
+};</p>
+  <p style="margin-top:12px">Three of the four call their captured original. Deleting the first definition — or hoisting the second over it — makes the wrapper capture <em>itself</em> and recurse forever. I made exactly this mistake mid-refactor and caught it before committing; the verification tool now detects the <code>_orig</code> capture and reports these separately from real duplicates, so the distinction is enforced rather than remembered. The same applies to <code>switchAnalytics</code>, <code>filterEvents</code> and <code>switchAdmin</code>.</p>
+</div>
+
+<div class="finding f-low">
+  <h3><span class="chip c-low">Bug</span> &nbsp;The profile page shows hardcoded data to every user</h3>
+  <p><code>FULL_USER_PROFILE</code> (app.js:4288) is a mock object holding one person's name and student ID. Nothing ever hydrates it from the API, but <code>render10SectionProfile()</code> is live — called from <code>showPage()</code> whenever the profile page opens. Every user sees the same hardcoded identity, and a successful profile save re-renders the mock over the real values.</p>
+  <p>This is a product bug, not dead code, so it is reported rather than silently changed.</p>
+</div>
+
+<div class="finding f-low">
+  <h3><span class="chip c-low">Gap</span> &nbsp;No repository layer, 176 inline queries</h3>
+  <p>SQL is written directly inside route handlers throughout: 55 <code>db.query</code> calls in <code>server.js</code>, 76 in <code>routes_v2.js</code>, 20 in the planner, 25 in compliance. This was <em>not</em> changed — introducing a repository layer touches every handler and is a much larger, riskier change than reorganizing files. It is recorded as the main remaining debt.</p>
+</div>
+
+<h2>What the structure looks like now</h2>
+<div class="rule"></div>
+
+<div class="cols">
+  <div>
+    <h3>Backend — before</h3>
+    <pre>server.js            1,256
+routes_v2.js           825
+routes_planner.js      303
+routes_compliance.js   266
+db.js                  106
+
+<i>auth, RBAC, constants, serialisers
+and 36 routes all inside server.js</i></pre>
+  </div>
+  <div>
+    <h3>Backend — after</h3>
+<pre>server.js              <b>composition root</b>
+src/server/
+├── config/
+│   ├── paths.js       <i>one source of truth</i>
+│   ├── env.js         <i>.env parsing</i>
+│   └── constants.js   <i>roles, TTL</i>
+├── db/pool.js
+├── middleware/
+│   ├── auth.js        <i>hashing, tokens, guards</i>
+│   └── static-assets.js <i>allow-list</i>
+├── shared/
+│   ├── http.js        <i>ok(), publicUser()</i>
+│   ├── crypto.js      <i>AES-256-GCM</i>
+│   ├── audit.js       <i>hash-chained trail</i>
+│   └── reference.js
+└── modules/
+    ├── index.js       <i>mounts, in order</i>
+    ├── events/        232
+    ├── jobs/          144
+    ├── giving/        153
+    ├── mentorship/    138
+    ├── community/     120
+    ├── custom-fields/  41
+    ├── audit/          19
+    ├── planner/       302
+    └── compliance/    266</pre>
+  </div>
+</div>
+
+<p style="margin-top:22px">Supporting files moved out of the web root entirely: <code>db/*.sql</code>, <code>scripts/migrate-*.js</code>, <code>tests/e2e-crud.js</code>, <code>tools/*</code>. <code>server.js</code> stays at the repository root deliberately — it is the entry point Vercel's <code>api/index.js</code> requires, and keeping it there means the deployment configuration did not have to change.</p>
+
+<h2>Why moving files was not enough</h2>
+<div class="rule"></div>
+
+<p>This is the part worth reading carefully, because the obvious fix does not work.</p>
+
+<p>Moving the backend out of the root <em>looks</em> like it should fix source disclosure. It does not. The web root is still the repository root, so the files simply reappear at new URLs:</p>
+
+<pre><i>after moving files, before the allow-list</i>
+GET /db.js                          -&gt; 404  <b>fixed</b>
+GET /migrate_v2.js                  -&gt; 404  <b>fixed</b>
+GET /src/server/middleware/auth.js  -&gt; 200  <i>new exposed path</i>
+GET /db/seed.sql                    -&gt; 200  <i>new exposed path</i></pre>
+
+<p>The actual fix is to decide what is public rather than to move what is private. <code>src/server/middleware/static-assets.js</code> replaces <code>express.static</code> over the whole tree with an explicit allow-list — the app shell, client scripts, and <code>assets/</code>. Everything else falls through to the existing 404 handlers.</p>
+
+<pre><i>after the allow-list</i>
+/server.js  /package.json  /src/server/middleware/auth.js
+/db/seed.sql  /db/schema.sql  /scripts/migrate-v2.js
+/tools/dump-routes.js  /README.md  /package-lock.json     <b>all 404</b>
+
+/  /index.html  /app.js  /api.js  /styles.css
+/manifest.json  /assets/daffodil-logo.svg  /api/health     <b>all 200</b></pre>
+
+<div class="note">
+  <p><b>One caveat, and it needs your decision.</b> This closes the hole for the Node server. On Vercel the CDN serves the repository root itself, <em>before</em> the function is invoked, so <code>/server.js</code> may still be fetchable in production. The fix is to move the web assets into a <code>public/</code> directory — Vercel then serves only that — or add a <code>.vercelignore</code>. Both change the deployment layout, which you chose to leave untouched in this pass, so it is recorded as <span class="mono">SEC-6</span> rather than applied.</p>
+</div>
+
+<h2>How every change was verified</h2>
+<div class="rule"></div>
+
+<p>The repository had no tests. Rather than restructure blind, the first commit built a safety net — and it is the part of this work with the longest useful life.</p>
+
+<div class="scroll">
+<table>
+  <tr><th>Tool</th><th>What it proves</th><th>Why it matters here</th></tr>
+  <tr>
+    <td class="mono">dump-routes.js</td>
+    <td>Express's route table in registration order</td>
+    <td>Order is load-bearing: <code>/api/events/planner/:id</code> must register before <code>/api/events/:id</code>. A diff catches any reordering.</td>
+  </tr>
+  <tr>
+    <td class="mono">api-contract-snapshot.js</td>
+    <td>Per-route status and response shape for anonymous / alumni / admin</td>
+    <td>Catches a changed guard or a renamed response key. Reads are probed with all three actors; writes anonymously only, so a guard rejects before any handler can touch the production database.</td>
+  </tr>
+  <tr>
+    <td class="mono">smoke-load-client.js</td>
+    <td>Executes the client scripts under a DOM shim and dumps all 247 globals</td>
+    <td>With no bundler, a split that drops a function is silent until a user clicks. This makes it loud.</td>
+  </tr>
+  <tr>
+    <td class="mono">check-inline-handlers.js</td>
+    <td>Every inline <code>on*=</code> name resolves; separates wrappers from duplicates</td>
+    <td>The 121 inline handlers are the app's real public surface. This is what a modularization would break.</td>
+  </tr>
+  <tr>
+    <td class="mono">check-syntax.js</td>
+    <td><code>node --check</code> across all tracked JS</td>
+    <td>Cheap standing guard.</td>
+  </tr>
+</table>
+</div>
+
+<p>All of it runs as <code>npm run verify</code>, which is green. Results at each commit:</p>
+
+<pre>route table    <b>134 layers, byte-identical order</b>       ✓ after every commit
+API contract   <b>127 routes, identical auth matrix</b>      ✓ after every commit
+               <b>identical response shapes</b>
+client globals <b>247 names and types, identical</b>          ✓ after client changes
+inline handlers <b>120/121 resolved</b> (1 known, recorded)   ✓
+duplicates     3 → <b>0</b>   wrappers correctly excluded    ✓</pre>
+
+<div class="note">
+  <p><b>A note on the production database.</b> The app is wired to a live Neon database with 194 real users. An early version of the contract tool probed write routes as an authenticated alumnus, which meant three writes actually executed — a <code>read-all</code> on notifications and a DSAR deletion request that the same run then cancelled. No lasting change, and the account was an existing QA seed row, but the tool was rewritten so writes are probed anonymously only. Worth stating plainly rather than leaving in a log.</p>
+</div>
+
+<h2>File migration matrix</h2>
+<div class="rule"></div>
+
+<div class="scroll">
+<table>
+  <tr><th>From</th><th>To</th><th>Action</th><th>Why</th><th class="num">Risk</th></tr>
+  <tr><td class="mono">db.js</td><td class="mono">src/server/db/pool.js</td><td>Move + split</td><td>Out of web root; .env parsing separated from pool creation</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="mono">— (in db.js)</td><td class="mono">src/server/config/env.js</td><td>Extract</td><td>Loading config and opening a pool are different jobs</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="mono">server.js:20-133</td><td class="mono">src/server/middleware/auth.js</td><td>Extract</td><td>Hashing, tokens, guards — copied byte-for-byte so existing sessions keep verifying</td><td><span class="chip c-med">Med</span></td></tr>
+  <tr><td class="mono">server.js</td><td class="mono">src/server/config/constants.js</td><td>Extract</td><td>Role groups were invisible to route modules; passed by hand before</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="mono">×4 copies of ok()</td><td class="mono">src/server/shared/http.js</td><td>Merge</td><td>Byte-identical duplicates, confirmed before merging</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="mono">routes_v2.js</td><td class="mono">src/server/modules/{events,jobs,giving,<br>mentorship,community,custom-fields,audit}/</td><td>Split</td><td>825 lines, 8 unrelated domains, one mount function</td><td><span class="chip c-high">High</span></td></tr>
+  <tr><td class="mono">routes_v2.js header</td><td class="mono">shared/{crypto,audit,reference}.js</td><td>Extract</td><td>AES helpers and the audit writer were buried in a routes file</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="mono">routes_planner.js</td><td class="mono">src/server/modules/planner/routes.js</td><td>Move</td><td>Domain module</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="mono">routes_compliance.js</td><td class="mono">src/server/modules/compliance/routes.js</td><td>Move</td><td>Domain module</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="mono">schema*.sql, seed.sql</td><td class="mono">db/</td><td>Move</td><td>Out of web root</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="mono">migrate_*.js, seed_cloud.js</td><td class="mono">scripts/</td><td>Move + rename</td><td>Out of web root; kebab-case consistently</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="mono">test_e2e_crud.js</td><td class="mono">tests/e2e-crud.js</td><td>Move</td><td>Out of web root; reachable via <code>npm run test:e2e</code></td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="mono">app.js ×3 functions</td><td>—</td><td>Delete</td><td>Superseded definitions, unreachable</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="mono">app.js ×4 wrappers</td><td class="mono">unchanged</td><td>Keep</td><td>Decorator pattern — deleting the first definition causes infinite recursion</td><td><span class="chip c-ok">None</span></td></tr>
+</table>
+</div>
+
+<h2>Security findings</h2>
+<div class="rule"></div>
+
+<p>All six predate this work and are recorded in <code>tools/known-issues.json</code>. Only the first was fixed here, because the rest change product behaviour and are yours to decide.</p>
+
+<div class="scroll">
+<table>
+  <tr><th>#</th><th>Finding</th><th>Status</th></tr>
+  <tr>
+    <td><span class="chip c-crit">Critical</span></td>
+    <td><b>Full backend source served over HTTP.</b> Auth implementation, schema and seed credentials publicly readable.</td>
+    <td><span class="chip c-ok">Fixed</span></td>
+  </tr>
+  <tr>
+    <td><span class="chip c-high">High</span></td>
+    <td><b>SEC-1 · A donor can confirm their own payment.</b> <code>POST /api/donations/:id/confirm</code> authorises on <code>donor_user_id === req.user.uid</code> and defaults <code>success</code> to true. Any authenticated user can mark their own pending donation SUCCESS, mint a receipt, and inflate campaign totals and the leaderboard — with no money moving.</td>
+    <td>Needs a gateway webhook. Your call.</td>
+  </tr>
+  <tr>
+    <td><span class="chip c-med">Medium</span></td>
+    <td><b>SEC-2 · Ticket signatures fall back to a hardcoded key.</b> <code>createHmac('sha256', ENCRYPTION_KEY || 'dic-ticket')</code> — without the env var, tickets are signed with a constant that is in the source, so they can be forged.</td>
+    <td>Fail closed, once the key is set everywhere.</td>
+  </tr>
+  <tr>
+    <td><span class="chip c-med">Medium</span></td>
+    <td><b>SEC-3 · Two endpoints answer unauthenticated callers.</b> <code>GET /api/chapters/:id/members</code> and <code>GET /api/events/planner/:id</code> return real rows with no token — alumni names and ids, and an event's budgets, sponsors and volunteers. Every sibling route requires auth.</td>
+    <td>One-line fix, but it changes the contract.</td>
+  </tr>
+  <tr>
+    <td><span class="chip c-low">Low</span></td>
+    <td><b>SEC-4 · 500s leak internal error text.</b> <code>ok()</code> returns <code>err.message</code>, exposing SQL and constraint names.</td>
+    <td>Now one function, so a one-line fix.</td>
+  </tr>
+  <tr>
+    <td><span class="chip c-low">Low</span></td>
+    <td><b>SEC-5 · Database TLS verification disabled.</b> <code>rejectUnauthorized: false</code> accepts any certificate.</td>
+    <td>Needs the provider CA trusted first.</td>
+  </tr>
+  <tr>
+    <td><span class="chip c-low">Info</span></td>
+    <td><b>SEC-6 · Vercel still serves source statically.</b> The allow-list covers the Node server; the CDN serves the repo root before the function runs.</td>
+    <td>Needs <code>public/</code> or <code>.vercelignore</code>.</td>
+  </tr>
+</table>
+</div>
+
+<h2>Architecture health</h2>
+<div class="rule"></div>
+
+<p>Scored 1–10, before this work and after. The scores that did not move are the honest part — organizing files does not add tests or a data layer.</p>
+
+<div class="card">
+  <div class="score"><span class="lbl">Backend structure</span><span class="bar was"><i style="width:30%"></i></span><span class="val">3 → 8</span></div>
+  <div class="score"><span class="lbl">Frontend structure</span><span class="bar was"><i style="width:20%"></i></span><span class="val">2 → 5</span></div>
+  <div class="score"><span class="lbl">Security posture</span><span class="bar was"><i style="width:20%"></i></span><span class="val">2 → 6</span></div>
+  <div class="score"><span class="lbl">Verifiability</span><span class="bar was"><i style="width:10%"></i></span><span class="val">1 → 8</span></div>
+  <div class="score"><span class="lbl">Dependency hygiene</span><span class="bar was"><i style="width:40%"></i></span><span class="val">4 → 7</span></div>
+  <div class="score"><span class="lbl">Database organization</span><span class="bar was"><i style="width:60%"></i></span><span class="val">6 → 7</span></div>
+  <div class="score"><span class="lbl">Data-access layer</span><span class="bar was"><i style="width:20%"></i></span><span class="val">2 → 2</span></div>
+  <div class="score"><span class="lbl">Test coverage</span><span class="bar was"><i style="width:10%"></i></span><span class="val">1 → 3</span></div>
+</div>
+
+<p><b>Backend 3 → 8.</b> Config, database, middleware, shared helpers and nine domain modules, largest 302 lines. Not a 10: there is still no service or repository layer.</p>
+<p><b>Frontend 2 → 5.</b> Duplicates removed and the hazards documented and enforced by tooling, but <code>app.js</code> and <code>styles.css</code> are the largest remaining problem.</p>
+<p><b>Verifiability 1 → 8.</b> From nothing to a route-order baseline, a live contract snapshot, a client load check and a handler gate — all in <code>npm run verify</code>.</p>
+<p><b>Data-access 2 → 2, tests 1 → 3.</b> Unchanged by design. 176 queries still sit inline in handlers, and the one end-to-end test covers a small fraction of 127 routes. Moving files does not fix either, and pretending otherwise would be the wrong report.</p>
+
+<h2>What to do next</h2>
+<div class="rule"></div>
+
+<div class="scroll">
+<table>
+  <tr><th class="num">#</th><th>Improvement</th><th>Why it pays</th><th>Risk</th></tr>
+  <tr><td class="num">1</td><td><b>Fix donation confirmation</b> (SEC-1)</td><td>Donors can currently fabricate successful payments and corrupt fundraising totals. This is the only finding with a direct financial consequence.</td><td><span class="chip c-med">Med</span></td></tr>
+  <tr><td class="num">2</td><td><b>Close Vercel static exposure</b> (SEC-6)</td><td>Production may still be serving backend source. Moving assets into <code>public/</code> is the Vercel-native fix.</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="num">3</td><td><b>Split <code>app.js</code> into <code>src/client/</code></b></td><td>6,396 lines in one global scope is the single biggest obstacle to anyone new working on the frontend. Must be a contiguous split — see the wrapper trap.</td><td><span class="chip c-high">High</span></td></tr>
+  <tr><td class="num">4</td><td><b>Hydrate the profile page from the API</b></td><td>Every user currently sees the same hardcoded name and student ID.</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="num">5</td><td><b>Fail closed on ticket signing</b> (SEC-2)</td><td>Forgeable tickets undermine event check-in.</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="num">6</td><td><b>Guard the two open endpoints</b> (SEC-3)</td><td>Alumni names and event financials are readable with no token.</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="num">7</td><td><b>Split <code>styles.css</code></b> (4,467 lines)</td><td>Same problem as app.js. Order-dependent rules must be identified first.</td><td><span class="chip c-med">Med</span></td></tr>
+  <tr><td class="num">8</td><td><b>Introduce a repository layer</b></td><td>176 inline queries mean no query is reusable or independently testable. Do it per-module, behind the boundaries that now exist.</td><td><span class="chip c-med">Med</span></td></tr>
+  <tr><td class="num">9</td><td><b>Stop leaking error text</b> (SEC-4)</td><td>One-line change now that <code>ok()</code> is one function.</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="num">10</td><td><b>Add real route tests</b></td><td>The contract snapshot catches shape and auth regressions but asserts nothing about correctness.</td><td><span class="chip c-low">Low</span></td></tr>
+</table>
+</div>
+
+<h2>Rules to keep</h2>
+<div class="rule"></div>
+
+<p>Four things about this codebase are easy to break by accident. They are enforced by tooling where possible.</p>
+
+<ul>
+  <li><b>Route order is part of the program.</b> Concrete paths must register before parameterised ones. <code>src/server/modules/index.js</code> mounts domains in a fixed order — run <code>npm run routes</code> and diff before and after any change to mounting.</li>
+  <li><b>Never reorder top-level code in <code>app.js</code>.</b> Four decorator wrappers depend on load order, and a hoisted declaration over a captured original causes infinite recursion. Any split must be contiguous.</li>
+  <li><b>No <code>type="module"</code> on the client.</b> 121 inline handlers resolve against <code>window</code>; module scope would break all of them at once, silently.</li>
+  <li><b>Adding a file to the repo does not make it public.</b> New web assets must be added to the allow-list in <code>src/server/middleware/static-assets.js</code>, which is the point — the default is private.</li>
+</ul>
+
+<footer>
+  Branch <span class="mono">refactor/codebase-organization</span> · four commits, each verified against the route-order and API-contract baselines.
+  Findings tracked in <span class="mono">tools/known-issues.json</span>. Run <span class="mono">npm run verify</span>.
+</footer>
+
+</div>
