@@ -221,11 +221,11 @@
     <p class="sub">What the code looked like, what was actually wrong with it, what changed, and how every change was proven not to alter behaviour.</p>
 
     <div class="facts">
-      <div class="fact"><b>6,396</b><span>lines in app.js</span></div>
+      <div class="fact"><b>6,352→21</b><span>app.js split into files</span></div>
       <div class="fact"><b>127</b><span>API routes</span></div>
       <div class="fact"><b>39</b><span>database tables</span></div>
       <div class="fact"><b>121</b><span>inline handlers</span></div>
-      <div class="fact"><b>0</b><span>tests before</span></div>
+      <div class="fact"><b>5</b><span>verified commits</span></div>
       <div class="fact"><b>194</b><span>live users</span></div>
     </div>
   </div>
@@ -249,8 +249,11 @@
 <p>The work was done on a branch, in four verified commits. Because route order and the auth matrix are load-bearing in this codebase, both were captured as machine-checkable baselines <em>before</em> anything moved, and every commit was checked against them.</p>
 
 <div class="note">
-  <p><b>The headline result:</b> the backend went from 5 flat files to a layered <code>src/server/</code> tree, the 825-line route grab-bag became 7 domain modules, and source-code disclosure is closed — with the API contract proven byte-identical at every step: <b>134 router layers in the same order, 127 routes with the same auth matrix and the same response shapes.</b></p>
+  <p><b>The headline result:</b> the backend went from 5 flat files to a layered <code>src/server/</code> tree, the 825-line route grab-bag became 7 domain modules, <code>app.js</code> became 21 files under <code>src/client/</code>, and source-code disclosure is closed.</p>
+  <p>All of it proven equivalent rather than assumed: <b>134 router layers in the same order, 127 routes with the same auth matrix and response shapes, 247 client globals with identical names and types</b> — and the split client files reassemble <b>byte-identical</b> to the originals.</p>
 </div>
+
+<p>Seven read-only analysis agents also swept the codebase in parallel. They surfaced a set of real defects that this pass deliberately did <em>not</em> fix, because each changes product behaviour: a donor can confirm their own payment, the <code>moderator</code> role cannot reach a single screen its permissions are for, several failed writes report success and invent fake rows, and two live widgets have no desktop styling. All of it is recorded with evidence in <code>docs/findings.md</code>.</p>
 
 <h2>What was there before</h2>
 <div class="rule"></div>
@@ -379,6 +382,38 @@ src/server/
 </div>
 
 <p style="margin-top:22px">Supporting files moved out of the web root entirely: <code>db/*.sql</code>, <code>scripts/migrate-*.js</code>, <code>tests/e2e-crud.js</code>, <code>tools/*</code>. <code>server.js</code> stays at the repository root deliberately — it is the entry point Vercel's <code>api/index.js</code> requires, and keeping it there means the deployment configuration did not have to change.</p>
+
+<h3>Frontend — one 6,352-line file became 21</h3>
+
+<pre><i>src/client/  — loaded as 22 ordered classic script tags</i>
+core/
+├── api-client.js   528  <i>was api.js</i>
+├── state.js         67  <i>app state, demo data</i>
+├── helpers.js       82  <i>escaping, dates, skeletons</i>
+├── auth.js         240  <i>login, session, sidebar nav</i>
+├── auth-signup.js  123
+├── app-shell.js    425  <i>init, dashboards, navigation</i>
+├── ui-modals.js    329
+└── runtime.js      136  <i>toast, offline, DOM boot</i>
+features/
+├── planner-workspace.js   901
+├── gap-fixes-req.js       753  <i>REQ-xx additions, still mixed</i>
+├── profile-community.js   675
+├── actions-api.js         544
+├── bulk-import.js         416
+├── chapters-planner-tabs.js 336
+├── directory.js           289
+├── bulk-import-parsing.js 211
+├── compliance-audit.js    196
+├── planner-reports-modals.js 193
+├── dashboards-vault.js    186
+├── mentorship-events.js   169
+├── analytics-charts.js    158
+└── profile-editor.js      107</pre>
+
+<div class="note">
+  <p><b>Why the split is contiguous, and why some filenames are honest rather than tidy.</b> Files were cut at line boundaries with nothing reordered — that is the safety property, not a shortcut. Because features were originally scattered, a contiguous cut cannot fully regroup them, so a few files (<code>gap-fixes-req.js</code>, <code>chapters-planner-tabs.js</code>) still hold more than one domain. Naming them for what they actually contain beats inventing a clean-looking name for a mixed file. Regrouping across those boundaries is safe only once the four decorator wrappers are inlined — that is the recommended follow-up, not something to do casually.</p>
+</div>
 
 <h2>Why moving files was not enough</h2>
 <div class="rule"></div>
@@ -525,6 +560,51 @@ duplicates     3 → <b>0</b>   wrappers correctly excluded    ✓</pre>
 </table>
 </div>
 
+<h2>What the parallel sweep found</h2>
+<div class="rule"></div>
+
+<p>Seven read-only agents audited the frontend, backend, data layer, tests, dependencies, cross-system contracts and refactor risk simultaneously. None of the following was fixed — each is a behaviour change. Full evidence in <code>docs/findings.md</code>.</p>
+
+<div class="finding f-high">
+  <h3><span class="chip c-high">High</span> &nbsp;The <code>moderator</code> role cannot reach anything it is allowed to do</h3>
+  <p>The backend authorises <code>moderator</code> for chapter and story moderation, event CRUD, ticket check-in, attendee lists and all planner CRUD. The sidebar gates the <code>admin</code>, <code>events</code> and <code>chapters</code> pages to roles that exclude it. Of 14 sidebar items a moderator sees five — not including the moderation queue their role is named for. The permission model exists on the server and was never wired into navigation.</p>
+</div>
+
+<div class="finding f-high">
+  <h3><span class="chip c-high">High</span> &nbsp;Failed writes report success and invent rows</h3>
+  <p>Three planner handlers share this shape:</p>
+  <p class="ev">const newX = await API.addEventX(...);
+list.push(newX || { id: Date.now(), ...fabricated });
+showToast('✅ … saved successfully!');</p>
+  <p style="margin-top:12px">On failure <code>newX</code> is <code>null</code>, so the code invents a row with a client-side id, pushes it into the planner cache, and still reports success. The user sees an item that was never saved and disappears on the next fetch. Related: two moderation handlers always show "Approved/Rejected" regardless of result, and proposal submission reports "Approved" when the record is created as <code>pending_approval</code>.</p>
+  <p>Root cause is one thing: <code>api.js</code> carries two incompatible error conventions — about half the legacy methods return <code>null</code> on failure, the rest never check <code>res.ok</code> at all, while the newer methods return <code>{error, status, data}</code>. Nothing normalises the envelope.</p>
+</div>
+
+<div class="finding f-med">
+  <h3><span class="chip c-med">Medium</span> &nbsp;Event proposals can never be approved</h3>
+  <p>Proposals can be created, and three backend endpoints exist to approve them. None is reachable: the moderation panel destructures only <code>pendingChapters</code> and <code>pendingStories</code> from the response and silently drops <code>pendingProposals</code>, which the backend does return. No approve control exists anywhere in the UI.</p>
+</div>
+
+<div class="finding f-med">
+  <h3><span class="chip c-med">Medium</span> &nbsp;Two live widgets have no desktop styling</h3>
+  <p>Three feature rewrites renamed their markup and left the old CSS behind. The donor leaderboard and the audit log now render class names that have <em>no base CSS at all</em> — only their predecessors' rules survive, orphaned. These are visible bugs, not just dead stylesheet.</p>
+</div>
+
+<div class="finding f-low">
+  <h3><span class="chip c-low">Low</span> &nbsp;A missing logo 404s four times per page load</h3>
+  <p><code>assets/dic-logo.png</code> is referenced by four <code>&lt;img&gt;</code> tags and has never existed — verified against full git history. Every page load issues four failed requests before the <code>onerror</code> fallback loads the SVG that does the real work.</p>
+</div>
+
+<div class="finding f-low">
+  <h3><span class="chip c-low">Low</span> &nbsp;Verified dead code, including a timer that runs forever</h3>
+  <p><code>startCampaignTicker()</code> runs a <code>setInterval</code> every 3.5 seconds for the life of the page, updating DOM ids that are never created — the real campaigns page is API-backed. <code>renderRBACTable()</code> is unreachable and would throw if reached, because it reads <code>MOCK_RBAC</code>, which is never declared. <code>seed_cloud.js</code> has zero references and duplicates <code>db.js</code>. Plus seven orphaned functions and 16 unused API methods — including the entire "connections" feature, which has a table, two endpoints and two client methods, while the Connect button only sets local state and shows a toast.</p>
+</div>
+
+<div class="finding f-med">
+  <h3><span class="chip c-med">Medium</span> &nbsp;Nine tables missing an index on the column they are always filtered by</h3>
+  <p><code>WHERE event_id = $1</code> appears 30+ times, but nine event-planner tables carry a bare <code>event_id</code> with no foreign key and no index. Invisible at current row counts; every one of those queries is a full table scan as data grows. Separately, there is no migration tracking — a fresh environment built from <code>initDbSchemaAndSeed()</code> alone gets the v1 schema only, and the v2/v3 tables silently do not exist.</p>
+</div>
+
 <h2>Architecture health</h2>
 <div class="rule"></div>
 
@@ -532,7 +612,7 @@ duplicates     3 → <b>0</b>   wrappers correctly excluded    ✓</pre>
 
 <div class="card">
   <div class="score"><span class="lbl">Backend structure</span><span class="bar was"><i style="width:30%"></i></span><span class="val">3 → 8</span></div>
-  <div class="score"><span class="lbl">Frontend structure</span><span class="bar was"><i style="width:20%"></i></span><span class="val">2 → 5</span></div>
+  <div class="score"><span class="lbl">Frontend structure</span><span class="bar was"><i style="width:20%"></i></span><span class="val">2 → 7</span></div>
   <div class="score"><span class="lbl">Security posture</span><span class="bar was"><i style="width:20%"></i></span><span class="val">2 → 6</span></div>
   <div class="score"><span class="lbl">Verifiability</span><span class="bar was"><i style="width:10%"></i></span><span class="val">1 → 8</span></div>
   <div class="score"><span class="lbl">Dependency hygiene</span><span class="bar was"><i style="width:40%"></i></span><span class="val">4 → 7</span></div>
@@ -542,7 +622,7 @@ duplicates     3 → <b>0</b>   wrappers correctly excluded    ✓</pre>
 </div>
 
 <p><b>Backend 3 → 8.</b> Config, database, middleware, shared helpers and nine domain modules, largest 302 lines. Not a 10: there is still no service or repository layer.</p>
-<p><b>Frontend 2 → 5.</b> Duplicates removed and the hazards documented and enforced by tooling, but <code>app.js</code> and <code>styles.css</code> are the largest remaining problem.</p>
+<p><b>Frontend 2 → 7.</b> One 6,352-line file is now 21, each named for what it holds, with the split proven byte-identical on reassembly. Not higher because the contiguous cut could not fully regroup the scattered domains — two files still mix concerns — and <code>styles.css</code> is untouched at 4,467 lines.</p>
 <p><b>Verifiability 1 → 8.</b> From nothing to a route-order baseline, a live contract snapshot, a client load check and a handler gate — all in <code>npm run verify</code>.</p>
 <p><b>Data-access 2 → 2, tests 1 → 3.</b> Unchanged by design. 176 queries still sit inline in handlers, and the one end-to-end test covers a small fraction of 127 routes. Moving files does not fix either, and pretending otherwise would be the wrong report.</p>
 
@@ -554,14 +634,14 @@ duplicates     3 → <b>0</b>   wrappers correctly excluded    ✓</pre>
   <tr><th class="num">#</th><th>Improvement</th><th>Why it pays</th><th>Risk</th></tr>
   <tr><td class="num">1</td><td><b>Fix donation confirmation</b> (SEC-1)</td><td>Donors can currently fabricate successful payments and corrupt fundraising totals. This is the only finding with a direct financial consequence.</td><td><span class="chip c-med">Med</span></td></tr>
   <tr><td class="num">2</td><td><b>Close Vercel static exposure</b> (SEC-6)</td><td>Production may still be serving backend source. Moving assets into <code>public/</code> is the Vercel-native fix.</td><td><span class="chip c-low">Low</span></td></tr>
-  <tr><td class="num">3</td><td><b>Split <code>app.js</code> into <code>src/client/</code></b></td><td>6,396 lines in one global scope is the single biggest obstacle to anyone new working on the frontend. Must be a contiguous split — see the wrapper trap.</td><td><span class="chip c-high">High</span></td></tr>
-  <tr><td class="num">4</td><td><b>Hydrate the profile page from the API</b></td><td>Every user currently sees the same hardcoded name and student ID.</td><td><span class="chip c-low">Low</span></td></tr>
-  <tr><td class="num">5</td><td><b>Fail closed on ticket signing</b> (SEC-2)</td><td>Forgeable tickets undermine event check-in.</td><td><span class="chip c-low">Low</span></td></tr>
-  <tr><td class="num">6</td><td><b>Guard the two open endpoints</b> (SEC-3)</td><td>Alumni names and event financials are readable with no token.</td><td><span class="chip c-low">Low</span></td></tr>
-  <tr><td class="num">7</td><td><b>Split <code>styles.css</code></b> (4,467 lines)</td><td>Same problem as app.js. Order-dependent rules must be identified first.</td><td><span class="chip c-med">Med</span></td></tr>
-  <tr><td class="num">8</td><td><b>Introduce a repository layer</b></td><td>176 inline queries mean no query is reusable or independently testable. Do it per-module, behind the boundaries that now exist.</td><td><span class="chip c-med">Med</span></td></tr>
-  <tr><td class="num">9</td><td><b>Stop leaking error text</b> (SEC-4)</td><td>One-line change now that <code>ok()</code> is one function.</td><td><span class="chip c-low">Low</span></td></tr>
-  <tr><td class="num">10</td><td><b>Add real route tests</b></td><td>The contract snapshot catches shape and auth regressions but asserts nothing about correctness.</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="num">3</td><td><b>Guard the two open endpoints</b> (SEC-3, SEC-7)</td><td>Alumni names and event financials are readable with no token — and an empty chapter falls back to returning the first four users in the whole table.</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="num">4</td><td><b>Normalise the API client's error contract</b></td><td>The single root cause behind every silent failure: two incompatible conventions in <code>api.js</code>, so failed writes report success and fabricate rows.</td><td><span class="chip c-med">Med</span></td></tr>
+  <tr><td class="num">5</td><td><b>Wire up the <code>moderator</code> role</b></td><td>A whole role is inert. The backend already authorises it; only the sidebar gating needs to change.</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="num">6</td><td><b>Hydrate the profile page from the API</b></td><td>Every user sees the same hardcoded name and student ID, and saved edits never appear.</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="num">7</td><td><b>Fail closed on ticket signing</b> (SEC-2)</td><td>Forgeable tickets undermine event check-in.</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="num">8</td><td><b>Add the nine missing <code>event_id</code> indexes</b></td><td>Cheap, additive, and prevents full table scans on the most-filtered column as data grows.</td><td><span class="chip c-low">Low</span></td></tr>
+  <tr><td class="num">9</td><td><b>Split <code>styles.css</code></b> (4,467 lines)</td><td>Same problem app.js had, plus 16 selectors declared more than once whose winner depends on file position — those must be resolved before splitting, not after.</td><td><span class="chip c-med">Med</span></td></tr>
+  <tr><td class="num">10</td><td><b>Introduce a repository layer</b></td><td>176 inline queries mean no query is reusable or independently testable. Do it per-module, behind the boundaries that now exist.</td><td><span class="chip c-med">Med</span></td></tr>
 </table>
 </div>
 
