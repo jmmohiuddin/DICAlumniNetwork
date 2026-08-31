@@ -137,10 +137,13 @@
           </div><!-- /auth-panel-signup -->
         </div>
       </div>
+      <!-- Three stat pills used to sit here reading 38,420 alumni, ৳45.2L
+           raised and 3,800 mentorships. Every platform figure is behind
+           authentication, so a signed-out visitor cannot be shown a real one —
+           and these were not real. -->
       <div class="login-stats">
-        <div class="stat-pill">38,420 DIC Alumni</div>
-        <div class="stat-pill">৳45.2L Raised</div>
-        <div class="stat-pill">3,800 Mentorships</div>
+        <div class="stat-pill">Daffodil International College</div>
+        <div class="stat-pill">Alumni &amp; Career Network</div>
       </div>
     </div>
   </div>
@@ -214,145 +217,20 @@
     <!-- PAGES CONTAINER -->
     <main class="pages-container" id="pages">
       <!-- ============ DASHBOARD PAGE ============ -->
+      <!-- renderDashboard() replaces this element's contents with the
+           role-specific dashboard as soon as the session resolves. What used to
+           sit here was a full Executive Dashboard written as static markup:
+           12,847 alumni, ৳45.2L collected, 1,203 mentorships, 47 events, a
+           bKash/Nagad/Rocket/Card funnel at 68/19/8/5%, a badge reading 12
+           pending verifications, and four "High Priority Alerts" describing
+           incidents that never happened. None of it came from the database, and
+           all of it was visible for the moment before the real dashboard
+           rendered over the top. -->
       <div class="page active" id="page-dashboard">
         <div class="page-header">
           <div>
-            <h1 class="page-title">Executive Dashboard</h1>
-            <p class="page-subtitle">Dhaka International College — FY 2026 · Q3 Overview</p>
-          </div>
-          <div class="page-header-actions">
-            <select class="form-select sm" id="dashboard-term">
-              <option>FY 2026 — Q3</option>
-              <option>FY 2026 — Q2</option>
-              <option>FY 2025 — Q4</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- KPI TILES -->
-        <div class="kpi-grid">
-          <div class="kpi-card indigo">
-            <div class="kpi-icon"><i data-lucide="users" class="ui-icon"></i></div>
-            <div class="kpi-body">
-              <div class="kpi-value" data-target="12847" id="kpi-alumni">0</div>
-              <div class="kpi-label">Total Verified Alumni</div>
-              <div class="kpi-trend up"><i data-lucide="trending-up" class="ui-icon"></i> 8.4% this month</div>
-            </div>
-          </div>
-          <div class="kpi-card teal">
-            <div class="kpi-icon">৳</div>
-            <div class="kpi-body">
-              <div class="kpi-value" id="kpi-funds">৳0</div>
-              <div class="kpi-label">FY Funds Collected</div>
-              <div class="kpi-trend up"><i data-lucide="trending-up" class="ui-icon"></i> 35.2% YoY</div>
-            </div>
-          </div>
-          <div class="kpi-card purple">
-            <div class="kpi-icon"><i data-lucide="handshake" class="ui-icon"></i></div>
-            <div class="kpi-body">
-              <div class="kpi-value" data-target="1203" id="kpi-mentors">0</div>
-              <div class="kpi-label">Active Mentorships</div>
-              <div class="kpi-trend up">83% completion rate</div>
-            </div>
-          </div>
-          <div class="kpi-card amber">
-            <div class="kpi-icon"><i data-lucide="ticket" class="ui-icon"></i></div>
-            <div class="kpi-body">
-              <div class="kpi-value" data-target="47" id="kpi-events">0</div>
-              <div class="kpi-label">Upcoming Events</div>
-              <div class="kpi-trend">72% capacity avg</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- MAIN SPLIT -->
-        <div class="dashboard-split">
-          <!-- LEFT: Charts -->
-          <div class="dashboard-left">
-            <div class="chart-tabs">
-              <button class="chart-tab active" onclick="switchChart('engagement', this)">Engagement</button>
-              <button class="chart-tab" onclick="switchChart('donations', this)">Donations</button>
-              <button class="chart-tab" onclick="switchChart('geographic', this)">Geographic</button>
-            </div>
-            <div class="chart-container glass-card">
-              <canvas id="main-chart" height="260"></canvas>
-            </div>
-            <!-- Donation Funnel -->
-            <div class="glass-card mt-16">
-              <div class="card-header">
-                <h3 class="card-title">Donation Funnel — MFS vs Card</h3>
-                <span class="card-badge teal">Live</span>
-              </div>
-              <div class="funnel-bars">
-                <div class="funnel-item">
-                  <div class="funnel-label">bKash</div>
-                  <div class="funnel-track"><div class="funnel-fill bkash" style="width:68%">68%</div></div>
-                </div>
-                <div class="funnel-item">
-                  <div class="funnel-label">Nagad</div>
-                  <div class="funnel-track"><div class="funnel-fill nagad" style="width:19%">19%</div></div>
-                </div>
-                <div class="funnel-item">
-                  <div class="funnel-label">Rocket</div>
-                  <div class="funnel-track"><div class="funnel-fill rocket" style="width:8%">8%</div></div>
-                </div>
-                <div class="funnel-item">
-                  <div class="funnel-label">Card</div>
-                  <div class="funnel-track"><div class="funnel-fill card" style="width:5%">5%</div></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- RIGHT: Verification Queue + Leaderboard -->
-          <div class="dashboard-right">
-            <div class="glass-card">
-              <div class="card-header">
-                <h3 class="card-title">Pending Verification Queue</h3>
-                <span class="badge-count">12</span>
-              </div>
-              <div class="queue-list" id="verification-queue"></div>
-              <button class="btn btn-outline btn-full mt-8" onclick="showPage('admin')">View All in Admin →</button>
-            </div>
-            <div class="glass-card mt-16">
-              <div class="card-header"><h3 class="card-title"><i data-lucide="trophy" class="ui-icon"></i> Top Donors Leaderboard</h3><span class="card-badge amber">FY 2026</span></div>
-              <div id="donor-leaderboard"></div>
-            </div>
-            <div class="glass-card mt-16">
-              <div class="card-header">
-                <h3 class="card-title">High Priority Alerts</h3>
-              </div>
-              <div class="alerts-list">
-                <div class="alert-item critical">
-                  <span class="alert-dot red"></span>
-                  <div class="alert-body">
-                    <div class="alert-title">bKash Callback Timeout</div>
-                    <div class="alert-sub">Campaign #C-047 · 2 transactions pending retry</div>
-                  </div>
-                </div>
-                <div class="alert-item warning">
-                  <span class="alert-dot amber"></span>
-                  <div class="alert-body">
-                    <div class="alert-title">Mentor Response Expiring</div>
-                    <div class="alert-sub">5 mentorship requests expire in &lt;24h</div>
-                  </div>
-                </div>
-                <div class="alert-item info">
-                  <span class="alert-dot teal"></span>
-                  <div class="alert-body">
-                    <div class="alert-title">Reunion 2026 Capacity</div>
-                    <div class="alert-sub">Event at 94% — enable waitlist?</div>
-                  </div>
-                </div>
-                <div class="alert-item success">
-                  <span class="alert-dot green"></span>
-                  <div class="alert-body">
-                    <div class="alert-title">Offline Sync Complete</div>
-                    <div class="alert-sub">247 records synced from mobile queue</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <h1 class="page-title">Dashboard</h1>
+            <p class="page-subtitle">Loading your dashboard…</p>
           </div>
         </div>
       </div>
@@ -362,7 +240,7 @@
         <div class="page-header">
           <div>
             <h1 class="page-title">Alumni Directory</h1>
-            <p class="page-subtitle">Semantic AI search across 12,847 verified profiles</p>
+            <p class="page-subtitle">Search verified DIC alumni profiles</p>
           </div>
         </div>
         <!-- Search Bar -->
@@ -392,7 +270,7 @@
           <button class="chip" onclick="toggleChip(this,'usa')"><i data-lucide="flag" class="ui-icon"></i> USA</button>
         </div>
         <div class="directory-stats-bar">
-          <span id="dir-count">Showing 24 of 12,847 profiles</span>
+          <span id="dir-count">Loading profiles…</span>
           <div class="sort-options">
             <select class="form-select sm" onchange="sortDirectory(this.value)">
               <option value="relevance">Most Relevant</option>
@@ -509,22 +387,28 @@
           <button class="btn btn-primary" onclick="showCreateCampaign()">+ New Campaign</button>
         </div>
         <!-- Campaign Stats -->
+        <!-- These four tiles read ৳24.7L raised, 1,847 donors, ৳1,338 average
+             and a 98.2% success rate. All four were literals. They are now
+             filled by renderDonationStats() from donations with status SUCCESS.
+             There is no "transaction success rate" tile any more: it would need
+             failed-payment rows to divide by, and the settle/fail outcome is
+             only recorded for payments the platform itself processed. -->
         <div class="kpi-grid four">
           <div class="mini-kpi glass-card">
-            <div class="mini-kpi-value teal">৳24.7L</div>
-            <div class="mini-kpi-label">Total Raised FY26</div>
+            <div class="mini-kpi-value teal" id="don-kpi-raised">—</div>
+            <div class="mini-kpi-label">Donations Settled</div>
           </div>
           <div class="mini-kpi glass-card">
-            <div class="mini-kpi-value indigo">1,847</div>
-            <div class="mini-kpi-label">Total Donors</div>
+            <div class="mini-kpi-value indigo" id="don-kpi-donors">—</div>
+            <div class="mini-kpi-label">Donors</div>
           </div>
           <div class="mini-kpi glass-card">
-            <div class="mini-kpi-value amber">৳1,338</div>
-            <div class="mini-kpi-label">Avg Donation</div>
+            <div class="mini-kpi-value amber" id="don-kpi-avg">—</div>
+            <div class="mini-kpi-label">Average Donation</div>
           </div>
           <div class="mini-kpi glass-card">
-            <div class="mini-kpi-value green">98.2%</div>
-            <div class="mini-kpi-label">Transaction Success</div>
+            <div class="mini-kpi-value green" id="don-kpi-campaigns">—</div>
+            <div class="mini-kpi-label">Active Campaigns</div>
           </div>
         </div>
         <div class="campaigns-grid" id="campaigns-grid"></div>
@@ -605,21 +489,20 @@
             </div>
             <div id="jobs-list"></div>
           </div>
-          <div class="jobs-sidebar">
-            <div class="glass-card">
-              <div class="card-header"><h3 class="card-title">Your Resume</h3></div>
-              <div class="resume-upload-zone" onclick="triggerResumeUpload()">
-                <div class="upload-icon"><i data-lucide="file-text" class="ui-icon"></i></div>
-                <div class="upload-text">Upload Resume (PDF)</div>
-                <div class="upload-sub">AI will extract skills & match jobs</div>
+            <!-- Two cards used to sit here. "Your Resume" offered a PDF upload
+                 promising that "AI will extract skills and match jobs"; its click
+                 handler, triggerResumeUpload(), was never defined, nothing was
+                 stored, and no such matching exists. "Internship Drives" listed
+                 three openings at bKash, Pathao and Samsung R&amp;D that were a
+                 literal array shown beside the real postings. In their place is
+                 the referral queue, which lists rows job_referrals actually
+                 holds - requests that previously had no read path at all. -->
+            <div class="jobs-sidebar">
+              <div class="glass-card">
+                <div class="card-header"><h3 class="card-title">Referral Requests</h3></div>
+                <div id="job-referrals-list"></div>
               </div>
-              <input type="file" id="resume-input" style="display:none" />
             </div>
-            <div class="glass-card mt-16">
-              <div class="card-header"><h3 class="card-title">Internship Drives</h3></div>
-              <div id="internship-drives"></div>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -661,7 +544,7 @@
         <!-- Mentorship Health panel -->
         <div id="analytics-panel-mentorship" class="hidden">
           <div class="glass-card" style="margin-bottom:16px">
-            <div class="card-header"><h3 class="card-title">Mentorship Health Scorecard</h3><span class="card-badge teal">1,203 Active Pairs</span></div>
+            <div class="card-header"><h3 class="card-title">Mentorship Health Scorecard</h3><span class="card-badge teal" id="mentorship-pair-count">—</span></div>
             <div id="mentorship-health-grid"></div>
           </div>
           <div class="analytics-grid analytics-split-2">
@@ -759,32 +642,37 @@
             <!-- Cluster pins -->
             <div class="map-clusters" id="map-clusters"></div>
           </div>
+          <div class="map-note" id="map-note"></div>
           <div class="map-legend">
             <div class="legend-item"><span class="legend-dot large"></span> 1000+</div>
             <div class="legend-item"><span class="legend-dot medium"></span> 100–999</div>
             <div class="legend-item"><span class="legend-dot small"></span> &lt;100</div>
           </div>
         </div>
+        <!-- 47 countries, 12,847 mapped alumni, 8,241 in Bangladesh, 4,606
+             international, 23 active chapters — all five were literals, and the
+             pins on the map above were a fixed cluster list. Both are now drawn
+             from alumni_profiles.country / .city. -->
         <div class="map-stats glass-card mt-16">
           <div class="map-stat-item">
-            <div class="map-stat-val">47</div>
+            <div class="map-stat-val" id="map-stat-countries">—</div>
             <div class="map-stat-lab">Countries</div>
           </div>
           <div class="map-stat-item">
-            <div class="map-stat-val">12,847</div>
-            <div class="map-stat-lab">Mapped Alumni</div>
+            <div class="map-stat-val" id="map-stat-mapped">—</div>
+            <div class="map-stat-lab">Alumni With a Location</div>
           </div>
           <div class="map-stat-item">
-            <div class="map-stat-val">8,241</div>
+            <div class="map-stat-val" id="map-stat-bd">—</div>
             <div class="map-stat-lab">In Bangladesh</div>
           </div>
           <div class="map-stat-item">
-            <div class="map-stat-val">4,606</div>
+            <div class="map-stat-val" id="map-stat-intl">—</div>
             <div class="map-stat-lab">International</div>
           </div>
           <div class="map-stat-item">
-            <div class="map-stat-val">23</div>
-            <div class="map-stat-lab">Active Chapters</div>
+            <div class="map-stat-val" id="map-stat-chapters">—</div>
+            <div class="map-stat-lab">Approved Chapters</div>
           </div>
         </div>
       </div>
@@ -799,23 +687,21 @@
           <button class="btn btn-primary" onclick="showEditProfileV2()"><i data-lucide="pen-line" class="ui-icon"></i> Edit Profile</button>
         </div>
         <!-- Profile Completeness Score Banner -->
-        <div class="profile-completeness-banner glass-card" id="profile-completeness">
-          <div class="pc-left">
-            <div class="pc-title">Profile Completeness Score</div>
-            <div class="pc-track"><div class="pc-fill" id="profile-completeness-bar" style="width:85%"></div></div>
-            <div class="pc-sub" id="profile-completeness-text">85% complete — Gold Tier Alumni Identity</div>
-          </div>
-          <div class="pc-score-ring">
-            <div class="pc-ring-val" id="profile-completeness-ring" style="color:var(--daffodil-primary)">85%</div>
-          </div>
-          <div class="pc-items" id="profile-completeness-items">
-            <div class="pc-item done"><i data-lucide="check" class="ui-icon"></i> Basic Info</div>
-            <div class="pc-item done"><i data-lucide="check" class="ui-icon"></i> Academic Record</div>
-            <div class="pc-item done"><i data-lucide="check" class="ui-icon"></i> Professional Info</div>
-            <div class="pc-item done"><i data-lucide="check" class="ui-icon"></i> Contact &amp; Emergency</div>
-            <div class="pc-item missing"><i data-lucide="circle" class="ui-icon"></i> Social Profiles</div>
-            <div class="pc-item missing"><i data-lucide="circle" class="ui-icon"></i> Custom Fields</div>
-          </div>
+          <!-- Every value in this banner was fixed markup: an 85% bar, "85%
+               complete - Gold Tier Alumni Identity", and a six-item checklist
+               reporting four sections done and two missing regardless of what
+               the profile actually contained. paintProfileCompleteness() now
+               measures the profile against PROFILE_COMPLETENESS_FIELDS. -->
+          <div class="profile-completeness-banner glass-card" id="profile-completeness">
+            <div class="pc-left">
+              <div class="pc-title">Profile Completeness Score</div>
+              <div class="pc-track"><div class="pc-fill" id="profile-completeness-bar" style="width:0%"></div></div>
+              <div class="pc-sub" id="profile-completeness-text">Checking your profile&hellip;</div>
+            </div>
+            <div class="pc-score-ring">
+              <div class="pc-ring-val" id="profile-completeness-ring" style="color:var(--daffodil-primary)">&mdash;</div>
+            </div>
+            <div class="pc-items" id="profile-completeness-items"></div>
         </div>
 
         <!-- 10-SECTION NAVIGATION TABS -->
@@ -845,23 +731,30 @@
                 <div class="id-institution">Daffodil International College</div>
                 <div class="id-logo">DIC</div>
               </div>
-              <div class="id-card-body">
-                <div class="id-avatar" id="id-card-avatar">MR</div>
-                <div class="id-info">
-                  <div class="id-name" id="id-card-name">Mohiuddin Rahman</div>
-                  <div class="id-degree">BSc Computer Science</div>
-                  <div class="id-batch">Batch of 2020</div>
-                  <div class="id-role-badge" id="id-card-role">Verified Alumni</div>
+                <!-- The card showed one invented person to everybody: Mohiuddin
+                     Rahman, BSc Computer Science, Batch of 2020, ID
+                     DIC-2020-0847, valid through Dec 2027, and an
+                     "Anti-Spoofing QR" encoding a verification URL on a domain
+                     that does not exist plus a random token. It now shows the
+                     signed-in account, and the QR is gone: no verification
+                     endpoint exists for an alumni identity, so any code here
+                     would scan to nothing. Event tickets are unaffected - those
+                     carry a real HMAC-signed payload. -->
+                <div class="id-card-body">
+                  <div class="id-avatar" id="id-card-avatar">&mdash;</div>
+                  <div class="id-info">
+                    <div class="id-name" id="id-card-name">&mdash;</div>
+                    <div class="id-degree" id="id-card-degree"></div>
+                    <div class="id-batch" id="id-card-batch"></div>
+                    <div class="id-role-badge" id="id-card-role">&mdash;</div>
+                  </div>
                 </div>
-              </div>
-              <div class="id-card-footer">
-                <div class="id-qr" id="id-qr-code"></div>
-                <div class="id-meta">
-                  <div class="id-number">ID: DIC-2020-0847</div>
-                  <div class="id-valid">Valid through Dec 2027</div>
-                  <div class="id-verified-badge"><i data-lucide="check" class="ui-icon"></i> Anti-Spoofing QR</div>
+                <div class="id-card-footer">
+                  <div class="id-meta">
+                    <div class="id-number" id="id-card-number"></div>
+                    <div class="id-valid" id="id-card-verified"></div>
+                  </div>
                 </div>
-              </div>
               <div class="id-hologram"></div>
             </div>
             <div class="id-wallet-btns">
@@ -920,7 +813,6 @@
           <button class="chart-tab" onclick="switchAdmin('audit', this)">Audit Log</button>
           <button class="chart-tab" onclick="switchAdmin('compliance', this)">Compliance Vault</button>
           <button class="chart-tab" onclick="switchAdmin('nidvault', this)">NID/BRC Vault</button>
-          <button class="chart-tab" onclick="switchAdmin('tenants', this)">Tenants</button>
           <button class="chart-tab" onclick="switchAdmin('offlinesync', this)">Offline Sync</button>
           <button class="chart-tab" onclick="switchAdmin('broadcast', this)">Broadcast History</button>
           <button class="chart-tab" onclick="switchAdmin('segmentation', this)">Segmentation</button>
@@ -951,9 +843,9 @@
         <div id="admin-compliance" class="admin-section hidden">
           <div class="compliance-grid" id="compliance-grid"></div>
         </div>
-        <div id="admin-tenants" class="admin-section hidden">
-          <div id="tenant-list"></div>
-        </div>
+        <!-- The Tenants tab and panel were removed. This is a
+             single-institution deployment: no tenants table exists, and the
+             panel listed one hardcoded institution with 38,420 alumni. -->
         <div id="admin-offlinesync" class="admin-section hidden">
           <div class="offline-sync-panel" id="offline-sync-panel"></div>
         </div>
@@ -972,145 +864,8 @@
           <div id="segmentation-panel"></div>
         </div>
       </div>
+      <!-- The Career Progression page was removed. Its timeline, salary band, skills radar and peer-comparison panels were all populated from literal arrays, and the banner claimed an SSO job-change feed that had updated 847 profiles at 03:00 UTC. Nothing in the schema records employment history, salary or any such sync. alumni_profiles keeps only a current company and job title, which the profile page already shows. -->
 
-      <!-- ============ CAREER TRACKER PAGE (REQ-08) ============ -->
-      <div class="page hidden" id="page-career">
-        <div class="page-header">
-          <div>
-            <h1 class="page-title">Career Progression Tracker</h1>
-            <p class="page-subtitle">AI-enriched employment histories · Opt-out privacy controls · Self-reporting prompts</p>
-          </div>
-          <div class="page-header-actions">
-            <button class="btn btn-outline" onclick="showSelfReportPrompt()"><i data-lucide="pen-line" class="ui-icon"></i> Update My Career</button>
-            <button class="btn btn-primary" onclick="showCareerPrivacyModal()"><i data-lucide="lock" class="ui-icon"></i> Privacy Controls</button>
-          </div>
-        </div>
-        <div class="career-tracker-banner glass-card">
-          <div class="ct-banner-icon"><i data-lucide="bot" class="ui-icon"></i></div>
-          <div class="ct-banner-body">
-            <div class="ct-banner-title">AI Career Enrichment Active</div>
-            <div class="ct-banner-sub">System auto-updates alumni employment data via opt-in SSO. Last run: <strong>2026-07-30 03:00 UTC</strong> · <strong>847 profiles updated</strong></div>
-          </div>
-          <span class="card-badge teal">Opt-in Active</span>
-        </div>
-        <div class="career-tracker-layout">
-          <div class="career-tracker-main">
-            <div class="glass-card">
-              <div class="card-header">
-                <h3 class="card-title">Alumni Employment Registry</h3>
-                <div class="page-header-actions" style="flex-shrink:0">
-                  <select class="form-select sm" onchange="filterCareerRegistry(this.value)">
-                    <option value="">All Domains</option>
-                    <option value="tech">Technology</option>
-                    <option value="finance">Finance</option>
-                    <option value="business">Business</option>
-                  </select>
-                  <select class="form-select sm" onchange="filterCareerStatus(this.value)">
-                    <option value="">All Statuses</option>
-                    <option value="auto">AI Auto-Updated</option>
-                    <option value="self">Self-Reported</option>
-                    <option value="pending">Pending</option>
-                  </select>
-                </div>
-              </div>
-              <div id="career-registry-list"></div>
-            </div>
-          </div>
-          <div class="career-tracker-sidebar">
-            <div class="glass-card">
-              <div class="card-header"><h3 class="card-title">Self-Reporting Prompts</h3><span class="card-badge amber">12 Pending</span></div>
-              <div id="self-report-prompts"></div>
-            </div>
-            <div class="glass-card mt-16">
-              <div class="card-header"><h3 class="card-title">Enrichment Stats</h3></div>
-              <div id="enrichment-stats"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- ============ DEVELOPER API PAGE (REQ-18) ============ -->
-      <div class="page hidden" id="page-apidev">
-        <div class="page-header">
-          <div>
-            <h1 class="page-title">Developer API &amp; Webhooks</h1>
-            <p class="page-subtitle">OpenAPI-compliant · OAuth2 application access · SIS/ERP integration · Enterprise Tier</p>
-          </div>
-          <div class="page-header-actions">
-            <button class="btn btn-outline" onclick="showApiDocs()"><i data-lucide="file-text" class="ui-icon"></i> OpenAPI Docs</button>
-            <button class="btn btn-primary" onclick="showCreateApiApp()">+ New Application</button>
-          </div>
-        </div>
-        <div class="api-enterprise-badge glass-card">
-          <span style="font-size:20px"><i data-lucide="webhook" class="ui-icon"></i></span>
-          <div style="flex:1"><div style="font-weight:700">Enterprise Tier — External API Access</div><div style="font-size:12px;color:var(--text-secondary)">OAuth2 scoped credentials · Rate-limited 1,000 req/min · Webhook HMAC-SHA256 signed payloads</div></div>
-          <span class="card-badge teal">Active</span>
-        </div>
-        <div class="api-layout">
-          <div class="api-main">
-            <div class="glass-card">
-              <div class="card-header"><h3 class="card-title">OAuth2 Applications</h3><span class="badge-count">3</span></div>
-              <div id="api-apps-list"></div>
-            </div>
-            <div class="glass-card mt-16">
-              <div class="card-header"><h3 class="card-title">Webhook Endpoints</h3><button class="btn btn-sm btn-outline" onclick="showAddWebhookModal()">+ Add Endpoint</button></div>
-              <div id="webhook-list"></div>
-            </div>
-            <div class="glass-card mt-16">
-              <div class="card-header"><h3 class="card-title">Live Request Log</h3><span class="card-badge teal">Real-time</span></div>
-              <div id="api-request-log"></div>
-            </div>
-          </div>
-          <div class="api-sidebar">
-            <div class="glass-card">
-              <div class="card-header"><h3 class="card-title">Available Endpoints</h3></div>
-              <div id="api-endpoint-list"></div>
-            </div>
-            <div class="glass-card mt-16">
-              <div class="card-header"><h3 class="card-title">SIS/ERP Integrations</h3></div>
-              <div id="sis-integrations"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-    <!-- DAFFODIL OFFICIAL FOOTER (#1869BD) -->
-    <footer class="daffodil-footer">
-      <div class="footer-container">
-        <div class="footer-top">
-          <div class="footer-brand">
-            <img src="assets/dic-logo.png" onerror="this.onerror=null;this.src='assets/daffodil-logo.svg'"
-             alt="Daffodil International College" class="footer-brand-logo" />
-          </div>
-          <div class="footer-links">
-            <a href="#" onclick="showPage('dashboard')">Home</a>
-            <a href="#" onclick="showPage('directory')">Directory</a>
-            <a href="#" onclick="showPage('mentorship')">Mentorship</a>
-            <a href="#" onclick="showPage('events')">Events</a>
-            <a href="#" onclick="showPage('jobs')">Jobs</a>
-            <a href="#" onclick="showPage('profile')">Profile</a>
-          </div>
-        </div>
-        <div class="footer-bottom">
-          <div class="footer-legal">
-            <div>© 2026 Daffodil International College — Alumni &amp; Career Network. All Rights Reserved.</div>
-            <div>PDPA 2026 Compliant · Enterprise Grade</div>
-          </div>
-
-          <!-- TECHNOLOGY PARTNER CREDIT -->
-          <a class="built-by-nimikh" href="https://nimikh.com/" target="_blank" rel="noopener noreferrer"
-             aria-label="Built by Nimikh — opens nimikh.com in a new tab">
-            <span class="built-by-label">Built by</span>
-            <!-- Not lazy-loaded: the footer lives deep inside the scrollable
-                 #pages container, where the intersection observer did not fire
-                 and the mark never rendered. At 21KB on every page, deferring
-                 it buys nothing. -->
-            <img src="assets/nimikh-logo.svg" alt="Nimikh" class="nimikh-logo" width="360" height="100"
-                 decoding="async" />
-          </a>
-        </div>
-      </div>
-    </footer>
     </main>
 
     <!-- BOTTOM NAV (Mobile) -->

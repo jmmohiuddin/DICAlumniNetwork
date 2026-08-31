@@ -327,7 +327,10 @@ module.exports = function mountV2(app, { requireAuth, requireRole, ADMIN_ROLES, 
     const rows = await db.query(`
       SELECT COALESCE(NULLIF(d.is_anonymous, TRUE)::text, '') AS ignored,
              CASE WHEN d.is_anonymous THEN 'Anonymous Donor' ELSE u.full_name END AS name,
-             ap.batch, SUM(d.amount)::numeric AS total
+             ap.batch, SUM(d.amount)::numeric AS total,
+             -- Backs the line under each name, which used to be an invented
+             -- status tier assigned purely by position in this list.
+             COUNT(*)::int AS donation_count
       FROM donations d
       LEFT JOIN users u ON u.id = d.donor_user_id
       LEFT JOIN alumni_profiles ap ON ap.user_id = u.id

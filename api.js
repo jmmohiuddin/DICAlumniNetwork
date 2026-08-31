@@ -403,6 +403,18 @@ Object.assign(API, {
   getJobApplicants: (id)            => apiRequest('GET',    `/api/jobs/${id}/applicants`),
   requestReferral:  (id, message)   => apiRequest('POST',   `/api/jobs/${id}/refer`, { message }),
 
+  // ─── REAL PLATFORM STATISTICS ───
+  // Backs every dashboard tile, analytics figure and map number. Each field is
+  // a COUNT or SUM over rows that exist; none of it is a stored counter.
+  getStatsOverview:     ()          => apiRequest('GET',    '/api/stats/overview'),
+  getStatsAnalytics:    ()          => apiRequest('GET',    '/api/stats/analytics'),
+  getStatsMap:          ()          => apiRequest('GET',    '/api/stats/map'),
+  getRbacMatrix:        ()          => apiRequest('GET',    '/api/stats/rbac'),
+  getVerificationQueue: ()          => apiRequest('GET',    '/api/verification-queue'),
+  verifyUser:        (id, v = true) => apiRequest('PUT',    '/api/users/' + id + '/verify', { verified: v }),
+  getSyncMutations:     ()          => apiRequest('GET',    '/api/sync-mutations'),
+  getJobReferrals:      ()          => apiRequest('GET',    '/api/job-referrals'),
+
   // ─── CAMPAIGNS & DONATIONS ───
   getCampaigns:     ()              => apiRequest('GET',    '/api/campaigns'),
   createCampaign:   (d)             => apiRequest('POST',   '/api/campaigns', d),

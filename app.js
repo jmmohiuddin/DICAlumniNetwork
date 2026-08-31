@@ -11,32 +11,20 @@
    from POST /api/auth/login, and those accounts have been rotated. */
 
 
-const MOCK_CAMPAIGNS = [
-  { id: 1, name: 'DIC Merit Scholarship Fund 2026', desc: 'Provide full tuition scholarships to 50 meritorious DIC students from underprivileged backgrounds.', tag: 'scholarship', raised: 1840000, goal: 2500000, donors: 342, days: 18, gateways: ['bkash', 'nagad', 'card'] },
-  { id: 2, name: 'DIC Smart Robotics Lab Fund', desc: 'Equip the campus robotics laboratory with modern research-grade instruments and microcontrollers.', tag: 'infrastructure', raised: 680000, goal: 1200000, donors: 189, days: 31, gateways: ['bkash', 'nagad', 'rocket'] },
-  { id: 3, name: 'DIC Entrepreneurship Seed Fund', desc: 'Launch a startup incubator at DIC providing seed funding and mentorship for student tech startups.', tag: 'education', raised: 920000, goal: 1500000, donors: 210, days: 45, gateways: ['bkash', 'card'] }
-];
-
-
-
+/* MOCK_CAMPAIGNS held three fundraising campaigns with raised totals, donor
+   counts and days remaining. The campaigns table holds the real ones, and
+   /api/campaigns returns their settled totals computed from donations. */
 
 // Chapters loaded from PostgreSQL by renderChapters(). Was a hardcoded array.
 let chaptersCache = [];
 // The signed-in user's chapter memberships, also from PostgreSQL.
 let USER_CHAPTER_MEMBERSHIPS = new Set();
 
-const MOCK_VERIFICATION_QUEUE = [
-  { name: 'Rafiq Hossain', initials: 'RH', details: 'CSE Batch 2021 · Unmatched ID' },
-  { name: 'Sumaiya Zaman', initials: 'SZ', details: 'BBA Batch 2022 · Pending NID' }
-];
-
-const MOCK_TENANTS = [
-  { name: 'Daffodil International College', subdomain: 'alumni.dic.edu.bd', alumni: 38420, status: 'active', plan: 'Enterprise Platform' }
-];
-const MOCK_CAREER_TIMELINE = [
-  { company: 'Daffodil International College', role: 'DIC Alumni Board Director', period: '2024 – Present' },
-  { company: 'Brain Station 23', role: 'Senior Software Engineer', period: '2022 – Present' }
-];
+/* Three arrays lived here and are gone: MOCK_VERIFICATION_QUEUE, which showed
+   the same two people awaiting verification on every install; MOCK_TENANTS, a
+   single institution with a hardcoded roll of 38,420; and MOCK_CAREER_TIMELINE,
+   two invented jobs shown on every alumnus's profile. The verification queue is
+   now GET /api/verification-queue, and the other two screens were removed. */
 
 // ─── APP STATE ──────────────────────────────────────────────
 let state = {
@@ -272,18 +260,20 @@ function renderSidebarNav(role) {
   const navItems = [
     { id: 'dashboard', icon: '⊞', label: 'Dashboard', roles: ['alumni', 'moderator', 'dept_admin', 'univ_admin', 'super_admin'] },
     { id: 'directory', icon: '◉', label: 'Alumni Directory', roles: ['alumni', 'moderator', 'dept_admin', 'univ_admin', 'super_admin'] },
-    { id: 'mentorship', icon: '⟳', label: 'Mentorship Hub', badge: '3', roles: ['alumni', 'moderator', 'univ_admin', 'super_admin'] },
+    // The badge on this item read a literal "3" against a mentorships table
+    // holding no rows, and the Job Board badge below read a literal "5". Both
+    // are gone; a count in the navigation would need to be fetched, and neither
+    // is worth a request on every render.
+    { id: 'mentorship', icon: '⟳', label: 'Mentorship Hub', roles: ['alumni', 'moderator', 'univ_admin', 'super_admin'] },
     { id: 'donations', icon: '❤', label: 'Donations & Funds', roles: ['alumni', 'univ_admin', 'super_admin'] },
     { id: 'events', icon: 'calendar-days', label: 'Events & Tickets', roles: ['alumni', 'moderator', 'dept_admin', 'univ_admin', 'super_admin'] },
-    { id: 'jobs', icon: '✦', label: 'Job Board', badge: '5', badgeNew: true, roles: ['alumni', 'dept_admin', 'univ_admin', 'super_admin'] },
+    { id: 'jobs', icon: '✦', label: 'Job Board', roles: ['alumni', 'dept_admin', 'univ_admin', 'super_admin'] },
     { id: 'analytics', icon: '▦', label: 'Executive Analytics', roles: ['dept_admin', 'univ_admin', 'super_admin'] },
-    { id: 'career', icon: '📈', label: 'Career Progression', roles: ['alumni', 'super_admin'] },
     { id: 'chapters', icon: '⬡', label: 'DIC Chapters', roles: ['alumni', 'univ_admin', 'super_admin'] },
     { id: 'news', icon: '✐', label: 'DIC News Feed', roles: ['alumni', 'moderator', 'dept_admin', 'univ_admin', 'super_admin'] },
     { id: 'map', icon: '⊕', label: 'Alumni Map', roles: ['alumni', 'univ_admin', 'super_admin'] },
     { id: 'profile', icon: '◎', label: 'My DIC Profile', isDivider: true, roles: ['alumni', 'moderator', 'dept_admin', 'univ_admin', 'super_admin'] },
-    { id: 'admin', icon: '⚙', label: 'DIC Admin Panel', roles: ['univ_admin', 'super_admin'] },
-    { id: 'apidev', icon: '⟁', label: 'Developer API', badge: 'ENT', badgeTeal: true, roles: ['super_admin'] }
+    { id: 'admin', icon: '⚙', label: 'DIC Admin Panel', roles: ['univ_admin', 'super_admin'] }
   ];
 
   const allowed = navItems.filter(item => item.roles.includes(role));
@@ -356,22 +346,69 @@ function initApp() {
   renderAlumniGrid();
   renderMentorships();
   renderCampaignsEnhanced();
-  if (typeof startCampaignTicker === 'function') startCampaignTicker();
   renderEventsPage();
   renderJobsEnhanced();
   renderChapters();
   renderNewsFeed();
   renderMapClusters();
-  renderCareerTimeline();
-  if (typeof renderRBACTableV2 === 'function') renderRBACTableV2(); else renderRBACTable();
-  renderAuditLog();
-  renderComplianceGrid();
-  if (typeof renderTenantListEnhanced === 'function') renderTenantListEnhanced(); else renderTenantList();
   renderNotifications();
   renderSpotlightAlumni();
-  renderInternshipDrives();
-  renderAnalyticsMetrics();
+  renderRBACTableV2();          // every role may read its own permission row
   generateGeoHeatmap();
+
+  // Staff-only surfaces. Calling these for an alumnus produced three 403s and a
+  // console error on every sign-in, for panels that role cannot even open.
+  if (STAFF_ROLES.includes(state.currentUser?.role)) {
+    renderAuditLog();
+    renderComplianceGrid();
+    renderAnalyticsMetrics();
+  }
+}
+
+// Matches MODERATOR_ROLES on the server; used only to avoid requesting things
+// the caller is not allowed to have.
+const STAFF_ROLES = ['super_admin', 'univ_admin', 'dept_admin', 'moderator'];
+
+/* ─── DASHBOARDS ────────────────────────────────────────────
+   All five dashboards used to ship their numbers as literals in the template:
+   38,420 alumni, ৳45.2L collected, 3,800 mentorships, 89% placement, a 99.4%
+   safety index, 18% CPU load. None of it came from the database. Every figure
+   below is now read from GET /api/stats/overview, which is a set of COUNT and
+   SUM queries over rows that exist, and anything that cannot be counted is not
+   shown at all rather than invented. */
+
+/* One fetch each per page load. Four separate renderers need the profile row —
+   the completeness banner, the badges, the career timeline and the ten sections
+   — and each was requesting it independently. */
+let _profilePromise = null;
+function loadMyProfile(force = false) {
+  if (force) _profilePromise = null;
+  if (!_profilePromise) _profilePromise = API.getMyProfile();
+  return _profilePromise;
+}
+
+let _statsPromise = null;
+function loadPlatformStats(force = false) {
+  if (force) _statsPromise = null;
+  if (!_statsPromise) {
+    _statsPromise = API.getStatsOverview().then(r => (apiFailed(r) ? null : r));
+  }
+  return _statsPromise;
+}
+
+// Numbers render as "—" until the real value arrives, never as a placeholder
+// figure that could be mistaken for data.
+const statNum = (v) => (v === null || v === undefined ? '—' : Number(v).toLocaleString('en-IN'));
+const statMoney = (v) => (v === null || v === undefined ? '—' : '৳' + Number(v).toLocaleString('en-IN'));
+
+// Writes a value into every element carrying data-stat="<key>", so a dashboard
+// only has to name the field it wants in the markup.
+function paintStats(stats, formatters = {}) {
+  document.querySelectorAll('[data-stat]').forEach(el => {
+    const key = el.getAttribute('data-stat');
+    const fmt = formatters[key] || statNum;
+    el.textContent = fmt(stats ? stats[key] : null);
+  });
 }
 
 function renderDashboard() {
@@ -393,28 +430,36 @@ function renderDashboard() {
   }
 }
 
-// 🎓 1. ALUMNI DASHBOARD
+// 1. ALUMNI DASHBOARD
 function renderAlumniDashboard(page) {
   const u = state.currentUser;
   page.innerHTML = `
     <div class="page-header">
       <div>
-        <h1 class="page-title">Welcome back, ${u.name}! <i data-lucide="hand" class="ui-icon"></i></h1>
-        <p class="page-subtitle">Daffodil International College · ${u.dept}</p>
+        <h1 class="page-title">Welcome back, ${escapeHtml(u.name)}! <i data-lucide="hand" class="ui-icon"></i></h1>
+        <p class="page-subtitle">Daffodil International College · ${escapeHtml(u.dept || '')}</p>
       </div>
       <button class="btn btn-primary" onclick="showPage('profile')"><i data-lucide="id-card" class="ui-icon"></i> View Digital ID</button>
     </div>
 
-    <!-- PROFILE COMPLETENESS -->
+    <!-- Completeness is measured against the profile fields that are actually
+         filled in, not a fixed 85%. -->
     <div class="profile-completeness-banner glass-card">
       <div class="pc-left">
         <div class="pc-title">DIC Profile Completeness</div>
-        <div class="pc-track"><div class="pc-fill" style="width:85%"></div></div>
-        <div class="pc-sub">85% complete — Gold Tier Alumni Status</div>
+        <div class="pc-track"><div class="pc-fill" id="dash-pc-fill" style="width:0%"></div></div>
+        <div class="pc-sub" id="dash-pc-text">Checking your profile…</div>
       </div>
       <div class="pc-score-ring">
-        <div class="pc-ring-val" style="color:var(--daffodil-primary)">85%</div>
+        <div class="pc-ring-val" id="dash-pc-ring" style="color:var(--daffodil-primary)">—</div>
       </div>
+    </div>
+
+    <div class="sync-overview-grid mb-16">
+      <div class="sync-stat-card"><div class="sync-stat-val" data-stat="my_registrations">—</div><div class="sync-stat-label">My Event Registrations</div></div>
+      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--teal)" data-stat="my_connections">—</div><div class="sync-stat-label">My Connections</div></div>
+      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--amber)" data-stat="my_chapters">—</div><div class="sync-stat-label">My Chapters</div></div>
+      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--primary-light)" data-stat="my_unread_notifications">—</div><div class="sync-stat-label">Unread Notifications</div></div>
     </div>
 
     <div class="dashboard-split">
@@ -430,7 +475,7 @@ function renderAlumniDashboard(page) {
       </div>
       <div class="dashboard-right">
         <div class="glass-card">
-          <div class="card-header"><h3 class="card-title"><i data-lucide="trophy" class="ui-icon"></i> Top Donors Leaderboard</h3><span class="card-badge amber">FY 2026</span></div>
+          <div class="card-header"><h3 class="card-title"><i data-lucide="trophy" class="ui-icon"></i> Top Donors</h3></div>
           <div id="donor-leaderboard"></div>
         </div>
         <div class="glass-card mt-16">
@@ -444,25 +489,89 @@ function renderAlumniDashboard(page) {
   renderEventsPage();
   renderDonorLeaderboard();
   renderActivePoll();
+  loadPlatformStats().then(s => paintStats(s));
+  paintProfileCompleteness('dash-pc-fill', 'dash-pc-ring', 'dash-pc-text');
 }
 
-// <i data-lucide="shield" class="ui-icon"></i> 2. MODERATOR DASHBOARD
+/* Profile completeness, measured. PROFILE_COMPLETENESS_FIELDS is the list the
+   profile page itself asks the user to fill in; the score is simply how many of
+   them are non-empty. The old banner was a hardcoded 85% for every account,
+   including one with an entirely blank profile. */
+const PROFILE_COMPLETENESS_FIELDS = [
+  ['full_name', 'Full name'], ['primary_email', 'Email address'], ['mobile_number', 'Mobile number'],
+  ['batch', 'Batch / passing year'], ['department', 'Department'], ['student_id', 'Student ID'],
+  ['bio', 'Short bio'], ['photo_url', 'Profile photo'], ['present_address', 'Present address'],
+  ['city', 'City'], ['country', 'Country'], ['blood_group', 'Blood group'],
+  ['current_company', 'Current organisation'], ['job_title', 'Current designation'],
+  ['skills', 'Skills'], ['linkedin', 'LinkedIn profile']
+];
+
+function profileCompleteness(profile) {
+  if (!profile) return null;
+  const filled = PROFILE_COMPLETENESS_FIELDS.filter(([k]) => {
+    const v = profile[k];
+    return v !== null && v !== undefined && String(v).trim() !== '';
+  });
+  return {
+    percent: Math.round((filled.length / PROFILE_COMPLETENESS_FIELDS.length) * 100),
+    filled: filled.length,
+    total: PROFILE_COMPLETENESS_FIELDS.length,
+    missing: PROFILE_COMPLETENESS_FIELDS.filter(([k]) => {
+      const v = profile[k];
+      return v === null || v === undefined || String(v).trim() === '';
+    }).map(([, label]) => label)
+  };
+}
+
+function paintProfileCompleteness(fillId, ringId, textId, itemsId) {
+  loadMyProfile().then(p => {
+    const fill = document.getElementById(fillId);
+    const ring = document.getElementById(ringId);
+    const text = document.getElementById(textId);
+    const items = itemsId ? document.getElementById(itemsId) : null;
+    if (apiFailed(p)) {
+      if (text) text.textContent = 'Profile could not be loaded.';
+      if (ring) ring.textContent = '—';
+      if (items) items.innerHTML = '';
+      return;
+    }
+    const c = profileCompleteness(p);
+    if (fill) fill.style.width = c.percent + '%';
+    if (ring) ring.textContent = c.percent + '%';
+    if (text) {
+      text.textContent = c.percent === 100
+        ? `Complete — all ${c.total} profile fields filled in`
+        : `${c.filled} of ${c.total} fields filled in · next: ${c.missing.slice(0, 3).join(', ')}`;
+    }
+    // One chip per field, ticked only when that field actually holds a value.
+    if (items) {
+      items.innerHTML = PROFILE_COMPLETENESS_FIELDS.map(([key, label]) => {
+        const v = p[key];
+        const done = v !== null && v !== undefined && String(v).trim() !== '';
+        return `<div class="pc-item ${done ? 'done' : 'missing'}">
+          <i data-lucide="${done ? 'check' : 'circle'}" class="ui-icon"></i> ${escapeHtml(label)}</div>`;
+      }).join('');
+      if (window.lucide) lucide.createIcons();
+    }
+  });
+}
+
+// 2. MODERATOR DASHBOARD
 function renderModeratorDashboard(page) {
-  const u = state.currentUser;
   page.innerHTML = `
     <div class="page-header">
       <div>
         <h1 class="page-title"><i data-lucide="shield" class="ui-icon"></i> Community Moderation Center</h1>
-        <p class="page-subtitle">DIC Community Safety &amp; Approvals Control Panel</p>
+        <p class="page-subtitle">DIC Community Approvals Control Panel</p>
       </div>
-      <span class="card-badge teal">14 Pending Reviews</span>
+      <span class="card-badge teal"><span data-stat="moderation_pending">—</span> pending</span>
     </div>
 
     <div class="sync-overview-grid mb-16">
-      <div class="sync-stat-card"><div class="sync-stat-val">14</div><div class="sync-stat-label">Pending Profiles</div></div>
-      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--amber)">3</div><div class="sync-stat-label">Reported Posts</div></div>
-      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--teal)">99.4%</div><div class="sync-stat-label">Safety Index</div></div>
-      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--primary-light)">&lt;5 min</div><div class="sync-stat-label">Avg Review Time</div></div>
+      <div class="sync-stat-card"><div class="sync-stat-val" data-stat="pending_verifications">—</div><div class="sync-stat-label">Unverified Accounts</div></div>
+      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--amber)" data-stat="pending_stories">—</div><div class="sync-stat-label">Stories Awaiting Review</div></div>
+      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--teal)" data-stat="pending_chapters">—</div><div class="sync-stat-label">Chapters Awaiting Review</div></div>
+      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--primary-light)" data-stat="pending_events">—</div><div class="sync-stat-label">Events Awaiting Approval</div></div>
     </div>
 
     <div class="dashboard-split">
@@ -474,121 +583,187 @@ function renderModeratorDashboard(page) {
       </div>
       <div class="dashboard-right">
         <div class="glass-card">
-          <div class="card-header"><h3 class="card-title"><i data-lucide="triangle-alert" class="ui-icon"></i> Flagged Content Queue</h3></div>
-          <div style="font-size:12px;color:var(--text-secondary)">
-            <div style="padding:10px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:6px;margin-bottom:8px">
-              <div style="font-weight:700;color:var(--amber)">Reported Discussion Post #482</div>
-              <div style="margin:4px 0;color:var(--text-muted)">"Promotional spam link posted in CSE forum"</div>
-              <div style="display:flex;gap:6px;margin-top:6px">
-                <button class="btn btn-sm btn-danger" onclick="showToast('🗑 Post removed from feed')">Take Down</button>
-                <button class="btn btn-sm btn-outline" onclick="showToast('✓ Report dismissed')">Dismiss</button>
-              </div>
-            </div>
-          </div>
+          <div class="card-header"><h3 class="card-title"><i data-lucide="clipboard-list" class="ui-icon"></i> Moderation Queue</h3></div>
+          <div id="dash-moderation-queue"></div>
         </div>
       </div>
     </div>
   `;
   renderVerificationQueue();
+  renderDashModerationQueue();
+  loadPlatformStats().then(s => paintStats(s));
 }
 
-// 🏢 3. DEPARTMENT ADMIN DASHBOARD
+/* The real moderation queue. The panel this replaces held one invented item —
+   "Reported Discussion Post #482" — with working Take Down and Dismiss buttons
+   that only raised a toast. There is no reports table in the schema, so no
+   report count is shown; what is shown is what /api/moderation returns. */
+function renderDashModerationQueue() {
+  const el = document.getElementById('dash-moderation-queue');
+  if (!el) return;
+  el.innerHTML = '<div class="queue-sub" style="padding:12px">Loading…</div>';
+  API.getModerationQueue().then(res => {
+    if (apiFailed(res)) {
+      el.innerHTML = renderEmptyState('<i data-lucide="shield-off" class="ui-icon"></i>',
+        'Moderation queue unavailable', 'The queue could not be loaded.');
+      return;
+    }
+    const items = [
+      ...(res.chapters || []).map(c => ({ kind: 'Chapter', title: c.name, id: c.id, type: 'chapter' })),
+      ...(res.stories || []).map(s => ({ kind: 'Story', title: s.title, id: s.id, type: 'story' }))
+    ];
+    if (!items.length) {
+      el.innerHTML = renderEmptyState('<i data-lucide="check-check" class="ui-icon"></i>',
+        'Nothing waiting for review', 'Chapters and stories submitted for approval appear here.');
+      if (window.lucide) lucide.createIcons();
+      return;
+    }
+    el.innerHTML = items.map(i => `
+      <div class="queue-item">
+        <div class="queue-info">
+          <div class="queue-name">${escapeHtml(i.title || 'Untitled')}</div>
+          <div class="queue-sub">${i.kind} · awaiting review</div>
+        </div>
+        <div class="queue-actions">
+          <button class="approve-btn" onclick="${i.type === 'chapter' ? 'handleModerateChapter' : 'handleModerateStory'}(${i.id}, 'approve')">Approve</button>
+          <button class="review-btn" onclick="${i.type === 'chapter' ? 'handleModerateChapter' : 'handleModerateStory'}(${i.id}, 'reject')">Reject</button>
+        </div>
+      </div>`).join('');
+    if (window.lucide) lucide.createIcons();
+  });
+}
+
+// 3. DEPARTMENT ADMIN DASHBOARD
 function renderDeptAdminDashboard(page) {
   const u = state.currentUser;
   page.innerHTML = `
     <div class="page-header">
       <div>
         <h1 class="page-title"><i data-lucide="building-2" class="ui-icon"></i> Department Admin Center</h1>
-        <p class="page-subtitle">Daffodil International College · ${u.dept}</p>
+        <p class="page-subtitle">Daffodil International College · ${escapeHtml(u.dept || '')}</p>
       </div>
-      <select class="form-select sm" style="width:auto" onchange="showToast('Filtering for department: ' + this.value)">
-        <option>Computer Science &amp; Eng (CSE)</option>
-        <option>Software Engineering (SWE)</option>
-        <option>Business Administration (BBA)</option>
-        <option>Electrical &amp; Electronic (EEE)</option>
-      </select>
     </div>
 
     <div class="sync-overview-grid">
-      <div class="sync-stat-card"><div class="sync-stat-val">6,210</div><div class="sync-stat-label">CSE Alumni</div></div>
-      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--teal)">94.2%</div><div class="sync-stat-label">Employment Rate</div></div>
-      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--amber)">18</div><div class="sync-stat-label">Active Events</div></div>
-      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--primary-light)">42</div><div class="sync-stat-label">Pending Students</div></div>
+      <div class="sync-stat-card"><div class="sync-stat-val" id="dept-alumni-count">—</div><div class="sync-stat-label">Alumni in ${escapeHtml(u.dept || 'your department')}</div></div>
+      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--teal)" data-stat="events_upcoming">—</div><div class="sync-stat-label">Upcoming Events</div></div>
+      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--amber)" data-stat="my_assigned_tasks">—</div><div class="sync-stat-label">Tasks Assigned to Me</div></div>
+      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--primary-light)" data-stat="moderation_pending">—</div><div class="sync-stat-label">Items Awaiting Review</div></div>
     </div>
 
     <div class="dashboard-split">
       <div class="dashboard-left">
         <div class="glass-card">
-          <div class="card-header"><h3 class="card-title"><i data-lucide="trending-up" class="ui-icon"></i> CSE Alumni Placement Funnel</h3></div>
-          <canvas id="dashboard-chart" height="180"></canvas>
+          <div class="card-header"><h3 class="card-title"><i data-lucide="users" class="ui-icon"></i> Alumni by Department</h3></div>
+          <div id="dept-breakdown"></div>
         </div>
       </div>
       <div class="dashboard-right">
         <div class="glass-card">
-          <div class="card-header"><h3 class="card-title"><i data-lucide="clipboard-list" class="ui-icon"></i> CSE Verification Queue</h3></div>
+          <div class="card-header"><h3 class="card-title"><i data-lucide="clipboard-list" class="ui-icon"></i> Verification Queue</h3></div>
           <div id="verification-queue"></div>
         </div>
       </div>
     </div>
   `;
   renderVerificationQueue();
-  setTimeout(initDashboardChart, 100);
+  loadPlatformStats().then(s => paintStats(s));
+  renderDepartmentBreakdown(u.dept);
 }
 
-// <i data-lucide="landmark" class="ui-icon"></i> 4. COLLEGE ADMIN DASHBOARD
+/* Real headcount per department, straight from alumni_profiles. This replaces a
+   fixed "6,210 CSE Alumni" tile and a placement-funnel chart whose series was a
+   literal array. There is no employment-outcome data in the schema, so no
+   employment rate is shown. */
+function renderDepartmentBreakdown(myDept) {
+  const el = document.getElementById('dept-breakdown');
+  API.getStatsAnalytics().then(res => {
+    if (apiFailed(res)) {
+      if (el) el.innerHTML = renderEmptyState('<i data-lucide="chart-column" class="ui-icon"></i>',
+        'Breakdown unavailable', 'Department figures could not be loaded.');
+      return;
+    }
+    const rows = res.byDepartment || [];
+    const mine = rows.find(r => r.department === myDept);
+    const countEl = document.getElementById('dept-alumni-count');
+    if (countEl) countEl.textContent = mine ? statNum(mine.n) : '0';
+
+    if (!el) return;
+    if (!rows.length) {
+      el.innerHTML = renderEmptyState('<i data-lucide="chart-column" class="ui-icon"></i>',
+        'No alumni profiles recorded yet',
+        'Department figures appear once alumni profiles carry a department.');
+      if (window.lucide) lucide.createIcons();
+      return;
+    }
+    const max = Math.max(...rows.map(r => r.n));
+    el.innerHTML = `<div class="funnel-bars">${rows.map(r => `
+      <div class="funnel-item">
+        <div class="funnel-label">${escapeHtml(r.department)}</div>
+        <div class="funnel-track"><div class="funnel-fill bkash" style="width:${Math.round((r.n / max) * 100)}%">${r.n}</div></div>
+      </div>`).join('')}</div>`;
+    if (window.lucide) lucide.createIcons();
+  });
+}
+
+// 4. COLLEGE ADMIN DASHBOARD
 function renderUnivAdminDashboard(page) {
-  const u = state.currentUser;
   page.innerHTML = `
     <div class="page-header">
       <div>
         <h1 class="page-title"><i data-lucide="landmark" class="ui-icon"></i> DIC Executive Command Center</h1>
-        <p class="page-subtitle">Daffodil International College · FY 2026 Q3 Overview</p>
+        <p class="page-subtitle">Daffodil International College</p>
       </div>
       <div class="page-header-actions">
         <button class="btn btn-primary" onclick="showBroadcastModal()"><i data-lucide="megaphone" class="ui-icon"></i> College Broadcast</button>
       </div>
     </div>
 
+    <!-- No trend captions: nothing in the schema records a prior period to
+         compare against, so a "9.2% this quarter" line could only be invented. -->
     <div class="kpi-grid">
       <div class="kpi-card indigo">
         <div class="kpi-icon"><i data-lucide="users" class="ui-icon"></i></div>
         <div class="kpi-body">
-          <div class="kpi-value" id="kpi-alumni">38,420</div>
-          <div class="kpi-label">Total DIC Verified Alumni</div>
-          <div class="kpi-trend up"><i data-lucide="trending-up" class="ui-icon"></i> 9.2% this quarter</div>
+          <div class="kpi-value" data-stat="users_verified">—</div>
+          <div class="kpi-label">Verified Accounts</div>
         </div>
       </div>
       <div class="kpi-card teal">
         <div class="kpi-icon">৳</div>
         <div class="kpi-body">
-          <div class="kpi-value" id="kpi-funds">৳45.2L</div>
-          <div class="kpi-label">Funds Collected</div>
-          <div class="kpi-trend up"><i data-lucide="trending-up" class="ui-icon"></i> 14.8% YoY</div>
+          <div class="kpi-value" data-stat="donations_total">—</div>
+          <div class="kpi-label">Donations Settled</div>
         </div>
       </div>
       <div class="kpi-card amber">
         <div class="kpi-icon"><i data-lucide="handshake" class="ui-icon"></i></div>
         <div class="kpi-body">
-          <div class="kpi-value" id="kpi-mentors">3,800</div>
-          <div class="kpi-label">Mentorship Connections</div>
-          <div class="kpi-trend up"><i data-lucide="trending-up" class="ui-icon"></i> 83% completion</div>
+          <div class="kpi-value" data-stat="mentorships_active">—</div>
+          <div class="kpi-label">Active Mentorships</div>
         </div>
       </div>
       <div class="kpi-card purple">
         <div class="kpi-icon"><i data-lucide="ticket" class="ui-icon"></i></div>
         <div class="kpi-body">
-          <div class="kpi-value" id="kpi-events">89%</div>
-          <div class="kpi-label">Graduate Placement</div>
-          <div class="kpi-trend up">High placement</div>
+          <div class="kpi-value" data-stat="events_upcoming">—</div>
+          <div class="kpi-label">Upcoming Events</div>
         </div>
       </div>
+    </div>
+
+    <div class="sync-overview-grid mt-16">
+      <div class="sync-stat-card"><div class="sync-stat-val" data-stat="profiles_total">—</div><div class="sync-stat-label">Alumni Profiles</div></div>
+      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--teal)" data-stat="registrations_total">—</div><div class="sync-stat-label">Event Registrations</div></div>
+      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--amber)" data-stat="jobs_total">—</div><div class="sync-stat-label">Job Postings</div></div>
+      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--primary-light)" data-stat="chapter_memberships_total">—</div><div class="sync-stat-label">Chapter Memberships</div></div>
     </div>
 
     <div class="dashboard-split mt-16">
       <div class="dashboard-left">
         <div class="glass-card">
-          <div class="card-header"><h3 class="card-title"><i data-lucide="trending-up" class="ui-icon"></i> DIC 12-Month Alumni Engagement Trends</h3></div>
-          <canvas id="dashboard-chart" height="180"></canvas>
+          <div class="card-header"><h3 class="card-title"><i data-lucide="chart-column" class="ui-icon"></i> Alumni by Batch</h3></div>
+          <div id="univ-batch-breakdown"></div>
         </div>
       </div>
       <div class="dashboard-right">
@@ -600,30 +775,66 @@ function renderUnivAdminDashboard(page) {
     </div>
   `;
   renderDonorLeaderboard();
-  setTimeout(initDashboardChart, 100);
+  loadPlatformStats().then(s => paintStats(s, { donations_total: statMoney }));
+  renderBatchBreakdown();
 }
 
-// 👑 5. SUPER ADMIN DASHBOARD
+/* Alumni per graduating batch, from alumni_profiles.batch. Replaces a
+   "12-Month Alumni Engagement Trends" chart whose twelve data points were a
+   literal array — the schema stores no monthly engagement history. */
+function renderBatchBreakdown() {
+  const el = document.getElementById('univ-batch-breakdown');
+  if (!el) return;
+  API.getStatsAnalytics().then(res => {
+    if (apiFailed(res)) {
+      el.innerHTML = renderEmptyState('<i data-lucide="chart-column" class="ui-icon"></i>',
+        'Breakdown unavailable', 'Batch figures could not be loaded.');
+      return;
+    }
+    const rows = res.byBatch || [];
+    if (!rows.length) {
+      el.innerHTML = renderEmptyState('<i data-lucide="chart-column" class="ui-icon"></i>',
+        'No batch data recorded yet', 'Figures appear once alumni profiles carry a passing year.');
+      if (window.lucide) lucide.createIcons();
+      return;
+    }
+    const max = Math.max(...rows.map(r => r.n));
+    el.innerHTML = `<div class="funnel-bars">${rows.map(r => `
+      <div class="funnel-item">
+        <div class="funnel-label">Batch ${r.batch}</div>
+        <div class="funnel-track"><div class="funnel-fill nagad" style="width:${Math.round((r.n / max) * 100)}%">${r.n}</div></div>
+      </div>`).join('')}</div>`;
+    if (window.lucide) lucide.createIcons();
+  });
+}
+
+// 5. SUPER ADMIN DASHBOARD
 function renderSuperAdminDashboard(page) {
-  const u = state.currentUser;
   page.innerHTML = `
     <div class="page-header">
       <div>
         <h1 class="page-title"><i data-lucide="crown" class="ui-icon"></i> DIC Super Admin Control Panel</h1>
-        <p class="page-subtitle">Full Platform Infrastructure · Security · Server Health · Integrations</p>
+        <p class="page-subtitle">Platform totals · audit trail · system status</p>
       </div>
-      <span class="card-badge teal">System Health: 100% Operational</span>
     </div>
 
-    <!-- SERVER HEALTH MONITORS -->
-    <div class="server-health-grid">
-      <div class="server-card"><div class="server-val">18%</div><div class="server-label">CPU Load (AWS EKS)</div></div>
-      <div class="server-card"><div class="server-val" style="color:var(--teal)">4.2 / 16 GB</div><div class="server-label">RAM Usage</div></div>
-      <div class="server-card"><div class="server-val" style="color:var(--amber)">12 ms</div><div class="server-label">API Latency</div></div>
-      <div class="server-card"><div class="server-val" style="color:var(--primary-light)">42 / 100</div><div class="server-label">DB Connection Pool</div></div>
+    <!-- The four tiles here used to report CPU load, RAM usage, API latency and
+         a database connection-pool figure. Nothing in this system collects any
+         of that, so all four were literals. GET /api/health is the only real
+         telemetry available: it proves the database answered and reports what
+         it is and what time it thinks it is. -->
+    <div class="server-health-grid" id="system-status">
+      <div class="server-card"><div class="server-val">—</div><div class="server-label">Checking system status…</div></div>
     </div>
 
-    <div class="dashboard-split">
+    <div class="sync-overview-grid mt-16">
+      <div class="sync-stat-card"><div class="sync-stat-val" data-stat="users_total">—</div><div class="sync-stat-label">User Accounts</div></div>
+      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--teal)" data-stat="events_total">—</div><div class="sync-stat-label">Events</div></div>
+      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--amber)" data-stat="audit_entries">—</div><div class="sync-stat-label">Audit Log Entries</div></div>
+      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--primary-light)" data-stat="custom_fields_total">—</div><div class="sync-stat-label">Custom Fields</div></div>
+    </div>
+
+    <div class="dashboard-split mt-16">
       <div class="dashboard-left">
         <div class="glass-card">
           <div class="card-header"><h3 class="card-title"><i data-lucide="scroll-text" class="ui-icon"></i> Immutable System Security Audit Trail</h3><button class="btn btn-outline btn-sm" onclick="showPage('admin')">View Full Audit Log →</button></div>
@@ -632,30 +843,68 @@ function renderSuperAdminDashboard(page) {
       </div>
       <div class="dashboard-right">
         <div class="glass-card">
-          <div class="card-header"><h3 class="card-title"><i data-lucide="settings" class="ui-icon"></i> Platform Feature Flags</h3></div>
-          <div style="display:flex;flex-direction:column;gap:10px;font-size:12px">
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:var(--bg-glass);border-radius:6px">
-              <span>OAuth2 Developer Gateway</span>
-              <span class="card-badge teal">Active</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:var(--bg-glass);border-radius:6px">
-              <span>bKash/Nagad MFS Payment Rails</span>
-              <span class="card-badge teal">Active</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:var(--bg-glass);border-radius:6px">
-              <span>Vector Similarity Search</span>
-              <span class="card-badge teal">Active</span>
-            </div>
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:8px;background:var(--bg-glass);border-radius:6px">
-              <span>AES-256 Field Vault</span>
-              <span class="card-badge teal">Encrypted</span>
-            </div>
-          </div>
+          <div class="card-header"><h3 class="card-title"><i data-lucide="database" class="ui-icon"></i> Platform Totals</h3></div>
+          <div id="super-totals"></div>
         </div>
       </div>
     </div>
   `;
   renderAuditLog();
+  renderSystemStatus();
+  loadPlatformStats().then(s => {
+    paintStats(s, { donations_total: statMoney });
+    renderSuperTotals(s);
+  });
+}
+
+/* Real system status. Everything shown is something GET /api/health actually
+   returned; when it does not answer, that is what the panel says. */
+function renderSystemStatus() {
+  const el = document.getElementById('system-status');
+  if (!el) return;
+  API.health().then(h => {
+    if (apiFailed(h) || !h || h.status !== 'online') {
+      el.innerHTML = `<div class="server-card"><div class="server-val" style="color:var(--danger)">Unreachable</div>
+        <div class="server-label">The API did not answer a health check</div></div>`;
+      return;
+    }
+    const t = new Date(h.time);
+    el.innerHTML = `
+      <div class="server-card"><div class="server-val" style="color:var(--teal)">Online</div><div class="server-label">API status</div></div>
+      <div class="server-card"><div class="server-val" style="font-size:15px">${escapeHtml(h.database || 'PostgreSQL')}</div><div class="server-label">Database</div></div>
+      <div class="server-card"><div class="server-val">${statNum(h.total_users)}</div><div class="server-label">User accounts</div></div>
+      <div class="server-card"><div class="server-val" style="font-size:15px">${isNaN(t) ? '—' : t.toLocaleString()}</div><div class="server-label">Database server time</div></div>`;
+  });
+}
+
+// A plain listing of the counts behind the platform, so the figures on every
+// other screen can be checked against one place.
+function renderSuperTotals(s) {
+  const el = document.getElementById('super-totals');
+  if (!el) return;
+  if (!s) {
+    el.innerHTML = renderEmptyState('<i data-lucide="database" class="ui-icon"></i>',
+      'Totals unavailable', 'Platform figures could not be loaded.');
+    if (window.lucide) lucide.createIcons();
+    return;
+  }
+  const rows = [
+    ['Alumni profiles', statNum(s.profiles_total)],
+    ['Verified accounts', statNum(s.users_verified)],
+    ['Events', statNum(s.events_total)],
+    ['Event registrations', statNum(s.registrations_total)],
+    ['Event tasks', `${statNum(s.tasks_completed)} of ${statNum(s.tasks_total)} completed`],
+    ['Jobs', statNum(s.jobs_total)],
+    ['Job applications', statNum(s.job_applications_total)],
+    ['Chapters', statNum(s.chapters_total)],
+    ['Chapter memberships', statNum(s.chapter_memberships_total)],
+    ['Mentorships', statNum(s.mentorships_total)],
+    ['Donations settled', `${statMoney(s.donations_total)} from ${statNum(s.donors_count)} donor(s)`],
+    ['Bulk imports run', statNum(s.imports_total)],
+    ['Broadcasts sent', statNum(s.broadcasts_total)]
+  ];
+  el.innerHTML = `<div class="totals-list">${rows.map(([k, v]) => `
+    <div class="totals-row"><span class="totals-key">${k}</span><span class="totals-val">${v}</span></div>`).join('')}</div>`;
 }
 
 // ─── NAVIGATION ─────────────────────────────────────────────
@@ -690,9 +939,9 @@ function showPage(page) {
   if (page === 'mentorship') renderMentorships();
   if (page === 'donations') renderCampaignsEnhanced();
   if (page === 'events') renderEventsPage();
+  if (page === 'jobs') renderJobReferrals();
   if (page === 'jobs') renderJobsEnhanced();
   if (page === 'career' && typeof renderCareerTracker === 'function') renderCareerTracker();
-  if (page === 'apidev' && typeof renderAPIPage === 'function') renderAPIPage();
   if (page === 'chapters') renderChapters();
   if (page === 'news') {
     renderNewsFeed();
@@ -703,19 +952,20 @@ function showPage(page) {
   }
   if (page === 'map') renderMapClusters();
   if (page === 'profile') {
-    if (typeof render10SectionProfile === 'function') render10SectionProfile();
+    // Load the real row first; the ten sections read from FULL_USER_PROFILE.
+    hydrateUserProfile().then(() => render10SectionProfile());
     renderCareerTimeline();
+    paintProfileCompleteness('profile-completeness-bar', 'profile-completeness-ring',
+                             'profile-completeness-text', 'profile-completeness-items');
     if (typeof renderEngagementScore === 'function') renderEngagementScore();
     if (typeof renderAlumniBadges === 'function') renderAlumniBadges();
-    initQRCode();
   }
   if (page === 'admin') {
     if (typeof renderBulkImportPanel === 'function') renderBulkImportPanel();
     loadImportHistory(); // pulls the real audit trail, then re-renders the panel
-    if (typeof renderRBACTableV2 === 'function') renderRBACTableV2(); else renderRBACTable();
+    renderRBACTableV2();
     renderAuditLog();
     renderComplianceGrid();
-    if (typeof renderTenantListEnhanced === 'function') renderTenantListEnhanced(); else renderTenantList();
     if (typeof renderOfflineSyncPanel === 'function') renderOfflineSyncPanel();
     if (typeof renderBroadcastHistory === 'function') renderBroadcastHistory();
     if (typeof renderNIDVaultPanel === 'function') renderNIDVaultPanel();
@@ -913,26 +1163,60 @@ function switchAnalytics(type, btn) {
 }
 
 // ─── RENDER FUNCTIONS ────────────────────────────────────────
-function renderVerificationQueue() {
+/* The real queue: accounts where users.is_verified is false. It used to list the
+   same two invented people — Rafiq Hossain and Sumaiya Zaman — on every install,
+   and the dashboard badge above it always read 12. */
+async function renderVerificationQueue() {
   const container = document.getElementById('verification-queue');
   if (!container) return;
-  container.innerHTML = MOCK_VERIFICATION_QUEUE.map(item => `
-    <div class="queue-item">
-      <div class="queue-avatar">${item.initials}</div>
+
+  container.innerHTML = '<div class="queue-sub" style="padding:12px">Loading…</div>';
+  const rows = await API.getVerificationQueue();
+
+  if (apiFailed(rows)) {
+    container.innerHTML = renderErrorState(
+      rows?.error || 'Could not load the verification queue.', 'renderVerificationQueue()');
+    return;
+  }
+  if (!rows.length) {
+    container.innerHTML = renderEmptyState('<i data-lucide="user-check" class="ui-icon"></i>',
+      'No accounts awaiting verification',
+      'New sign-ups appear here until an administrator verifies them.');
+    if (window.lucide) lucide.createIcons();
+    return;
+  }
+
+  container.innerHTML = rows.map(u => {
+    const detail = [
+      u.department, u.batch ? `Batch ${u.batch}` : null,
+      u.student_id ? `ID ${u.student_id}` : null
+    ].filter(Boolean).join(' · ') || u.email;
+    return `
+    <div class="queue-item" id="vq-${u.id}">
+      <div class="queue-avatar">${escapeHtml(u.initials || (u.full_name || '?').charAt(0))}</div>
       <div class="queue-info">
-        <div class="queue-name">${item.name}</div>
-        <div class="queue-sub">${item.details}</div>
+        <div class="queue-name">${escapeHtml(u.full_name || 'Unnamed account')}</div>
+        <div class="queue-sub">${escapeHtml(detail)}</div>
       </div>
       <div class="queue-actions">
-        <button class="approve-btn" onclick="approveAlumni('${item.name}')"><i data-lucide="check" class="ui-icon"></i> Approve</button>
-        <button class="review-btn">Review</button>
+        <button class="approve-btn" onclick="approveAlumni(${u.id})"><i data-lucide="check" class="ui-icon"></i> Verify</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
+  if (window.lucide) lucide.createIcons();
 }
 
-function approveAlumni(name) {
-  showToast(`✅ ${name} approved successfully`);
+/* Actually verifies the account. The previous version took a name and raised a
+   toast saying it had been approved, while users.is_verified stayed false. */
+async function approveAlumni(id) {
+  const res = await API.verifyUser(id, true);
+  if (apiFailed(res)) {
+    showToast('⚠ Could not verify this account — please try again.');
+    return;
+  }
+  showToast(`✅ ${res.full_name} is now verified`);
+  loadPlatformStats(true).then(s => paintStats(s, { donations_total: statMoney }));
+  renderVerificationQueue();
 }
 
 // Directory is served from PostgreSQL. Search, filters, sorting and paging are
@@ -1332,19 +1616,28 @@ function selectChapter(id) {
       <div class="chapter-detail-header">
         <div class="chapter-detail-icon">${emojiIcon(c.icon, 'hexagon')}</div>
         <div>
-          <div class="chapter-detail-title">${c.name}</div>
-          <div class="chapter-detail-sub">${c.type.charAt(0).toUpperCase() + c.type.slice(1)} Chapter · Est. 2020 · PostgreSQL Synced</div>
+          <div class="chapter-detail-title">${escapeHtml(c.name)}</div>
+          <!-- "Est. 2020 · PostgreSQL Synced" used to sit here. chapters has no
+               founding-date column, and every chapter claimed the same year. -->
+          <div class="chapter-detail-sub">${c.type.charAt(0).toUpperCase() + c.type.slice(1)} chapter</div>
         </div>
       </div>
+      ${c.description ? `<p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">${escapeHtml(c.description)}</p>` : ''}
+      <!-- Two of the three tiles here were invented: an events count taken from
+           chapters.events_count, which nothing ever writes and which cannot be
+           derived because events carry no chapter reference, and a fixed "94%
+           Active Rate" with nothing behind it at all. -->
       <div class="chapter-stats-grid">
-        <div class="chapter-stat"><div class="chapter-stat-val" id="chap-member-count-${c.id}">${c.members.toLocaleString()}</div><div class="chapter-stat-lab">Members</div></div>
-        <div class="chapter-stat"><div class="chapter-stat-val">${c.events}</div><div class="chapter-stat-lab">Events</div></div>
-        <div class="chapter-stat"><div class="chapter-stat-val">94%</div><div class="chapter-stat-lab">Active Rate</div></div>
+        <div class="chapter-stat"><div class="chapter-stat-val" id="chap-member-count-${c.id}">${c.members.toLocaleString('en-IN')}</div><div class="chapter-stat-lab">${c.members === 1 ? 'Member' : 'Members'}</div></div>
       </div>
       <div style="font-size:14px;font-weight:700;margin-bottom:12px">Chapter Leadership &amp; Officers</div>
-      ${['President: Rafiq Hossain (CSE 2018)', 'VP: Meher Nisha (SWE 2019)', 'Secretary: Tanvir Chowdhury (BBA 2020)'].map(m => `
-        <div class="chapter-member"><span style="font-size:20px"><i data-lucide="user" class="ui-icon"></i></span><span>${m}</span></div>
-      `).join('')}
+      <!-- Three officers were listed by name for every chapter, the same three
+           each time. There is no officer or role column on chapters or on
+           chapter_memberships, so there is nothing to list. -->
+      <div class="chapter-empty-note">
+        No chapter officers are recorded. The system does not yet store chapter
+        leadership roles.
+      </div>
       <div style="margin-top:16px;display:flex;gap:8px">
         <button class="btn ${isJoined ? 'btn-outline' : 'btn-primary'} btn-sm" id="btn-join-${c.id}" onclick="toggleJoinChapter(${c.id})">
           ${isJoined ? '<i data-lucide="check" class="ui-icon"></i> Joined Chapter' : '+ Join Chapter'}
@@ -1494,68 +1787,98 @@ async function renderSpotlightAlumni() {
   `).join('');
 }
 
-function renderMapClusters() {
+/* The map used to draw nine fixed pins — 8,241 in Bangladesh, 1,240 in the UK,
+   987 in the USA and so on, adding up to the 12,847 alumni claimed elsewhere —
+   at coordinates chosen by hand. None of it came from the database.
+
+   Pins are now placed from alumni_profiles.country, using the small lookup
+   below for the countries the platform can position. A country with real
+   profiles but no entry here is still counted in the totals and listed under the
+   map; it simply cannot be drawn, and the caption says so rather than quietly
+   dropping it. */
+const MAP_COUNTRY_POSITIONS = {
+  'bangladesh': { top: 42, left: 68 },
+  'india': { top: 45, left: 65 },
+  'pakistan': { top: 40, left: 62 },
+  'united kingdom': { top: 26, left: 45 },
+  'united states': { top: 34, left: 20 },
+  'canada': { top: 24, left: 20 },
+  'australia': { top: 74, left: 82 },
+  'germany': { top: 28, left: 48 },
+  'france': { top: 30, left: 46 },
+  'japan': { top: 36, left: 82 },
+  'singapore': { top: 56, left: 76 },
+  'malaysia': { top: 55, left: 75 },
+  'united arab emirates': { top: 44, left: 58 },
+  'saudi arabia': { top: 44, left: 55 },
+  'qatar': { top: 44, left: 57 },
+  'italy': { top: 32, left: 49 },
+  'sweden': { top: 20, left: 50 },
+  'south korea': { top: 35, left: 80 },
+  'china': { top: 36, left: 74 },
+  'new zealand': { top: 80, left: 88 }
+};
+
+// A pin's size band reflects how many alumni it stands for, matching the legend.
+function mapClusterSize(n) {
+  if (n >= 1000) return 'xl';
+  if (n >= 100) return 'lg';
+  if (n >= 10) return 'md';
+  return 'sm';
+}
+
+async function renderMapClusters() {
   const container = document.getElementById('map-clusters');
   if (!container) return;
 
-  const clusters = [
-    { label: '8,241', size: 'xl', top: 42, left: 62, title: 'Bangladesh' },
-    { label: '1,240', size: 'lg', top: 28, left: 44, title: 'United Kingdom' },
-    { label: '987', size: 'lg', top: 35, left: 18, title: 'United States' },
-    { label: '542', size: 'md', top: 38, left: 50, title: 'India' },
-    { label: '487', size: 'md', top: 42, left: 54, title: 'UAE' },
-    { label: '381', size: 'md', top: 72, left: 80, title: 'Australia' },
-    { label: '298', size: 'sm', top: 40, left: 72, title: 'Singapore' },
-    { label: '187', size: 'sm', top: 30, left: 48, title: 'Germany' },
-    { label: '142', size: 'sm', top: 25, left: 36, title: 'Canada' },
-  ];
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  const res = await API.getStatsMap();
 
-  container.innerHTML = clusters.map(c => `
-    <div class="map-cluster ${c.size}" style="top:${c.top}%;left:${c.left}%" title="${c.title}: ${c.label} alumni">
-      ${c.label}
-    </div>
-  `).join('');
-}
+  if (apiFailed(res)) {
+    container.innerHTML = '';
+    ['map-stat-countries', 'map-stat-mapped', 'map-stat-bd', 'map-stat-intl', 'map-stat-chapters']
+      .forEach(id => set(id, '—'));
+    return;
+  }
 
-function renderCareerTimeline() {
-  const el = document.getElementById('career-timeline');
-  if (!el) return;
-  el.innerHTML = MOCK_CAREER_TIMELINE.map(t => `
-    <div class="timeline-item">
-      <div class="timeline-dot"></div>
-      <div class="timeline-company">${t.company}</div>
-      <div class="timeline-role">${t.role}</div>
-      <div class="timeline-period">${t.period}</div>
-    </div>
-  `).join('');
-}
+  const countries = res.countries || [];
+  set('map-stat-countries', String(countries.length));
+  set('map-stat-mapped', Number(res.located || 0).toLocaleString('en-IN'));
+  set('map-stat-bd', Number(res.in_bangladesh || 0).toLocaleString('en-IN'));
+  set('map-stat-intl', Number(res.international || 0).toLocaleString('en-IN'));
+  set('map-stat-chapters', String(res.chapters ?? 0));
 
-function renderRBACTable() {
-  const table = document.getElementById('rbac-table');
-  if (!table) return;
-
-  const permClass = {
-    'Full': 'perm-full', 'Edit': 'perm-edit', 'View': 'perm-view',
-    'None': 'perm-none', 'Limited': 'perm-limited', 'Audit': 'perm-audit',
-    'Donate': 'perm-donate', 'Request': 'perm-view', 'Post': 'perm-edit',
-    'Apply': 'perm-view', 'past': 'perm-none'
-  };
-
-  let html = `<thead><tr>
-    <th class="module-col">Module / Function</th>
-    ${MOCK_RBAC.roles.map(r => `<th class="role-col">${r}</th>`).join('')}
-  </tr></thead><tbody>`;
-
-  MOCK_RBAC.matrix.forEach((row, i) => {
-    html += `<tr>
-      <td class="module-name">${MOCK_RBAC.modules[i]}</td>
-      ${row.map(p => `<td class="perm-cell"><span class="${permClass[p] || 'perm-none'}">${p}</span></td>`).join('')}
-    </tr>`;
+  const placed = [];
+  const unplaced = [];
+  countries.forEach(c => {
+    const pos = MAP_COUNTRY_POSITIONS[String(c.country).trim().toLowerCase()];
+    (pos ? placed : unplaced).push({ ...c, pos });
   });
 
-  html += '</tbody>';
-  table.innerHTML = html;
+  container.innerHTML = placed.map(c => `
+    <div class="map-cluster ${mapClusterSize(c.n)}" style="top:${c.pos.top}%;left:${c.pos.left}%"
+         title="${escapeHtml(c.country)}: ${c.n} alumni">${c.n}</div>
+  `).join('');
+
+  // Honest caption under the map: what is drawn, and what is real but not drawn.
+  const note = document.getElementById('map-note');
+  if (note) {
+    if (!countries.length) {
+      note.textContent = 'No alumni profile records a country yet, so there is nothing to place on the map.';
+    } else if (unplaced.length) {
+      note.textContent = `${placed.length} of ${countries.length} countries are shown. ` +
+        `Not positioned on this map: ${unplaced.map(c => `${c.country} (${c.n})`).join(', ')}.`;
+    } else {
+      note.textContent = `Showing every country with a recorded alumni location (${countries.length}).`;
+    }
+  }
 }
+
+
+/* renderRBACTable() was removed. It was the first version of the permission
+   matrix, reading a MOCK_RBAC constant that no longer exists, so it would have
+   thrown had anything called it. renderRBACTableV2() builds the table from
+   GET /api/stats/rbac instead. */
 
 // ─── IMMUTABLE AUDIT LOG ───
 async function renderAuditLog() {
@@ -1605,27 +1928,6 @@ async function renderComplianceGrid() {
     </div>`).join('');
 }
 
-function renderTenantList() {
-  const el = document.getElementById('tenant-list');
-  if (!el) return;
-  el.innerHTML = MOCK_TENANTS.map(t => `
-    <div class="tenant-card glass-card">
-      <div style="flex:1">
-        <div style="font-size:16px;font-weight:700">${t.name}</div>
-        <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${t.subdomain}</div>
-      </div>
-      <div style="text-align:center;padding:0 16px">
-        <div style="font-size:18px;font-weight:800;color:var(--teal)">${t.alumni.toLocaleString()}</div>
-        <div style="font-size:11px;color:var(--text-muted)">Alumni</div>
-      </div>
-      <div style="text-align:center;padding:0 16px">
-        <div style="font-size:13px;font-weight:700;color:var(--primary-light)">${t.plan}</div>
-        <div style="font-size:11px;color:var(--text-muted)">Plan</div>
-      </div>
-      <span class="tenant-status ${t.status}">${t.status.toUpperCase()}</span>
-    </div>
-  `).join('');
-}
 
 async function renderNotifications() {
   const el = document.getElementById('notif-list');
@@ -1721,83 +2023,102 @@ async function markAllNotificationsRead() {
   }
 }
 
-function renderInternshipDrives() {
-  const el = document.getElementById('internship-drives');
-  if (!el) return;
-  const drives = [
-    { company: 'bKash Ltd', role: 'Software Intern', emoji: '📱' },
-    { company: 'Pathao', role: 'Data Science Intern', emoji: '🚗' },
-    { company: 'Samsung R&D', role: 'AI/ML Intern', emoji: '📡' },
-  ];
-  el.innerHTML = drives.map(d => `
-    <div class="internship-item">
-      <span>${emojiIcon(d.emoji, 'briefcase')}</span>
-      <div style="flex:1"><div style="font-weight:600;font-size:13px">${d.role}</div><div style="font-size:11px;color:var(--text-muted)">${d.company}</div></div>
-      <button class="btn btn-sm btn-outline" onclick="showPage('jobs')">View Board</button>
-    </div>
-  `).join('');
-}
+/* renderInternshipDrives() was removed with its card: three internship
+   openings written as a literal array, shown on the Job Board beside the real
+   postings from the jobs table. */
 
-function renderAnalyticsMetrics() {
+
+/* Key Metrics used to list six rates — a 72.3% profile update rate, 35.2% YoY
+   donation growth, 83.1% mentorship completion, a 68.4% event conversion rate,
+   99.94% uptime and 99.8% offline sync success — each with a "vs last period"
+   delta. Not one of those six was computed; all twelve numbers were literals,
+   and the schema holds nothing to compute them from: there is no historical
+   snapshot to compare a period against, no uptime record, and no sync outcome
+   log. They are replaced by counts and by ratios where both sides of the ratio
+   are actually stored. */
+async function renderAnalyticsMetrics() {
   const el = document.getElementById('analytics-metrics');
   if (!el) return;
+
+  el.innerHTML = '<div class="analytics-metric-item"><div class="analytics-metric-label">Loading…</div></div>';
+  const res = await API.getStatsAnalytics();
+
+  if (apiFailed(res)) {
+    el.innerHTML = renderEmptyState('<i data-lucide="chart-column" class="ui-icon"></i>',
+      'Analytics unavailable', 'Figures could not be loaded from the database.');
+    if (window.lucide) lucide.createIcons();
+    return;
+  }
+
+  const t = res.totals || {};
+  const pct = (a, b) => (b > 0 ? Math.round((a / b) * 100) + '%' : null);
+
+  // Each entry names the query behind it, so a reader can check the figure.
   const metrics = [
-    { label: 'Profile Update Rate', value: '72.3%', change: '+8.4%', up: true },
-    { label: 'YoY Donation Growth', value: '35.2%', change: '+12.1%', up: true },
-    { label: 'Mentorship Completion', value: '83.1%', change: '+5.7%', up: true },
-    { label: 'Event Conversion Rate', value: '68.4%', change: '-2.1%', up: false },
-    { label: 'System Uptime', value: '99.94%', change: '+0.04%', up: true },
-    { label: 'Offline Sync Success', value: '99.8%', change: 'Stable', up: true },
-  ];
+    { label: 'User accounts', value: t.users, sub: 'COUNT(users)' },
+    { label: 'Alumni profiles', value: t.profiles, sub: 'COUNT(alumni_profiles)' },
+    { label: 'Profiles per account', value: pct(t.profiles, t.users), sub: 'profiles ÷ accounts' },
+    { label: 'Events', value: t.events, sub: 'COUNT(events)' },
+    { label: 'Event registrations', value: t.registrations, sub: 'COUNT(event_registrations)' },
+    { label: 'Job postings', value: t.jobs, sub: 'COUNT(jobs)' },
+    { label: 'Job applications', value: t.job_applications, sub: 'COUNT(job_applications)' },
+    { label: 'Mentorship records', value: t.mentorships, sub: 'COUNT(mentorships)' },
+    { label: 'Chapter memberships', value: t.chapter_memberships, sub: 'COUNT(chapter_memberships)' },
+    { label: 'Accepted connections', value: t.connections, sub: "COUNT(connections WHERE status='accepted')" },
+    { label: 'Settled donations', value: t.donations, sub: "COUNT(donations WHERE status='SUCCESS')" },
+    { label: 'Amount settled', value: money(t.donations_amount), sub: "SUM(amount WHERE status='SUCCESS')" }
+  ].filter(m => m.value !== null && m.value !== undefined);
+
   el.innerHTML = metrics.map(m => `
     <div class="analytics-metric-item">
       <div class="analytics-metric-label">${m.label}</div>
-      <div class="analytics-metric-value" style="color:${m.up ? 'var(--teal)' : 'var(--amber)'}">${m.value}</div>
-      <div class="analytics-metric-change ${m.up ? 'up' : 'down'}">${m.change} vs last period</div>
+      <div class="analytics-metric-value">${typeof m.value === 'number' ? m.value.toLocaleString('en-IN') : m.value}</div>
+      <div class="analytics-metric-source">${escapeHtml(m.sub)}</div>
     </div>
   `).join('');
 }
 
-function generateGeoHeatmap() {
+/* Ten countries were listed here with fixed counts and fixed bar widths,
+   totalling the same imaginary 12,847 alumni. This reads alumni_profiles.country. */
+async function generateGeoHeatmap() {
   const el = document.getElementById('geo-heatmap');
   if (!el) return;
-  const countries = [
-    { name: 'Bangladesh', count: 8241, pct: 100 },
-    { name: 'United Kingdom', count: 1240, pct: 64 },
-    { name: 'United States', count: 987, pct: 51 },
-    { name: 'Canada', count: 542, pct: 28 },
-    { name: 'UAE', count: 487, pct: 25 },
-    { name: 'Australia', count: 381, pct: 19 },
-    { name: 'Singapore', count: 298, pct: 15 },
-    { name: 'Germany', count: 187, pct: 10 },
-    { name: 'India', count: 142, pct: 7 },
-    { name: 'Others', count: 342, pct: 18 },
-  ];
+
+  const res = await API.getStatsMap();
+  if (apiFailed(res)) {
+    el.innerHTML = renderEmptyState('<i data-lucide="globe" class="ui-icon"></i>',
+      'Distribution unavailable', 'Location figures could not be loaded.');
+    if (window.lucide) lucide.createIcons();
+    return;
+  }
+
+  const countries = res.countries || [];
+  if (!countries.length) {
+    el.innerHTML = renderEmptyState('<i data-lucide="globe" class="ui-icon"></i>',
+      'No locations recorded yet',
+      'Countries appear here once alumni profiles carry a country.');
+    if (window.lucide) lucide.createIcons();
+    return;
+  }
+
+  const max = Math.max(...countries.map(c => c.n));
   el.innerHTML = `<div class="geo-countries">${countries.map(c => `
     <div class="geo-country-item">
-      <div class="geo-country-name">${c.name}</div>
-      <div class="geo-country-bar-track"><div class="geo-country-bar-fill" style="width:${c.pct}%"></div></div>
-      <div class="geo-country-count">${c.count.toLocaleString()}</div>
+      <div class="geo-country-name">${escapeHtml(c.country)}</div>
+      <div class="geo-country-bar-track"><div class="geo-country-bar-fill" style="width:${Math.round((c.n / max) * 100)}%"></div></div>
+      <div class="geo-country-count">${c.n.toLocaleString('en-IN')}</div>
     </div>
   `).join('')}</div>`;
 }
 
 // ─── QR CODE ─────────────────────────────────────────────────
-function initQRCode() {
-  const el = document.getElementById('id-qr-code');
-  if (!el || typeof QRCode === 'undefined') return;
-  el.innerHTML = '';
-  try {
-    new QRCode(el, {
-      text: 'https://dic.alumnai.io/verify?id=DIC-2020-0847&token=SEC-' + Math.random().toString(36).substr(2,12).toUpperCase(),
-      width: 70,
-      height: 70,
-      colorDark: '#0B3897',
-      colorLight: '#ffffff',
-      correctLevel: QRCode.CorrectLevel.M,
-    });
-  } catch(e) { el.style.background = '#fff'; el.innerHTML = '<div style="font-size:8px;color:#0B3897;padding:4px;text-align:center">QR Code</div>'; }
-}
+/* initQRCode() was removed with the QR it drew. The code encoded
+   https://dic.alumnai.io/verify?id=DIC-2020-0847&token=SEC-<random> — a domain
+   that does not exist, a student ID belonging to nobody, and a token generated
+   fresh on every render, all under a badge reading "Anti-Spoofing QR". Nothing
+   could have verified it. Event ticket QRs are a separate, real mechanism with
+   an HMAC-signed payload and are untouched. */
+
 
 // ─── MODALS ──────────────────────────────────────────────────
 let _modalReturnFocus = null;
@@ -2135,30 +2456,8 @@ async function handleCreateStorySubmit(e) {
   renderNotifications();
 }
 
-function showTenantSwitcher() {
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title"><i data-lucide="repeat" class="ui-icon"></i> Switch Institution</div>
-      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
-    </div>
-    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">You have cross-institutional access to the following alumni networks:</p>
-    ${MOCK_TENANTS.map(t => `
-      <div class="tenant-card glass-card" style="cursor:pointer" onclick="switchTenant('${t.name}')">
-        <div style="flex:1">
-          <div style="font-size:14px;font-weight:700">${t.name}</div>
-          <div style="font-size:12px;color:var(--text-secondary)">${t.subdomain}</div>
-        </div>
-        <span class="tenant-status ${t.status}">${t.status.toUpperCase()}</span>
-      </div>
-    `).join('')}
-  `);
-}
-
-function switchTenant(name) {
-  document.getElementById('active-tenant').textContent = name;
-  closeModal();
-  showToast(`🏫 Switched to ${name}`);
-}
+/* showTenantSwitcher() and switchTenant() were removed along with the tenant
+   panels. The modal offered "cross-institutional access" to a list of one. */
 
 // ─── ADMIN SECTIONS ─────────────────────────────────────────
 function switchAdmin(section, btn) {
@@ -2352,39 +2651,60 @@ filterDirectory = function(value) {
   _origFilterDir(value);
 };
 
-// ─── REQ-05: REAL-TIME CAMPAIGN TICKER ──────────────────────
-const MOCK_CAMPAIGNS_LIVE = {};
-MOCK_CAMPAIGNS.forEach(c => {
-  MOCK_CAMPAIGNS_LIVE[c.id] = { raised: c.raised, donors: c.donors };
-});
+/* The "real-time campaign ticker" was removed. Every few seconds it picked a
+   random increment from [500, 1000, 2000, 5000], added it to a campaign's raised
+   total and incremented the donor count, then wrote the result into the page —
+   inventing donations that nobody had made and that no donations row recorded.
+   Campaign totals now come from SUM(amount) over settled donations and change
+   only when somebody actually donates. */
 
-function startCampaignTicker() {
-  setInterval(() => {
-    MOCK_CAMPAIGNS.forEach(c => {
-      const increments = [500, 1000, 2000, 5000];
-      const inc = increments[Math.floor(Math.random() * increments.length)];
-      if (Math.random() < 0.25 && c.raised < c.goal) {
-        c.raised = Math.min(c.raised + inc, c.goal);
-        c.donors += 1;
-        // Update live raised element
-        const el = document.getElementById(`campaign-raised-${c.id}`);
-        if (el) {
-          el.textContent = '৳' + (c.raised / 100000).toFixed(1) + 'L raised';
-          el.style.color = 'var(--teal)';
-          setTimeout(() => el.style.color = '', 500);
-        }
-        const pctEl = document.getElementById(`campaign-pct-${c.id}`);
-        const pct = Math.round((c.raised / c.goal) * 100);
-        if (pctEl) pctEl.style.width = pct + '%';
-      }
-    });
-  }, 3500);
-}
-
-// Enhanced renderCampaigns with live IDs and ticker
 // ─── DONATIONS (REQ-05) ───
 // Two-phase: a PENDING ledger row is written, the gateway step is authorised,
 // then the transaction is confirmed and the campaign total moves.
+/* Money in taka. Small sums are shown in full rather than rounded into lakh —
+   "৳0.1L" for a ৳5,000 donation reads as a rounding artefact and hides the real
+   figure, which is exactly the problem this page had. */
+/* Campaigns store days_left as a plain integer written once, at creation, and
+   never decremented — so a campaign created on 5 August with 18 days on it was
+   still advertising "18 days left" four weeks after it closed. There is no end
+   date column, but created_at + days_left is one, so the remaining days are
+   counted from that and a campaign past its date says so. */
+function campaignDeadline(c) {
+  const days = parseInt(c.days_left, 10);
+  if (!Number.isFinite(days) || !c.created_at) return '';
+  const ends = new Date(c.created_at);
+  if (isNaN(ends)) return '';
+  ends.setDate(ends.getDate() + days);
+
+  const left = Math.ceil((ends - new Date()) / 86400000);
+  const icon = '<i data-lucide="calendar" class="ui-icon"></i>';
+  if (left < 0) return `<span>${icon} Closed ${escapeHtml(evDate ? evDate(ends) : ends.toLocaleDateString())}</span>`;
+  if (left === 0) return `<span>${icon} Closes today</span>`;
+  return `<span>${icon} ${left} day${left === 1 ? '' : 's'} left</span>`;
+}
+
+function money(v) {
+  const n = Number(v) || 0;
+  if (n >= 100000) return '৳' + (n / 100000).toFixed(2).replace(/\.00$/, '') + 'L';
+  return '৳' + n.toLocaleString('en-IN');
+}
+
+/* The four tiles above the campaign grid, computed from the campaigns the API
+   returned. Every figure is a sum or count over settled donations; when there
+   are none, the tiles read ৳0 and 0 rather than last year's marketing numbers. */
+function renderDonationStats(campaigns) {
+  const list = Array.isArray(campaigns) ? campaigns : [];
+  const raised = list.reduce((a, c) => a + (Number(c.raised_live) || 0), 0);
+  const donors = list.reduce((a, c) => a + (Number(c.donors_live) || 0), 0);
+
+  const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+  set('don-kpi-raised', money(raised));
+  set('don-kpi-donors', donors.toLocaleString('en-IN'));
+  // Average is per donor, and is only meaningful once somebody has donated.
+  set('don-kpi-avg', donors > 0 ? money(Math.round(raised / donors)) : '—');
+  set('don-kpi-campaigns', String(list.length));
+}
+
 async function renderCampaignsEnhanced() {
   const container = document.getElementById('campaigns-grid');
   if (!container) return;
@@ -2397,16 +2717,25 @@ async function renderCampaignsEnhanced() {
     return;
   }
   if (campaigns.length === 0) {
+    renderDonationStats([]);   // tiles read ৳0 / 0, not a stale figure
     container.innerHTML = renderEmptyState('<i data-lucide="heart" class="ui-icon"></i>', 'No active campaigns', 'Fundraising campaigns will appear here once launched.');
     return;
   }
 
   const canManage = state.currentUser && ['super_admin', 'univ_admin'].includes(state.currentUser.role);
 
+  renderDonationStats(campaigns);
+
   container.innerHTML = campaigns.map(c => {
-    const raised = Number(c.raised_amount) || 0;
-    const goal = Number(c.goal_amount) || 1;
-    const pct = Math.min(100, Math.round((raised / goal) * 100));
+    // raised_live / donors_live are computed by the API as SUM and COUNT over
+    // donations with status SUCCESS. The card used to read campaigns.raised_amount,
+    // a stored column seeded at ৳18.45L for a campaign holding ৳5,000 of real
+    // settled donations, and campaigns.donors_count, which was never written to.
+    const raised = Number(c.raised_live) || 0;
+    const donors = Number(c.donors_live) || 0;
+    const goal = Number(c.goal_amount) || 0;
+    const pct = goal > 0 ? Math.min(100, Math.round((raised / goal) * 100)) : 0;
+    const remaining = Math.max(0, goal - raised);
     const gateways = Array.isArray(c.gateways) ? c.gateways : [];
     const safeName = escapeHtml(c.name).replace(/'/g, '&#39;');
     return `
@@ -2420,12 +2749,13 @@ async function renderCampaignsEnhanced() {
         <div class="campaign-live-indicator"><div class="live-dot"></div> Live</div>
         <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
         <div class="progress-meta">
-          <span class="progress-raised">৳${(raised / 100000).toFixed(1)}L raised</span>
-          <span class="progress-goal">of ৳${(goal / 100000).toFixed(1)}L goal · ${pct}%</span>
+          <span class="progress-raised">${money(raised)} raised</span>
+          <span class="progress-goal">of ${money(goal)} goal · ${pct}%</span>
         </div>
         <div style="display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--text-muted)">
-          <span><i data-lucide="users" class="ui-icon"></i> ${Number(c.donors_count || 0).toLocaleString()} donors</span>
-          <span><i data-lucide="calendar" class="ui-icon"></i> ${c.days_left} days left</span>
+          <span><i data-lucide="users" class="ui-icon"></i> ${donors === 0 ? 'No donations yet' : donors.toLocaleString('en-IN') + (donors === 1 ? ' donor' : ' donors')}</span>
+          <span><i data-lucide="target" class="ui-icon"></i> ${money(remaining)} remaining</span>
+          ${campaignDeadline(c)}
         </div>
       </div>
       <div class="campaign-footer">
@@ -2519,274 +2849,115 @@ async function renderJobsEnhanced(filter = '') {
   }).join('');
 }
 
-// ─── REQ-08: CAREER PROGRESSION TRACKER ─────────────────────
-const MOCK_CAREER_REGISTRY = [
-  { id: 1, name: 'Fatima Khanam', initials: 'FK', color: '#6C63FF', batch: 2019, current: 'Senior SWE @ bKash Ltd', prev: 'Full-Stack Dev @ TechBD (2019–2022)', updateType: 'ai', lastUpdated: '2026-07-30' },
-  { id: 2, name: 'Arif Hossain', initials: 'AH', color: '#00D4AA', batch: 2018, current: 'Data Scientist @ Pathao', prev: 'Data Analyst @ LightCastle (2018–2020)', updateType: 'self', lastUpdated: '2026-07-28' },
-  { id: 3, name: 'Tasnim Akter', initials: 'TA', color: '#34D399', batch: 2015, current: 'SWE @ Google, London', prev: 'Backend Eng @ ThoughtWorks UK (2016–2020)', updateType: 'ai', lastUpdated: '2026-07-29' },
-  { id: 4, name: 'Liana Choudhury', initials: 'LC', color: '#C084FC', batch: 2018, current: 'AI Ethics Lead @ DeepMind', prev: 'Research Scientist @ Oxford AI Lab (2018–2023)', updateType: 'ai', lastUpdated: '2026-07-30' },
-  { id: 5, name: 'Omar Faruk', initials: 'OF', color: '#00D4AA', batch: 2013, current: 'CEO @ FinTech BD', prev: 'VP Engineering @ Dutch-Bangla Bank (2013–2019)', updateType: 'self', lastUpdated: '2026-07-25' },
-  { id: 6, name: 'Nusrat Jahan', initials: 'NJ', color: '#C084FC', batch: 2020, current: 'Investment Analyst @ BRAC Bank', prev: 'Finance Intern @ Citibank BD (2020)', updateType: 'pending', lastUpdated: '2026-07-20' },
-  { id: 7, name: 'Tanvir Ahmed', initials: 'TA2', color: '#FF8C42', batch: 2017, current: 'Product Manager @ Shohoz', prev: 'Business Analyst @ Berger Paints (2017–2019)', updateType: 'ai', lastUpdated: '2026-07-30' },
-  { id: 8, name: 'Mehnaz Sultana', initials: 'MS', color: '#6C63FF', batch: 2016, current: 'Cloud Architect @ Amazon AWS', prev: 'DevOps Engineer @ Wipro (2016–2020)', updateType: 'self', lastUpdated: '2026-07-15' },
-];
+/* The Career Progression tracker was removed with its page: an eight-person
+   registry of invented job moves tagged "AI Updated" or "Self-Reported", four
+   self-report prompts naming real alumni, an enrichment-statistics panel, and
+   modals for confirming a job change and setting career privacy. Nothing in the
+   schema records employment history or any enrichment run. */
 
-const MOCK_SELF_REPORT_PROMPTS = [
-  { name: 'Khalid Mahmud', initials: 'KM', question: 'Is "Backend Engineer @ Chaldal" still your current role?' },
-  { name: 'Priya Das', initials: 'PD', question: 'Have you changed your role at SSL Wireless recently?' },
-  { name: 'Babu Rahman', initials: 'BR', question: 'We detected a LinkedIn update — new role at Robi Axiata?' },
-  { name: 'Sabbir Islam', initials: 'SI', question: 'Your profile hasn\'t been updated in 6 months. Still at BTCL?' },
-];
-
-function renderCareerTracker() {
-  renderCareerRegistry();
-  renderSelfReportPrompts();
-  renderEnrichmentStats();
-}
-
-function renderCareerRegistry(filter = '') {
-  const el = document.getElementById('career-registry-list');
-  if (!el) return;
-  let data = MOCK_CAREER_REGISTRY;
-  if (filter) data = data.filter(c => c.updateType === filter || c.current.toLowerCase().includes(filter));
-  el.innerHTML = data.map(c => `
-    <div class="career-registry-item">
-      <div class="career-registry-avatar" style="background:linear-gradient(135deg,${c.color}40,${c.color}20);color:${c.color}">${c.initials}</div>
-      <div class="career-registry-info">
-        <div class="career-registry-name">${c.name} <span style="font-size:11px;color:var(--text-muted)">· Batch ${c.batch}</span></div>
-        <div class="career-registry-current">${c.current}</div>
-        <div class="career-registry-history">Previously: ${c.prev}</div>
-      </div>
-      <div class="career-registry-action" style="text-align:right;flex-shrink:0">
-        <div class="career-update-badge ${c.updateType}">${c.updateType === 'ai' ? '<i data-lucide="bot" class="ui-icon"></i> AI Updated' : c.updateType === 'self' ? '<i data-lucide="pen-line" class="ui-icon"></i> Self-Reported' : '<i data-lucide="hourglass" class="ui-icon"></i> Pending'}</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:4px">${c.lastUpdated}</div>
-        <button class="btn btn-sm btn-outline" style="margin-top:6px;font-size:10px" onclick="showToast('✎ Edit form for ${c.name} loading…')">Edit</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function filterCareerRegistry(val) { renderCareerRegistry(val); }
-function filterCareerStatus(val) { renderCareerRegistry(val); }
-
-function renderSelfReportPrompts() {
-  const el = document.getElementById('self-report-prompts');
-  if (!el) return;
-  el.innerHTML = MOCK_SELF_REPORT_PROMPTS.map(p => `
-    <div class="self-report-prompt-item" onclick="showSelfReportModal('${p.name}')">
-      <div class="career-registry-avatar" style="width:36px;height:36px;background:rgba(255,140,66,0.2);color:var(--amber);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${p.initials}</div>
-      <div>
-        <div class="prompt-question">${p.question}</div>
-        <div class="prompt-name">${p.name}</div>
-      </div>
-      <span style="font-size:18px;color:var(--amber)">?</span>
-    </div>
-  `).join('');
-}
-
-function renderEnrichmentStats() {
-  const el = document.getElementById('enrichment-stats');
-  if (!el) return;
-  const stats = [
-    { label: 'Total Alumni Tracked', val: '12,847', color: 'var(--teal)' },
-    { label: 'AI Auto-Updated (30d)', val: '847', color: 'var(--teal)' },
-    { label: 'Self-Reported (30d)', val: '312', color: 'var(--primary-light)' },
-    { label: 'Pending Verification', val: '194', color: 'var(--amber)' },
-    { label: 'Opted Out (Privacy)', val: '287', color: 'var(--text-muted)' },
-    { label: 'Last Enrichment Run', val: '03:00 UTC', color: 'var(--text-secondary)' },
-  ];
-  el.innerHTML = stats.map(s => `
-    <div class="enrichment-stat-item">
-      <span class="enrichment-stat-label">${s.label}</span>
-      <span class="enrichment-stat-val" style="color:${s.color}">${s.val}</span>
-    </div>
-  `).join('');
-}
-
-function showSelfReportPrompt() {
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title"><i data-lucide="pen-line" class="ui-icon"></i> Update My Career</div>
-      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
-    </div>
-    <div class="socratic-prompt">
-      <div class="socratic-prompt-icon"><i data-lucide="bot" class="ui-icon"></i></div>
-      <div class="socratic-prompt-text"><strong>ConnectAI:</strong> Let me help you update your career history. What changed?</div>
-    </div>
-    <div class="input-group"><label class="input-label">Current Employer</label><input type="text" class="form-input" value="TechBD Solutions" /></div>
-    <div class="input-group"><label class="input-label">Job Title</label><input type="text" class="form-input" value="Senior Full-Stack Engineer" /></div>
-    <div class="field-grid-2">
-      <div class="input-group"><label class="input-label">Start Month</label><input type="month" class="form-input" value="2023-03" /></div>
-      <div class="input-group"><label class="input-label">End (leave blank = current)</label><input type="month" class="form-input" /></div>
-    </div>
-    <div class="input-group"><label class="input-label">Privacy Setting</label>
-      <select class="form-select">
-        <option>Visible to All DIC Alumni</option>
-        <option>Verified Alumni Only</option>
-        <option>My Chapter Only</option>
-        <option>Private (Hidden)</option>
-      </select>
-    </div>
-    <div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.15);border-radius:var(--radius-sm);padding:10px;font-size:12px;color:var(--text-secondary);margin-bottom:16px">
-      <i data-lucide="lock" class="ui-icon"></i> Opt-out: You can hide any field from AI enrichment. Your scraping opt-out preference is stored encrypted.
-    </div>
-    <button class="btn btn-primary btn-full" onclick="closeModal(); showToast('✅ Career updated! Profile visible to DIC alumni.')">Save Career Update</button>
-  `);
-}
-
-function showSelfReportModal(name) {
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title"><i data-lucide="pen-line" class="ui-icon"></i> Confirm Career Info</div>
-      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
-    </div>
-    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Confirming career info for <strong>${name}</strong>. Please review and update if needed.</p>
-    <div class="input-group"><label class="input-label">Current Employer</label><input type="text" class="form-input" placeholder="Company name" /></div>
-    <div class="input-group"><label class="input-label">Current Role</label><input type="text" class="form-input" placeholder="Job title" /></div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-primary" onclick="closeModal(); showToast('✅ Career info confirmed for ${name}')"><i data-lucide="check" class="ui-icon"></i> Confirm & Save</button>
-      <button class="btn btn-outline" onclick="closeModal(); showToast('⏭ Skipped — will prompt again in 30 days')">Skip for Now</button>
-    </div>
-  `);
-}
-
-function showCareerPrivacyModal() {
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title"><i data-lucide="lock" class="ui-icon"></i> Career Privacy Controls</div>
-      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
-    </div>
-    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Control how your career data is collected and displayed. All preferences are PDPA 2026 compliant.</p>
-    ${[
-      { label: 'Allow AI scraping of public LinkedIn', enabled: true },
-      { label: 'Allow employer verification via SSO', enabled: true },
-      { label: 'Show current employer in directory', enabled: true },
-      { label: 'Show employment history', enabled: false },
-      { label: 'Receive self-reporting prompts', enabled: true },
-      { label: 'Include in employer analytics', enabled: false },
-    ].map(p => `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-glass)">
-        <span style="font-size:13px">${p.label}</span>
-        <div class="toggle-switch ${p.enabled ? 'active' : ''}" onclick="this.classList.toggle('active')"><div class="toggle-thumb"></div></div>
-      </div>
-    `).join('')}
-    <button class="btn btn-primary btn-full" style="margin-top:16px" onclick="closeModal(); showToast('✅ Privacy preferences saved')">Save Privacy Settings</button>
-  `);
-}
-
-// ─── REQ-09: UPDATED RBAC — 12 ROLES ────────────────────────
-const MOCK_RBAC_V2 = {
-  modules: [
-    'Tenant Config & Branding', 'User Verification', 'Directory Search',
-    'Mentorship', 'Donations & MFS', 'Financial Ledger', 'Event Management',
-    'Job Board', 'Security Audit Log', 'Content Moderation', 'API & Webhooks', 'Career Tracker'
-  ],
-  roles: ['Super Admin', 'School Owner', 'Alumni Dir.', 'Chapter Off.', 'Content Mod.', 'Event Mgr.', 'Alumni <i data-lucide="check" class="ui-icon"></i>', 'Alumni <i data-lucide="x" class="ui-icon"></i>', 'Student', 'Finance Aud.', 'API Dev.', 'System'],
-  matrix: [
-    ['Full', 'Edit', 'Full', 'None', 'None', 'None', 'None', 'None', 'None', 'None', 'None', 'View'],
-    ['Full', 'Full', 'Full', 'Edit', 'None', 'None', 'None', 'None', 'None', 'None', 'None', 'View'],
-    ['Full', 'Full', 'Full', 'Full', 'View', 'View', 'Limited', 'View', 'View', 'View', 'None', 'Full'],
-    ['Full', 'View', 'Full', 'Full', 'None', 'Edit', 'Request', 'None', 'View', 'None', 'None', 'View'],
-    ['None', 'None', 'View', 'None', 'None', 'None', 'None', 'None', 'None', 'Full', 'None', 'None'],
-    ['None', 'None', 'View', 'None', 'None', 'Full', 'None', 'None', 'None', 'None', 'None', 'None'],
-    ['Full', 'Full', 'Full', 'Full', 'None', 'Donate', 'Donate', 'None', 'Full', 'None', 'None', 'Full'],
-    ['Full', 'Full', 'View', 'None', 'None', 'None', 'None', 'None', 'View', 'None', 'None', 'Limited'],
-    ['Full', 'Full', 'Full', 'Full', 'None', 'View', 'View', 'View', 'View', 'None', 'None', 'View'],
-    ['Full', 'Full', 'None', 'None', 'None', 'None', 'None', 'None', 'None', 'None', 'None', 'Full'],
-    ['None', 'None', 'None', 'None', 'None', 'None', 'None', 'None', 'None', 'None', 'Full', 'None'],
-    ['Full', 'Full', 'Full', 'Full', 'Full', 'Full', 'Full', 'Full', 'Full', 'Full', 'Full', 'Full'],
-  ],
-};
-
-function renderRBACTableV2() {
+/* ─── RBAC MATRIX ───────────────────────────────────────────
+   The matrix used to be a 12x12 grid maintained by hand in this file, listing
+   roles the system does not have — School Owner, Chapter Officer, Event Manager,
+   Finance Auditor, API Developer, System — against modules it does not enforce,
+   and marking cells Full / Edit / View / Limited / Audit / Donate purely by
+   assertion. The platform has five roles and its guards are requireAuth and
+   requireRole(...ADMIN_ROLES | ...MODERATOR_ROLES). GET /api/stats/rbac derives
+   the table from those same constants, so the screen cannot drift from the
+   middleware, and no permission rule is written twice. */
+async function renderRBACTableV2() {
   const table = document.getElementById('rbac-table');
   if (!table) return;
-  const permClass = {
-    'Full': 'perm-full', 'Edit': 'perm-edit', 'View': 'perm-view',
-    'None': 'perm-none', 'Limited': 'perm-limited', 'Audit': 'perm-audit',
-    'Donate': 'perm-donate', 'Request': 'perm-view', 'Post': 'perm-edit', 'Apply': 'perm-view'
-  };
+
+  const res = await API.getRbacMatrix();
+  if (apiFailed(res)) {
+    table.innerHTML = `<tbody><tr><td style="padding:16px;color:var(--text-muted)">
+      The permission matrix could not be loaded.</td></tr></tbody>`;
+    return;
+  }
+
+  const label = (r) => ({
+    alumni: 'Alumni', moderator: 'Moderator', dept_admin: 'Dept Admin',
+    univ_admin: 'College Admin', super_admin: 'Super Admin'
+  }[r] || r);
+
   let html = `<thead><tr>
-    <th class="module-col">Module</th>
-    ${MOCK_RBAC_V2.roles.map(r => `<th class="role-col" style="font-size:9px">${r}</th>`).join('')}
+    <th class="module-col">Capability</th>
+    ${res.roles.map(r => `<th class="role-col" style="font-size:10px">${escapeHtml(label(r))}</th>`).join('')}
   </tr></thead><tbody>`;
-  MOCK_RBAC_V2.matrix.forEach((row, i) => {
+
+  res.capabilities.forEach(cap => {
     // data-label lets the same markup render as a table on desktop and as one
-    // card per module on mobile (see the ≤900px block in styles.css).
+    // card per capability on mobile (see the ≤900px block in styles.css).
     html += `<tr>
-      <td class="module-name">${escapeHtml(MOCK_RBAC_V2.modules[i])}</td>
-      ${row.map((p, j) => `<td class="perm-cell" data-label="${escapeHtml(MOCK_RBAC_V2.roles[j])}"><span class="${permClass[p] || 'perm-none'}">${escapeHtml(p)}</span></td>`).join('')}
+      <td class="module-name">${escapeHtml(cap.label)}</td>
+      ${res.roles.map(r => {
+        const allowed = cap.allowed.includes(r);
+        return `<td class="perm-cell" data-label="${escapeHtml(label(r))}">
+          <span class="${allowed ? 'perm-full' : 'perm-none'}">${allowed ? 'Allowed' : 'No'}</span></td>`;
+      }).join('')}
     </tr>`;
   });
   html += '</tbody>';
   table.innerHTML = html;
 }
 
-// ─── REQ-10: OFFLINE SYNC QUEUE MANAGER ─────────────────────
-const MOCK_SYNC_QUEUE = [
-  { type: 'mutation', op: 'UPDATE alumni#847 jobTitle', size: '2.4 KB', ts: '14:32:08' },
-  { type: 'checkin', op: 'INSERT event_checkin#REU-2026-0447', size: '0.8 KB', ts: '14:31:55' },
-  { type: 'mutation', op: 'INSERT donation#TXN-C3E8A9', size: '1.2 KB', ts: '14:31:44' },
-  { type: 'conflict', op: 'CONFLICT checkin#REU-2026-0112 — duplicate detected', size: '1.6 KB', ts: '14:30:22' },
-  { type: 'mutation', op: 'UPDATE alumni#1204 profilePhoto', size: '47.2 KB', ts: '14:28:11' },
-  { type: 'checkin', op: 'INSERT event_checkin#REU-2026-0448', size: '0.8 KB', ts: '14:27:09' },
-];
+/* ─── OFFLINE SYNC LEDGER ───────────────────────────────────
+   sync_mutations is a real table: routes_events.js writes a row for every event
+   registration, keyed by client_mutation_id so a retried request cannot
+   register the same person twice. This panel shows those rows.
 
-function renderOfflineSyncPanel() {
+   What it no longer shows, because none of it was ever recorded anywhere: a
+   six-item pending queue with byte sizes and timestamps, a conflict-resolution
+   log, "247 synced today", a 99.8% success rate, and a 3.8 MB payload against a
+   5 MB cap with LRU eviction at 100 MB. The Sync Now and Clear Conflicts
+   buttons raised a toast and did nothing; there is no client-side outbox to
+   flush, so they are gone too. */
+async function renderOfflineSyncPanel() {
   const el = document.getElementById('offline-sync-panel');
   if (!el) return;
 
-  const totalPayload = 3.8; // MB
-  const maxPayload = 5.0;
-  const pct = Math.round((totalPayload / maxPayload) * 100);
+  el.innerHTML = '<div class="glass-card"><div style="padding:16px;color:var(--text-muted);font-size:12px">Loading…</div></div>';
+  const res = await API.getSyncMutations();
 
+  if (apiFailed(res)) {
+    el.innerHTML = `<div class="glass-card">${renderErrorState(
+      res?.error || 'Could not load the sync ledger.', 'renderOfflineSyncPanel()')}</div>`;
+    return;
+  }
+
+  const rows = res.mutations || [];
   el.innerHTML = `
     <div class="glass-card">
-      <div class="card-header"><h3 class="card-title">Sync Overview</h3><span class="card-badge teal">Dexie.js IndexedDB</span></div>
+      <div class="card-header">
+        <h3 class="card-title">Sync Ledger</h3>
+        <span class="card-badge teal">sync_mutations</span>
+      </div>
+      <p style="font-size:12px;color:var(--text-secondary);margin:0 0 12px">
+        Every write that arrived with a client mutation id. The id makes a retried
+        request idempotent: a registration submitted twice is recorded once.
+      </p>
       <div class="sync-overview-grid">
-        <div class="sync-stat-card"><div class="sync-stat-val">${MOCK_SYNC_QUEUE.length}</div><div class="sync-stat-label">Queue Depth</div></div>
-        <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--amber)">${MOCK_SYNC_QUEUE.filter(q => q.type === 'conflict').length}</div><div class="sync-stat-label">Conflicts</div></div>
-        <div class="sync-stat-card"><div class="sync-stat-val">247</div><div class="sync-stat-label">Synced Today</div></div>
-        <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--green)">99.8%</div><div class="sync-stat-label">Success Rate</div></div>
-      </div>
-      <div class="sync-payload-bar-wrap" style="margin-top:16px">
-        <div class="sync-payload-label">
-          <span>Payload Size: ${totalPayload}MB</span>
-          <span style="color:${pct > 80 ? 'var(--amber)' : 'var(--teal)'}">${pct}% of 5MB cap</span>
-        </div>
-        <div class="sync-payload-track"><div class="sync-payload-fill" style="width:${pct}%"></div></div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">LRU eviction triggers at 100MB cache threshold · Retry on reconnect after 3 exponential backoffs</div>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:12px">
-        <button class="btn btn-primary btn-sm" onclick="showToast('🔄 Manual sync triggered — 6 items syncing…')"><i data-lucide="refresh-cw" class="ui-icon"></i> Sync Now</button>
-        <button class="btn btn-outline btn-sm" onclick="showToast('🗑 Conflict log cleared')">Clear Conflicts</button>
+        <div class="sync-stat-card"><div class="sync-stat-val">${res.total ?? 0}</div><div class="sync-stat-label">Recorded Mutations</div></div>
+        <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--teal)">${res.applied ?? 0}</div><div class="sync-stat-label">Applied</div></div>
+        <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--amber)">${res.unapplied ?? 0}</div><div class="sync-stat-label">Not Applied</div></div>
       </div>
     </div>
     <div class="glass-card">
-      <div class="card-header"><h3 class="card-title">Pending Queue</h3><span class="badge-count">${MOCK_SYNC_QUEUE.length}</span></div>
-      ${MOCK_SYNC_QUEUE.map(q => `
-        <div class="sync-queue-item">
-          <span class="sync-queue-type ${q.type}">${q.type.toUpperCase()}</span>
-          <span style="flex:1;color:var(--text-secondary);font-family:monospace;font-size:11px">${q.op}</span>
-          <span style="color:var(--text-muted);font-size:11px">${q.size}</span>
-          <span style="color:var(--text-muted);font-size:11px">${q.ts}</span>
-        </div>
-      `).join('')}
-    </div>
-    <div class="glass-card">
-      <div class="card-header"><h3 class="card-title">Conflict Resolution Log</h3></div>
-      ${MOCK_SYNC_QUEUE.filter(q => q.type === 'conflict').length === 0
-        ? '<div style="text-align:center;padding:24px;color:var(--text-muted)"><i data-lucide="check" class="ui-icon"></i> No conflicts</div>'
-        : MOCK_SYNC_QUEUE.filter(q => q.type === 'conflict').map(q => `
+      <div class="card-header"><h3 class="card-title">Recorded Mutations</h3><span class="badge-count">${rows.length}</span></div>
+      ${rows.length === 0
+        ? renderEmptyState('<i data-lucide="refresh-cw" class="ui-icon"></i>', 'No mutations recorded yet',
+            'Rows appear here as registrations and check-ins are submitted.')
+        : rows.map(m => `
           <div class="sync-queue-item">
-            <span class="sync-queue-type conflict">CONFLICT</span>
-            <span style="flex:1;color:var(--red);font-family:monospace;font-size:11px">${q.op}</span>
-            <button class="btn btn-sm btn-outline" style="font-size:10px" onclick="showToast('✅ Conflict resolved: last-write-wins applied')">Resolve</button>
-          </div>
-        `).join('')
+            <span class="sync-queue-type ${m.applied ? 'mutation' : 'conflict'}">${escapeHtml(String(m.action || '').toUpperCase())}</span>
+            <span style="flex:1;color:var(--text-secondary);font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11px;min-width:0;overflow-wrap:anywhere">${escapeHtml(m.entity || '')} · ${escapeHtml(m.client_mutation_id || '')}</span>
+            <span style="color:var(--text-muted);font-size:11px">${escapeHtml(m.user_name || 'Unknown')}</span>
+            <span style="color:var(--text-muted);font-size:11px">${escapeHtml(formatRelativeTime(m.created_at))}</span>
+          </div>`).join('')
       }
     </div>
   `;
+  if (window.lucide) lucide.createIcons();
 }
 
 // ─── REQ-12: BROADCAST HISTORY WITH READ RECEIPTS ────────────
@@ -2823,252 +2994,18 @@ async function renderBroadcastHistory() {
     </div>`).join('');
 }
 
-// ─── REQ-18: DEVELOPER API & WEBHOOKS PAGE ───────────────────
-const MOCK_API_APPS = [
-  { icon: '🏫', name: 'DIC SIS Integration', clientId: 'cl_dic_sis_a4f2b9c3', scopes: ['alumni:read', 'events:read', 'verify:write'], lastUsed: '2026-07-30', status: 'active' },
-  { icon: '📊', name: 'ERP Connector — Finance', clientId: 'cl_erp_fin_b7d8e2a1', scopes: ['donations:read', 'ledger:read'], lastUsed: '2026-07-29', status: 'active' },
-  { icon: '🤖', name: 'AI Partner API', clientId: 'cl_ai_ptn_c9f4d7b5', scopes: ['directory:read', 'mentorship:read'], lastUsed: '2026-07-25', status: 'active' },
-];
+/* The Developer API screen and everything that fed it were removed with the
+   page itself: three registered OAuth2 applications with client ids and scopes,
+   two webhook endpoints with delivery counters, a rolling request log, an
+   endpoint catalogue, three SIS/ERP integrations with status lights, an OpenAPI
+   document, and modals for creating applications and webhooks. The platform
+   issues no API credentials and sends no webhooks, so all of it was invented.
+   The real backend API routes are untouched. */
 
-const MOCK_WEBHOOKS = [
-  { url: 'https://sis.dic.edu.bd/webhooks/alumni', events: ['alumni.verified', 'alumni.updated'], status: 'active', deliveries: 1847 },
-  { url: 'https://erp.dic.edu.bd/api/donations', events: ['donation.completed', 'donation.failed'], status: 'active', deliveries: 342 },
-  { url: 'https://analytics.dic.edu.bd/events', events: ['event.registered', 'event.checkin'], status: 'active', deliveries: 2103 },
-];
-
-const MOCK_API_LOG = [
-  { method: 'get', path: '/api/v1/alumni?batch=2020', status: '200', client: 'DIC SIS', time: '47ms', ts: '14:32' },
-  { method: 'post', path: '/api/v1/webhooks/events', status: '200', client: 'ERP', time: '89ms', ts: '14:31' },
-  { method: 'get', path: '/api/v1/donations/campaigns', status: '200', client: 'ERP', time: '52ms', ts: '14:30' },
-  { method: 'get', path: '/api/v1/alumni/847/profile', status: '403', client: 'AI Partner', time: '12ms', ts: '14:29' },
-  { method: 'post', path: '/api/v1/verify', status: '201', client: 'DIC SIS', time: '134ms', ts: '14:28' },
-  { method: 'del', path: '/api/v1/webhooks/wh_012', status: '204', client: 'ERP', time: '23ms', ts: '14:25' },
-];
-
-const MOCK_API_ENDPOINTS = [
-  { method: 'GET', path: '/api/v1/alumni', desc: 'List verified alumni (paginated)' },
-  { method: 'GET', path: '/api/v1/alumni/:id', desc: 'Get single alumni profile' },
-  { method: 'POST', path: '/api/v1/verify', desc: 'Verify alumni status' },
-  { method: 'GET', path: '/api/v1/donations', desc: 'List campaigns & transactions' },
-  { method: 'POST', path: '/api/v1/donations/initiate', desc: 'Initiate MFS payment' },
-  { method: 'GET', path: '/api/v1/events', desc: 'List events & registrations' },
-  { method: 'POST', path: '/api/v1/events/checkin', desc: 'QR check-in via API' },
-  { method: 'GET', path: '/api/v1/mentorship', desc: 'List mentorship pairs' },
-  { method: 'GET', path: '/api/v1/chapters', desc: 'List chapters & members' },
-  { method: 'POST', path: '/api/v1/webhooks', desc: 'Register webhook endpoint' },
-];
-
-const MOCK_SIS_INTEGRATIONS = [
-  { icon: '🏫', name: 'DIC Student Information System', type: 'SIS · REST API', status: 'connected' },
-  { icon: '📊', name: 'Oracle ERP — Finance Module', type: 'ERP · SOAP/REST Bridge', status: 'connected' },
-  { icon: '🎓', name: 'National University BD Registry', type: 'Gov Registry · Batch Sync', status: 'pending' },
-  { icon: '📋', name: 'BUET Alumni DB', type: 'Cross-Institution · Federated', status: 'connected' },
-];
-
-function renderAPIPage() {
-  renderAPIApps();
-  renderWebhooks();
-  renderAPILog();
-  renderAPIEndpoints();
-  renderSISIntegrations();
-}
-
-function renderAPIApps() {
-  const el = document.getElementById('api-apps-list');
-  if (!el) return;
-  el.innerHTML = MOCK_API_APPS.map(a => `
-    <div class="api-app-card">
-      <div class="api-app-icon">${emojiIcon(a.icon, 'app-window')}</div>
-      <div class="api-app-info">
-        <div class="api-app-name">${a.name}</div>
-        <div class="api-app-client">${a.clientId}</div>
-        <div class="api-app-scopes">${a.scopes.map(s => `<span class="scope-tag">${s}</span>`).join('')}</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Last used: ${a.lastUsed}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
-        <span class="card-badge teal">Active</span>
-        <button class="api-key-btn" onclick="showToast('🔑 API key revealed (expires in 30s)')">Show Key</button>
-        <button class="api-key-btn" onclick="showToast('🔄 API key rotated successfully')">Rotate</button>
-        <button class="api-key-btn" style="color:var(--red)" onclick="showToast('🗑 App revoked')">Revoke</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function renderWebhooks() {
-  const el = document.getElementById('webhook-list');
-  if (!el) return;
-  el.innerHTML = MOCK_WEBHOOKS.map(w => `
-    <div class="webhook-item">
-      <div style="flex:1">
-        <div class="webhook-url">${w.url}</div>
-        <div class="webhook-events">${w.events.map(e => `<span class="webhook-event-tag">${e}</span>`).join('')}</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:4px">${w.deliveries.toLocaleString()} deliveries</div>
-      </div>
-      <span class="webhook-status ${w.status}">${w.status === 'active' ? '<i data-lucide="circle-dot" class="ui-icon"></i> Active' : '<i data-lucide="circle" class="ui-icon"></i> Inactive'}</span>
-      <button class="api-key-btn" onclick="showToast('🗑 Webhook deleted')">Delete</button>
-    </div>
-  `).join('');
-}
-
-function renderAPILog() {
-  const el = document.getElementById('api-request-log');
-  if (!el) return;
-  const statusOk = s => ['200','201','204'].includes(s);
-  el.innerHTML = MOCK_API_LOG.map(l => `
-    <div class="api-log-item">
-      <span class="api-method ${l.method}">${l.method.toUpperCase()}</span>
-      <span class="api-log-path">${l.path}</span>
-      <span class="api-log-status ${statusOk(l.status) ? 'ok' : 'err'}">${l.status}</span>
-      <span style="color:var(--text-muted);font-size:11px">${l.client}</span>
-      <span style="color:var(--teal);font-size:11px">${l.time}</span>
-      <span class="api-log-time">${l.ts}</span>
-    </div>
-  `).join('');
-}
-
-function renderAPIEndpoints() {
-  const el = document.getElementById('api-endpoint-list');
-  if (!el) return;
-  const colors = { GET: 'var(--green)', POST: 'var(--primary-light)', DEL: 'var(--red)' };
-  el.innerHTML = MOCK_API_ENDPOINTS.map(e => `
-    <div class="api-endpoint-item" onclick="showToast('📄 Opening docs for ${e.path}')">
-      <div class="api-endpoint-method" style="color:${colors[e.method] || 'var(--text-muted)'}">${e.method}</div>
-      <div class="api-endpoint-path">${e.path}</div>
-      <div class="api-endpoint-desc">${e.desc}</div>
-    </div>
-  `).join('');
-}
-
-function renderSISIntegrations() {
-  const el = document.getElementById('sis-integrations');
-  if (!el) return;
-  el.innerHTML = MOCK_SIS_INTEGRATIONS.map(s => `
-    <div class="sis-integration-item">
-      <div class="sis-integration-icon">${emojiIcon(s.icon, 'link')}</div>
-      <div class="sis-integration-info">
-        <div class="sis-integration-name">${s.name}</div>
-        <div class="sis-integration-type">${s.type}</div>
-      </div>
-      <div class="sis-status-dot ${s.status}" title="${s.status}"></div>
-    </div>
-  `).join('');
-}
-
-function showApiDocs() {
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title"><i data-lucide="file-text" class="ui-icon"></i> OpenAPI Documentation</div>
-      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
-    </div>
-    <div style="background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm);padding:16px;font-family:monospace;font-size:12px;color:var(--text-secondary);margin-bottom:16px">
-openapi: 3.0.3
-info:
-  title: AlumniConnect API
-  version: 1.0.0
-  contact: api@alumnai.io
-servers:
-  - url: https://dic.alumnai.io/api/v1
-security:
-  - OAuth2: [alumni:read]
-paths:
-  /alumni:
-    get:
-      summary: List verified alumni
-      parameters: [batch, domain, location]
-  /donations:
-    get:
-      summary: List campaigns
-  /verify:
-    post:
-      summary: Verify alumni status
-    </div>
-    <button class="btn btn-outline btn-full" onclick="showToast('📄 Full OpenAPI spec downloading as YAML…')"><i data-lucide="download" class="ui-icon"></i> Download Full Spec</button>
-  `);
-}
-
-function showCreateApiApp() {
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title">+ New OAuth2 Application</div>
-      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
-    </div>
-    <div class="input-group"><label class="input-label">Application Name</label><input type="text" class="form-input" placeholder="e.g., SIS Integration v2" /></div>
-    <div class="input-group"><label class="input-label">Callback URLs</label><input type="text" class="form-input" placeholder="https://sis.dic.edu.bd/callback" /></div>
-    <div class="modal-section">
-      <div class="modal-section-title">OAuth2 Scopes</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        ${['alumni:read','alumni:write','events:read','donations:read','verify:write','mentorship:read'].map(s => `<button class="chip">${s}</button>`).join('')}
-      </div>
-    </div>
-    <button class="btn btn-primary btn-full" onclick="closeModal(); showToast('✅ API application created! Client ID and Secret generated.')">Create Application</button>
-  `);
-}
-
-function showAddWebhookModal() {
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title">+ Add Webhook Endpoint</div>
-      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
-    </div>
-    <div class="input-group"><label class="input-label">Endpoint URL</label><input type="url" class="form-input" placeholder="https://your-server.com/webhook" /></div>
-    <div class="input-group"><label class="input-label">Secret (HMAC-SHA256)</label><input type="text" class="form-input" value="whsec_${Math.random().toString(36).substr(2,24)}" /></div>
-    <div class="modal-section">
-      <div class="modal-section-title">Events to Subscribe</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        ${['alumni.verified','alumni.updated','donation.completed','event.registered','event.checkin','mentorship.accepted'].map(e => `<button class="chip">${e}</button>`).join('')}
-      </div>
-    </div>
-    <button class="btn btn-primary btn-full" onclick="closeModal(); showToast('✅ Webhook registered! Sending test payload…')">Register Endpoint</button>
-  `);
-}
-
-// ─── REQ-01: TENANT BRANDING EDITOR ─────────────────────────
-function renderTenantListEnhanced() {
-  const el = document.getElementById('tenant-list');
-  if (!el) return;
-  el.innerHTML = MOCK_TENANTS.map(t => `
-    <div class="tenant-card glass-card">
-      <div style="flex:1">
-        <div style="font-size:16px;font-weight:700">${t.name}</div>
-        <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${t.subdomain}</div>
-        <div class="tenant-branding-editor">
-          <div class="branding-editor-title"><i data-lucide="palette" class="ui-icon"></i> Branding</div>
-          <div class="branding-color-grid">
-            <div class="color-field">
-              <div class="color-swatch" style="background:#0B3897" title="Primary color" onclick="showToast('🎨 Color picker for Primary')"></div>
-              <span class="color-label">Primary</span>
-            </div>
-            <div class="color-field">
-              <div class="color-swatch" style="background:#00D4AA" title="Accent color" onclick="showToast('🎨 Color picker for Accent')"></div>
-              <span class="color-label">Accent</span>
-            </div>
-          </div>
-          <button class="btn btn-sm btn-outline btn-full" onclick="showToast('🏫 Custom CSS editor for ${t.name} opened')">Custom CSS / Logo</button>
-        </div>
-      </div>
-      <div style="text-align:center;padding:0 16px">
-        <div style="font-size:18px;font-weight:800;color:var(--teal)">${t.alumni.toLocaleString()}</div>
-        <div style="font-size:11px;color:var(--text-muted)">Alumni</div>
-      </div>
-      <div style="text-align:center;padding:0 16px">
-        <div style="font-size:13px;font-weight:700;color:var(--primary-light)">${t.plan}</div>
-        <div style="font-size:11px;color:var(--text-muted)">Plan</div>
-      </div>
-      <span class="tenant-status ${t.status}">${t.status.toUpperCase()}</span>
-    </div>
-  `).join('') + `
-    <div class="tenant-card glass-card" style="border-color:rgba(248,113,113,0.3);opacity:0.75">
-      <div style="flex:1">
-        <div style="font-size:16px;font-weight:700">Rajshahi University Alumni <span style="font-size:12px;color:var(--red)">— SUSPENDED</span></div>
-        <div style="font-size:12px;color:var(--text-secondary)">ru.alumnai.io</div>
-        <div style="font-size:12px;color:var(--red);margin-top:6px"><i data-lucide="triangle-alert" class="ui-icon"></i> Subscription expired Jul 1, 2026 · 72 day grace period remaining</div>
-        <div style="font-size:11px;color:var(--text-muted)">White-labeled suspension notice active at ru.alumnai.io</div>
-      </div>
-      <span class="tenant-status" style="background:rgba(248,113,113,0.12);color:var(--red)">SUSPENDED</span>
-    </div>
-  `;
-}
+/* The tenant branding editor was removed. This is a single-institution
+   deployment — there is no tenants table, no tenant column on any row, and no
+   code path that resolves one — so the panel could only ever list Daffodil
+   International College beside a hardcoded alumni count of 38,420. */
 
 // ─── OVERRIDE INITAPP & SHOWPAGE (CLEANED UP) ─────────────────
 // All renderers directly invoked in master initApp and showPage functions
@@ -3095,16 +3032,24 @@ async function renderDonorLeaderboard() {
     return;
   }
 
-  const tiers = ['Gold Benefactor', 'Silver Patron', 'Bronze Supporter', 'Alumni Sustainer', 'Annual Contributor'];
-  el.innerHTML = rows.map((d, i) => `
+  /* The tier under each name — Gold Benefactor, Silver Patron, Bronze Supporter
+     and so on — was assigned by position in the list, so whoever gave the most
+     was "Gold Benefactor" even at ৳1, and second place was "Silver Patron" even
+     at ৳100,000. No tier thresholds are defined anywhere. The rank and the
+     amount are real, so those stay and the invented status label goes; the line
+     under the name is now the count of donations behind the total. */
+  el.innerHTML = rows.map((d, i) => {
+    const n = Number(d.donation_count || 0);
+    return `
     <div class="donor-row">
       <div class="donor-rank rank-${i + 1}">${i + 1}</div>
       <div style="flex:1;min-width:0">
         <div class="donor-name">${escapeHtml(d.name || 'Anonymous Donor')}${d.batch ? ` · <span style="color:var(--text-muted);font-weight:500">Batch '${String(d.batch).slice(-2)}</span>` : ''}</div>
-        <div class="donor-tier">${tiers[i] || 'Contributor'}</div>
+        ${n ? `<div class="donor-tier">${n} donation${n === 1 ? '' : 's'}</div>` : ''}
       </div>
-      <div class="donor-amount">৳${Number(d.total).toLocaleString()}</div>
-    </div>`).join('');
+      <div class="donor-amount">${money(d.total)}</div>
+    </div>`;
+  }).join('');
 }
 
 // ─── 2. ANALYTICS: MENTORSHIP HEALTH & EVENT ROI ─────────────
@@ -3134,30 +3079,82 @@ switchAnalytics = function(tab, btn) {
   }
 };
 
-function renderMentorshipHealthAnalytics() {
+/* The scorecard read 1,203 active connections, an 83% goal completion rate, a
+   sub-12-hour mentor response time and a 4.9/5.0 mentee rating, over a
+   mentorships table holding zero rows. The outcome distribution below it was
+   four fixed bars. Nothing records a goal, a response time or a rating, so
+   those three are gone; the counts that are stored are shown instead. */
+async function renderMentorshipHealthAnalytics() {
   const grid = document.getElementById('mentorship-health-grid');
   const dist = document.getElementById('outcome-distribution');
   if (!grid) return;
 
-  grid.innerHTML = `
-    <div class="sync-overview-grid">
-      <div class="sync-stat-card"><div class="sync-stat-val">1,203</div><div class="sync-stat-label">Active Connections</div></div>
-      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--teal)">83%</div><div class="sync-stat-label">Goal Completion Rate</div></div>
-      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--amber)">&lt;12 hrs</div><div class="sync-stat-label">Avg Mentor Response</div></div>
-      <div class="sync-stat-card"><div class="sync-stat-val" style="color:var(--primary-light)">4.9 / 5.0</div><div class="sync-stat-label">Mentee Rating</div></div>
-    </div>
-  `;
+  grid.innerHTML = '<div class="queue-sub" style="padding:12px">Loading…</div>';
+  const res = await API.getStatsAnalytics();
+
+  if (apiFailed(res)) {
+    grid.innerHTML = renderEmptyState('<i data-lucide="handshake" class="ui-icon"></i>',
+      'Mentorship figures unavailable', 'They could not be loaded from the database.');
+    if (dist) dist.innerHTML = '';
+    if (window.lucide) lucide.createIcons();
+    return;
+  }
+
+  const total = res.totals?.mentorships ?? 0;
+  if (total === 0) {
+    grid.innerHTML = renderEmptyState('<i data-lucide="handshake" class="ui-icon"></i>',
+      'No mentorship records yet',
+      'Figures appear here once alumni request and accept mentorships.');
+  } else {
+    grid.innerHTML = `
+      <div class="sync-overview-grid">
+        <div class="sync-stat-card"><div class="sync-stat-val">${total.toLocaleString('en-IN')}</div><div class="sync-stat-label">Mentorship Records</div></div>
+      </div>`;
+  }
 
   if (dist) {
-    dist.innerHTML = `
-      <div class="funnel-bars" style="margin-top:10px">
-        <div class="funnel-item"><div class="funnel-label">Career Advice & Referrals</div><div class="funnel-track"><div class="funnel-fill bkash" style="width:72%">72%</div></div></div>
-        <div class="funnel-item"><div class="funnel-label">Code & Technical Reviews</div><div class="funnel-track"><div class="funnel-fill nagad" style="width:58%">58%</div></div></div>
-        <div class="funnel-item"><div class="funnel-label">Higher Education & Research</div><div class="funnel-track"><div class="funnel-fill rocket" style="width:41%">41%</div></div></div>
-        <div class="funnel-item"><div class="funnel-label">Startup Pitch Feedback</div><div class="funnel-track"><div class="funnel-fill card" style="width:25%">25%</div></div></div>
-      </div>
-    `;
+    dist.innerHTML = `<div class="chapter-empty-note">
+      Mentorship outcomes are not recorded. The mentorships table stores a
+      status — pending, accepted, declined, expired or completed — but no
+      outcome category, goal or rating, so there is no distribution to chart.
+    </div>`;
   }
+  if (window.lucide) lucide.createIcons();
+}
+
+/* Referral requests, read side. POST /api/jobs/:id/refer has always written a
+   job_referrals row, but nothing could read one back: there was no endpoint and
+   no screen, so every request a student sent vanished. */
+async function renderJobReferrals() {
+  const el = document.getElementById('job-referrals-list');
+  if (!el) return;
+  el.innerHTML = '<div class="queue-sub" style="padding:12px">Loading…</div>';
+
+  const rows = await API.getJobReferrals();
+  if (apiFailed(rows)) {
+    el.innerHTML = renderErrorState(rows?.error || 'Could not load referral requests.', 'renderJobReferrals()');
+    return;
+  }
+  if (!rows.length) {
+    el.innerHTML = renderEmptyState('<i data-lucide="handshake" class="ui-icon"></i>',
+      'No referral requests yet',
+      'Requests you send, and requests sent to you about your own postings, appear here.');
+    if (window.lucide) lucide.createIcons();
+    return;
+  }
+  el.innerHTML = rows.map(r => `
+    <div class="queue-item">
+      <div class="queue-info">
+        <div class="queue-name">${escapeHtml(r.job_title || 'Job')} · ${escapeHtml(r.company || '')}</div>
+        <div class="queue-sub">
+          ${escapeHtml(r.requester_name || 'Someone')} asked ${escapeHtml(r.referrer_name || 'the poster')}
+          · ${escapeHtml(formatRelativeTime(r.created_at))}
+        </div>
+        ${r.message ? `<div class="queue-sub" style="margin-top:4px">“${escapeHtml(r.message)}”</div>` : ''}
+      </div>
+      <span class="card-badge ${r.status === 'accepted' ? 'teal' : ''}">${escapeHtml(r.status || 'pending')}</span>
+    </div>`).join('');
+  if (window.lucide) lucide.createIcons();
 }
 
 
@@ -3700,11 +3697,9 @@ async function executeBulkImportProcess() {
 }
 
 // ─── 5. ADMIN DYNAMIC CUSTOM FIELD MANAGER ───────────────────
-let MOCK_CUSTOM_FIELDS = [
-  { id: 'cf_1', label: 'Research Publications', section: 'academic', type: 'text', required: false },
-  { id: 'cf_2', label: 'Scholarship / Award Name', section: 'academic', type: 'text', required: false },
-  { id: 'cf_3', label: 'Startup Pitch Deck / Video Link', section: 'networking', type: 'url', required: false }
-];
+/* MOCK_CUSTOM_FIELDS duplicated the three rows already in the custom_fields
+   table. The admin manager and the profile both read the table now. */
+
 
 // ─── CUSTOM FIELDS ───
 async function renderCustomFieldManager() {
@@ -3788,82 +3783,114 @@ let PROFILE_PRIVACY_SETTINGS = {
   company: 'public'
 };
 
+/* This object used to be a complete, invented alumnus — Mohiuddin Rahman, ID
+   DIC-2020-0847, born 14 August 1998, blood group O+, living at House 42 Road 11
+   Dhanmondi, father Abdur Rahman on +880 1912-345678 — and the ten-section
+   profile page rendered it for whoever was signed in. Every account saw the same
+   stranger's address, phone numbers and emergency contact as their own profile.
+
+   It now starts empty and is filled by hydrateUserProfile() from
+   GET /api/profile/me. A field the database has no column for stays empty and
+   renders as "Not recorded" rather than as somebody's invented answer. */
 let FULL_USER_PROFILE = {
-  // Basic
-  fullName: 'Mohiuddin Rahman',
-  nickname: 'Mohi',
-  studentId: 'DIC-2020-0847',
-  rollNumber: '847',
-  registrationNumber: 'REG-2020-0847',
-  batch: 2020,
-  passingYear: 2020,
-  department: 'Computer Science & Engineering',
-  program: 'BSc CSE',
-  section: 'A',
-  currentStatus: 'Alumni & Tech Lead',
-  dob: '1998-08-14',
-  gender: 'Male',
-  bloodGroup: 'O+',
-  bio: 'Full-stack software architect specializing in cloud systems, React, Node.js, and enterprise security. Passionate about empowering DIC alumni.',
-
-  // Contact
-  primaryEmail: 'mohiuddin@dic.edu.bd',
-  secondaryEmail: 'mohiuddin.dev@gmail.com',
-  mobileNumber: '+880 1712-345678',
-  altMobile: '+880 1812-345678',
-  emergencyName: 'Abdur Rahman',
-  emergencyPhone: '+880 1912-345678',
-  emergencyRelation: 'Father',
-
-  // Address
-  presentAddress: 'House 42, Road 11, Dhanmondi, Dhaka-1209',
-  permanentAddress: 'Village: Uttarpara, Upazila: Sadar',
-  hometown: 'Comilla',
-  city: 'Dhaka',
-  district: 'Comilla',
-  division: 'Chittagong',
-  country: 'Bangladesh',
-  postalCode: '1209',
-
-  // Academic
-  institution: 'Daffodil International College',
-  degree: 'Bachelor of Science in Computer Science & Engineering',
-  cgpa: '3.92 / 4.00',
-  admissionYear: 2016,
-  clubs: 'DIC Computer Club (President 2019), Robotics Club',
-  scholarship: 'DIC Chairman Merit Scholarship (100% Waiver)',
-  awards: '1st Runner Up - National Collegiate Programming Contest 2019',
-  publications: 'AI-Based Crop Disease Detection (IEEE 2020)',
-
-  // Professional
-  currentCompany: 'Brain Station 23',
-  jobTitle: 'Senior Software Engineer',
-  employmentType: 'Full-time',
-  industry: 'Software & Information Technology',
-  yearsExperience: '5 Years',
-  skills: 'React, Node.js, TypeScript, PostgreSQL, AWS, Docker, Microservices',
-  certifications: 'AWS Certified Solutions Architect, Certified Kubernetes Administrator (CKA)',
-
-  // Networking
-  lookingForJob: false,
-  hiring: true,
-  canMentor: true,
-  lookingForMentor: false,
-  collaboration: true,
-
-  // Social
-  linkedin: 'https://linkedin.com/in/mohiuddin-rahman',
-  facebook: 'https://facebook.com/mohiuddin.dic',
-  github: 'https://github.com/mohiuddin-dic',
-  twitter: 'https://x.com/mohiuddin_dev',
-  website: 'https://mohiuddin.dev'
+  fullName: '', nickname: '', studentId: '', rollNumber: '', registrationNumber: '',
+  batch: '', passingYear: '', department: '', program: '', section: '',
+  currentStatus: '', dob: '', gender: '', bloodGroup: '', bio: '',
+  primaryEmail: '', secondaryEmail: '', mobileNumber: '', altMobile: '',
+  emergencyName: '', emergencyPhone: '', emergencyRelation: '',
+  presentAddress: '', permanentAddress: '', hometown: '', city: '', district: '',
+  division: '', country: '', postalCode: '',
+  degree: '', cgpa: '', admissionYear: '', clubs: '', scholarship: '', awards: '',
+  publications: '', certifications: '',
+  currentCompany: '', jobTitle: '', employmentType: '', industry: '',
+  yearsExperience: '', skills: '',
+  linkedin: '', facebook: '', github: '', twitter: '', website: ''
 };
+
+/* Maps the alumni_profiles / users row onto the key names the profile template
+   already uses, so the markup is untouched and only the source of the values
+   changes. Called before the profile page renders. */
+async function hydrateUserProfile() {
+  const p = await loadMyProfile();
+  if (apiFailed(p)) return null;
+
+  const v = (x) => (x === null || x === undefined ? '' : String(x));
+  Object.assign(FULL_USER_PROFILE, {
+    fullName: v(p.full_name),
+    studentId: v(p.student_id),
+    rollNumber: v(p.roll_number),
+    registrationNumber: v(p.registration_number),
+    batch: v(p.batch),
+    passingYear: v(p.passing_year),
+    department: v(p.department || p.user_department),
+    program: v(p.program),
+    section: v(p.section_code),
+    currentStatus: v(p.current_status),
+    dob: v(p.dob),
+    gender: v(p.gender),
+    bloodGroup: v(p.blood_group),
+    bio: v(p.bio),
+    primaryEmail: v(p.primary_email || p.email),
+    secondaryEmail: v(p.secondary_email),
+    mobileNumber: v(p.mobile_number),
+    altMobile: v(p.alt_mobile),
+    emergencyName: v(p.emergency_name),
+    emergencyPhone: v(p.emergency_phone),
+    emergencyRelation: v(p.emergency_relation),
+    presentAddress: v(p.present_address),
+    permanentAddress: v(p.permanent_address),
+    hometown: v(p.hometown),
+    city: v(p.city),
+    district: v(p.district),
+    division: v(p.division),
+    country: v(p.country),
+    postalCode: v(p.postal_code),
+    degree: v(p.degree),
+    cgpa: v(p.cgpa),
+    admissionYear: v(p.admission_year),
+    clubs: v(p.clubs),
+    scholarship: v(p.scholarship),
+    awards: v(p.awards),
+    publications: v(p.publications),
+    certifications: v(p.certifications),
+    currentCompany: v(p.current_company),
+    jobTitle: v(p.job_title),
+    employmentType: v(p.employment_type),
+    industry: v(p.industry),
+    yearsExperience: v(p.years_experience),
+    skills: v(p.skills),
+    linkedin: v(p.linkedin),
+    facebook: v(p.facebook),
+    github: v(p.github),
+    twitter: v(p.twitter),
+    website: v(p.website)
+  });
+
+  // The digital ID card, from the same row.
+  const set = (id, text) => { const el = document.getElementById(id); if (el) el.textContent = text; };
+  set('id-card-avatar', p.initials || (p.full_name || '?').charAt(0));
+  set('id-card-name', p.full_name || 'Unnamed account');
+  set('id-card-degree', [p.degree, p.program].filter(Boolean).join(' · '));
+  set('id-card-batch', p.batch ? `Batch of ${p.batch}` : '');
+  set('id-card-role', p.role_label || p.role || '');
+  set('id-card-number', p.student_id ? `ID: ${p.student_id}` : 'No student ID recorded');
+  set('id-card-verified', p.is_verified ? 'Verified by an administrator' : 'Not yet verified');
+  return p;
+}
 
 function render10SectionProfile(filterSection = 'all') {
   const container = document.getElementById('profile-hub-content');
   if (!container) return;
 
-  const p = FULL_USER_PROFILE;
+  /* Reads through hydrateUserProfile()'s values but substitutes "Not recorded"
+     for anything empty, so a field the user has not filled in is visibly
+     missing rather than a blank space that could pass for a value. */
+  const p = new Proxy(FULL_USER_PROFILE, {
+    get(t, k) {
+      const v = t[k];
+      return (v === '' || v === null || v === undefined) ? 'Not recorded' : v;
+    }
+  });
   const priv = PROFILE_PRIVACY_SETTINGS;
 
   let html = '';
@@ -3996,30 +4023,58 @@ function render10SectionProfile(filterSection = 'all') {
   }
 
   // 8. CUSTOM FIELDS (ADMIN CREATED)
+  // Fields come from the custom_fields table via renderProfileCustomFields().
+  // They previously came from a MOCK_CUSTOM_FIELDS array that duplicated the
+  // same three rows, and every one of them displayed the same invented answer,
+  // "IEEE Research Paper / National Award 2020", on every profile. There is no
+  // per-user value column for these fields, so no value can be shown.
   if (filterSection === 'all' || filterSection === 'custom') {
-    if (MOCK_CUSTOM_FIELDS.length > 0) {
-      html += `
-        <div class="profile-section-card">
-          <div class="profile-section-header">
-            <div class="profile-section-title"><i data-lucide="settings" class="ui-icon"></i> Section 8: Admin Custom Institution Fields</div>
-            <span class="privacy-badge alumni"><i data-lucide="users" class="ui-icon"></i> DIC Portal Only</span>
-          </div>
-          <div class="field-grid-2 mb-16">
-            ${MOCK_CUSTOM_FIELDS.map(f => `
-              <div class="profile-field-row">
-                <div>
-                  <div class="field-label">${f.label}</div>
-                  <div class="field-val">IEEE Research Paper / National Award 2020</div>
-                </div>
-              </div>
-            `).join('')}
-          </div>
+    html += `
+      <div class="profile-section-card" id="profile-custom-fields">
+        <div class="profile-section-header">
+          <div class="profile-section-title"><i data-lucide="settings" class="ui-icon"></i> Section 8: Admin Custom Institution Fields</div>
+          <span class="privacy-badge alumni"><i data-lucide="users" class="ui-icon"></i> DIC Portal Only</span>
         </div>
-      `;
-    }
+        <div id="profile-custom-fields-body"></div>
+      </div>
+    `;
   }
 
   container.innerHTML = html;
+  renderProfileCustomFields();
+}
+
+/* Lists the fields an administrator has defined in custom_fields. The table
+   stores the definition only — label, section, type, required — and there is no
+   column anywhere holding a given alumnus's answer, so the values are shown as
+   not recorded rather than filled in with something plausible. */
+async function renderProfileCustomFields() {
+  const el = document.getElementById('profile-custom-fields-body');
+  if (!el) return;
+  const fields = await API.getCustomFields();
+  if (apiFailed(fields)) {
+    el.innerHTML = '<div class="chapter-empty-note">Custom fields could not be loaded.</div>';
+    return;
+  }
+  if (!fields.length) {
+    el.innerHTML = '<div class="chapter-empty-note">No custom fields have been defined for this institution.</div>';
+    return;
+  }
+  el.innerHTML = `
+    <div class="field-grid-2 mb-16">
+      ${fields.map(f => `
+        <div class="profile-field-row">
+          <div>
+            <div class="field-label">${escapeHtml(f.label)}${f.is_required ? ' *' : ''}</div>
+            <div class="field-val" style="color:var(--text-muted)">Not recorded</div>
+          </div>
+        </div>`).join('')}
+    </div>
+    <div class="chapter-empty-note">
+      These fields are defined by an administrator, but the system does not yet
+      store a value per alumnus for them.
+    </div>`;
+  if (window.lucide) lucide.createIcons();
 }
 
 function switchProfileHubSection(sectionTag, btn) {
@@ -4065,6 +4120,7 @@ function handleSaveProfileV2(e) {
   PROFILE_PRIVACY_SETTINGS.mobile = document.getElementById('edit-priv-mobile').value;
 
   closeModal();
+  loadMyProfile(true);   // the row changed; drop the cached copy
   render10SectionProfile();
 
   // Update Digital ID & topbar name
@@ -4198,41 +4254,122 @@ function renderPastPolls() {
 }
 
 // ─── 7. GAMIFICATION & BADGES ────────────────────────────────
+/* The engagement panel showed "1,840 PTS · Gold Tier Alumni" to every account,
+   including one created a minute earlier. No points, tier or engagement score is
+   stored anywhere, and nothing accrues them, so the panel is now a plain summary
+   of the things this user has actually done. */
 function renderEngagementScore() {
   const el = document.getElementById('engagement-score-display');
   if (!el) return;
-  el.innerHTML = `
-    <div class="engagement-score-display">
-      <div class="score-badge-circle"><i data-lucide="crown" class="ui-icon"></i></div>
-      <div class="score-points">1,840 PTS</div>
-      <div class="score-level">Gold Tier Alumni</div>
-      <div style="font-size:11px;color:var(--text-muted);margin-top:6px">Earn points by donating, mentoring, or attending events</div>
-    </div>
-  `;
+  el.innerHTML = '<div class="engagement-score-display"><div class="score-level">Loading…</div></div>';
+
+  loadPlatformStats().then(s => {
+    if (!s) {
+      el.innerHTML = renderEmptyState('<i data-lucide="activity" class="ui-icon"></i>',
+        'Activity unavailable', 'Your activity summary could not be loaded.');
+      if (window.lucide) lucide.createIcons();
+      return;
+    }
+    const rows = [
+      ['Events registered', s.my_registrations],
+      ['Chapters joined', s.my_chapters],
+      ['Connections', s.my_connections],
+      ['Mentorships', s.my_mentorships],
+      ['Job applications', s.my_job_applications],
+      ['Donated', money(s.my_donations_total)]
+    ];
+    el.innerHTML = `<div class="totals-list">${rows.map(([k, v]) => `
+      <div class="totals-row"><span class="totals-key">${k}</span>
+      <span class="totals-val">${typeof v === 'number' ? v.toLocaleString('en-IN') : v}</span></div>`).join('')}</div>`;
+  });
 }
 
+/* Six badges used to be handed to every account unconditionally — Master Mentor
+   for "5+ active mentees", Top Donor for "৳50k+", Event Regular for "5+
+   reunions" — on a profile with no mentees, no donations and no registrations.
+   A badge is now shown only when the count behind it actually meets the bar, and
+   the bar is stated on the card. Two of the original six are gone entirely: "PWA
+   Early Adopter" and "Community Champion — referred 10+ alumni" have no
+   corresponding data anywhere. */
 function renderAlumniBadges() {
   const el = document.getElementById('alumni-badges');
   if (!el) return;
-  const badges = [
-    { icon: '🤝', title: 'Master Mentor', desc: '5+ active mentees' },
-    { icon: '💎', title: 'Top Donor', desc: 'Contributed ৳50k+' },
-    { icon: '🎫', title: 'Event Regular', desc: 'Attended 5+ reunions' },
-    { icon: '🎓', title: 'SIS Verified', desc: 'Authentic record matched' },
-    { icon: '📱', title: 'PWA Early Adopter', desc: 'Mobile app user' },
-    { icon: '📢', title: 'Community Champion', desc: 'Referred 10+ alumni' }
-  ];
-  el.innerHTML = `
-    <div class="alumni-badges-grid">
-      ${badges.map(b => `
-        <div class="badge-card">
-          <div class="badge-icon">${emojiIcon(b.icon, 'award')}</div>
-          <div class="badge-title">${b.title}</div>
-          <div class="badge-desc">${b.desc}</div>
-        </div>
-      `).join('')}
-    </div>
-  `;
+  el.innerHTML = '<div class="queue-sub" style="padding:12px">Loading…</div>';
+
+  Promise.all([loadPlatformStats(), loadMyProfile()]).then(([s, profile]) => {
+    if (!s) {
+      el.innerHTML = renderEmptyState('<i data-lucide="award" class="ui-icon"></i>',
+        'Badges unavailable', 'Your activity could not be loaded.');
+      if (window.lucide) lucide.createIcons();
+      return;
+    }
+    const verified = !apiFailed(profile) && profile.is_verified;
+    const candidates = [
+      { icon: 'handshake', title: 'Mentor', desc: 'In an active mentorship', earned: (s.my_mentorships || 0) >= 1 },
+      { icon: 'gem', title: 'Donor', desc: 'Has a settled donation', earned: (s.my_donations_total || 0) > 0 },
+      { icon: 'ticket', title: 'Event Attendee', desc: 'Registered for an event', earned: (s.my_registrations || 0) >= 1 },
+      { icon: 'hexagon', title: 'Chapter Member', desc: 'Joined a chapter', earned: (s.my_chapters || 0) >= 1 },
+      { icon: 'users', title: 'Connected', desc: 'Has an accepted connection', earned: (s.my_connections || 0) >= 1 },
+      { icon: 'badge-check', title: 'Verified Alumnus', desc: 'Verified by an administrator', earned: !!verified }
+    ];
+    const earned = candidates.filter(b => b.earned);
+
+    if (!earned.length) {
+      el.innerHTML = renderEmptyState('<i data-lucide="award" class="ui-icon"></i>',
+        'No badges yet',
+        'Badges are awarded for joining a chapter, registering for an event, donating, mentoring or connecting with alumni.');
+      if (window.lucide) lucide.createIcons();
+      return;
+    }
+    el.innerHTML = `
+      <div class="alumni-badges-grid">
+        ${earned.map(b => `
+          <div class="badge-card">
+            <div class="badge-icon"><i data-lucide="${b.icon}" class="ui-icon"></i></div>
+            <div class="badge-title">${b.title}</div>
+            <div class="badge-desc">${b.desc}</div>
+          </div>`).join('')}
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+  });
+}
+
+/* The profile's Career Timeline listed two invented jobs — "DIC Alumni Board
+   Director, 2024–Present" and "Senior Software Engineer at Brain Station 23" —
+   on every account. alumni_profiles stores a current company and job title and
+   nothing historical, so that is what this shows. */
+function renderCareerTimeline() {
+  const el = document.getElementById('career-timeline');
+  if (!el) return;
+  loadMyProfile().then(p => {
+    if (apiFailed(p)) {
+      el.innerHTML = renderEmptyState('<i data-lucide="briefcase" class="ui-icon"></i>',
+        'Career details unavailable', 'Your profile could not be loaded.');
+      if (window.lucide) lucide.createIcons();
+      return;
+    }
+    const company = (p.current_company || '').trim();
+    const role = (p.job_title || '').trim();
+    if (!company && !role) {
+      el.innerHTML = renderEmptyState('<i data-lucide="briefcase" class="ui-icon"></i>',
+        'No current position recorded',
+        'Add your organisation and designation from Edit Profile and they will appear here.');
+      if (window.lucide) lucide.createIcons();
+      return;
+    }
+    el.innerHTML = `
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-company">${escapeHtml(company || '—')}</div>
+        <div class="timeline-role">${escapeHtml(role || '—')}</div>
+        <div class="timeline-period">Current position</div>
+      </div>
+      <div class="chapter-empty-note" style="margin-top:12px">
+        Only your current position is stored. The system does not keep employment
+        history, so there is nothing earlier to show.
+      </div>`;
+    if (window.lucide) lucide.createIcons();
+  });
 }
 
 
@@ -4950,9 +5087,11 @@ async function renderChapters() {
     type: c.type,
     icon: c.icon || '<i data-lucide="school" class="ui-icon"></i>',
     description: c.description || '',
-    // members_count is the counter the join/leave endpoint maintains.
-    members: c.members_count || 0,
-    events: c.events_count || 0,
+    /* member_rows is COUNT(*) over chapter_memberships, computed by the API.
+       chapters.members_count is a stored counter that was seeded at 18,420 /
+       12,400 / 6,210 / 4,120 / 840 against zero actual memberships, so it is
+       not read here at all. If the two ever disagree the row count wins. */
+    members: Number(c.member_rows) || 0,
     parent: c.parent_id ?? null
   }));
 

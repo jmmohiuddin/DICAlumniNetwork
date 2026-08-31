@@ -1338,6 +1338,49 @@ body {
 .chapter-icon { font-size: 14px; }
 .chapter-name { font-size: 13px; font-weight: 600; flex: 1; }
 .chapter-count { font-size: 11px; color: var(--text-muted); }
+
+/* Shown where the interface has nothing real to list — chapter officers, for
+   instance, which no table records. Deliberately reads as an absence rather
+   than as a styled card, so it cannot be mistaken for content. */
+/* Caption under the alumni map. States which countries are drawn and which
+   real ones could not be positioned, so a missing pin never reads as zero. */
+/* Names the query behind each Key Metrics figure, so the number can be checked
+   rather than taken on trust. Replaces the "+8.4% vs last period" captions,
+   which compared against a period nothing recorded. */
+.analytics-metric-source {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  margin-top: 2px;
+  word-break: break-word;
+}
+
+.map-note {
+  padding: 8px 14px 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.chapter-empty-note {
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-muted);
+  background: var(--bg-glass);
+  border: 1px dashed var(--border-glass);
+  border-radius: 8px;
+  padding: 12px 14px;
+}
+
+/* Key/value listing used by the super-admin platform totals panel. */
+.totals-list { display: flex; flex-direction: column; gap: 2px; }
+.totals-row {
+  display: flex; justify-content: space-between; align-items: baseline; gap: 12px;
+  padding: 8px 10px; border-radius: 6px; font-size: 12px;
+}
+.totals-row:nth-child(odd) { background: var(--bg-glass); }
+.totals-key { color: var(--text-secondary); }
+.totals-val { font-weight: 700; color: var(--text-primary); text-align: right; }
 .chapter-type { font-size: 10px; font-weight: 700; padding: 1px 6px; border-radius: 99px; }
 .chapter-type.regional { background: var(--primary-glow); color: var(--primary-light); }
 .chapter-type.batch { background: var(--teal-glow); color: var(--teal); }
