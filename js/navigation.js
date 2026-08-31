@@ -10,12 +10,39 @@
    ============================================================ */
 
 
+/* Which portal this page is. The entry point sets it: index.html leaves it
+   alone (alumni), admin.html sets 'admin' before the modules load. Everything
+   portal-specific reads this one flag, so neither entry point needs its own
+   copy of the navigation or the page list. */
+const PORTAL = (typeof window !== 'undefined' && window.DIC_PORTAL) || 'alumni';
+const isAdminPortal = () => PORTAL === 'admin';
+
+/* The admin portal's navigation. Every entry is backed by an endpoint that
+   exists — see the audit. Modules the platform does not have (system settings,
+   an admin notifications inbox) are absent rather than present and empty. */
+const ADMIN_NAV = [
+  { id: 'dashboard',      icon: '⊞',             label: 'Dashboard',        roles: ['moderator', 'dept_admin', 'univ_admin', 'super_admin'] },
+  { id: 'directory',      icon: '◉',             label: 'Alumni',           roles: ['moderator', 'dept_admin', 'univ_admin', 'super_admin'] },
+  { id: 'events',         icon: 'calendar-days', label: 'Events',           roles: ['moderator', 'dept_admin', 'univ_admin', 'super_admin'] },
+  { id: 'jobs',           icon: '✦',             label: 'Jobs',             roles: ['dept_admin', 'univ_admin', 'super_admin'] },
+  { id: 'mentorship',     icon: '⟳',             label: 'Mentorship',       roles: ['moderator', 'univ_admin', 'super_admin'] },
+  { id: 'donations',      icon: '❤',             label: 'Donations',        roles: ['univ_admin', 'super_admin'] },
+  { id: 'chapters',       icon: '⬡',             label: 'Chapters',         roles: ['univ_admin', 'super_admin'] },
+  { id: 'moderation',     icon: 'shield-check',  label: 'Moderation',       roles: ['moderator', 'dept_admin', 'univ_admin', 'super_admin'] },
+  { id: 'broadcasts',     icon: 'megaphone',     label: 'Broadcasts',       roles: ['univ_admin', 'super_admin'] },
+  { id: 'analytics',      icon: '▦',             label: 'Reports',          roles: ['dept_admin', 'univ_admin', 'super_admin'] },
+  { id: 'segmentation',   icon: 'target',        label: 'Segmentation',     roles: ['moderator', 'dept_admin', 'univ_admin', 'super_admin'] },
+  { id: 'compliance',     icon: 'shield',        label: 'Compliance',       roles: ['univ_admin', 'super_admin'] },
+  { id: 'administration', icon: 'users',         label: 'Administration',   isDivider: true, roles: ['super_admin'] },
+  { id: 'audit',          icon: 'scroll-text',   label: 'Audit Logs',       roles: ['univ_admin', 'super_admin'] }
+];
+
 // ─── DYNAMIC SIDEBAR NAV PER ROLE ───────────────────────────
 function renderSidebarNav(role) {
   const container = document.getElementById('sidebar-nav-container');
   if (!container) return;
 
-  const navItems = [
+  const navItems = isAdminPortal() ? ADMIN_NAV : [
     { id: 'dashboard', icon: '⊞', label: 'Dashboard', roles: ['alumni', 'moderator', 'dept_admin', 'univ_admin', 'super_admin'] },
     { id: 'directory', icon: '◉', label: 'Alumni Directory', roles: ['alumni', 'moderator', 'dept_admin', 'univ_admin', 'super_admin'] },
     // The badge on this item read a literal "3" against a mentorships table
@@ -31,7 +58,9 @@ function renderSidebarNav(role) {
     { id: 'news', icon: '✐', label: 'DIC News Feed', roles: ['alumni', 'moderator', 'dept_admin', 'univ_admin', 'super_admin'] },
     { id: 'map', icon: '⊕', label: 'Alumni Map', roles: ['alumni', 'univ_admin', 'super_admin'] },
     { id: 'profile', icon: '◎', label: 'My DIC Profile', isDivider: true, roles: ['alumni', 'moderator', 'dept_admin', 'univ_admin', 'super_admin'] },
-    { id: 'admin', icon: '⚙', label: 'DIC Admin Panel', roles: ['univ_admin', 'super_admin'] }
+    /* The admin panel link is gone from the alumni portal: administration now
+       lives at /admin, a separate entry point that does not load admin.js or
+       compliance.js at all. */
   ];
 
   const allowed = navItems.filter(item => item.roles.includes(role));
@@ -57,8 +86,14 @@ function renderSidebarNav(role) {
    This is a usability guard, not the security boundary. The boundary is the
    server, which refuses all 20 admin endpoints for a non-staff token. */
 const PAGE_ROLES = {
-  admin: ['univ_admin', 'super_admin'],
-  analytics: ['dept_admin', 'univ_admin', 'super_admin'],
+  admin:          ['univ_admin', 'super_admin'],
+  analytics:      ['dept_admin', 'univ_admin', 'super_admin'],
+  administration: ['super_admin'],
+  moderation:     ['moderator', 'dept_admin', 'univ_admin', 'super_admin'],
+  broadcasts:     ['univ_admin', 'super_admin'],
+  segmentation:   ['moderator', 'dept_admin', 'univ_admin', 'super_admin'],
+  compliance:     ['univ_admin', 'super_admin'],
+  audit:          ['univ_admin', 'super_admin'],
 };
 
 function canOpenPage(page) {
@@ -97,49 +132,66 @@ function showPage(page) {
     if (sidebar) sidebar.classList.remove('open');
   }
 
-  // Page specific renders on navigate
-  if (page === 'dashboard') renderDashboard();
-  if (page === 'directory') renderAlumniGrid();
-  if (page === 'mentorship') renderMentorships();
-  if (page === 'donations') renderCampaignsEnhanced();
-  if (page === 'events') renderEventsPage();
-  if (page === 'jobs') renderJobReferrals();
-  if (page === 'jobs') renderJobsEnhanced();
-  if (page === 'career' && typeof renderCareerTracker === 'function') renderCareerTracker();
-  if (page === 'chapters') renderChapters();
-  if (page === 'news') {
-    renderNewsFeed();
-    if (typeof renderActivePoll === 'function') renderActivePoll();
-    if (typeof renderTrendingTags === 'function') renderTrendingTags();
-    if (typeof renderPastPolls === 'function') renderPastPolls();
-    renderSpotlightAlumni();
-  }
-  if (page === 'map') renderMapClusters();
-  if (page === 'profile') {
-    // Load the real row first; the ten sections read from FULL_USER_PROFILE.
-    hydrateUserProfile().then(() => render10SectionProfile());
-    renderCareerTimeline();
-    paintProfileCompleteness('profile-completeness-bar', 'profile-completeness-ring',
-                             'profile-completeness-text', 'profile-completeness-items');
-    if (typeof renderEngagementScore === 'function') renderEngagementScore();
-    if (typeof renderAlumniBadges === 'function') renderAlumniBadges();
-  }
-  if (page === 'admin') {
-    if (typeof renderBulkImportPanel === 'function') renderBulkImportPanel();
-    loadImportHistory(); // pulls the real audit trail, then re-renders the panel
-    renderRBACTableV2();
-    renderAuditLog();
-    renderComplianceGrid();
-    if (typeof renderOfflineSyncPanel === 'function') renderOfflineSyncPanel();
-    if (typeof renderBroadcastHistory === 'function') renderBroadcastHistory();
-    if (typeof renderNIDVaultPanel === 'function') renderNIDVaultPanel();
-    if (typeof renderSegmentationPanel === 'function') renderSegmentationPanel();
-  }
-  if (page === 'analytics') {
-    if (!state.analyticsChart) setTimeout(initAnalyticsChart, 100);
-    renderAnalyticsMetrics();
-    generateGeoHeatmap();
-  }
+  /* What each page renders when you arrive on it.
+
+     Every call goes through render(), which skips anything the loaded modules
+     do not declare. The two entry points load different module lists — the
+     alumni site has no administration screen, the staff portal has no news feed
+     or profile hub — so the same table serves both and neither needs its own
+     copy. Without the guard, navigating to a page whose module is absent threw
+     and left the view half-built. */
+  const render = (fn, ...args) => { if (typeof fn === 'function') fn(...args); };
+
+  const ON_ENTER = {
+    dashboard:      () => render(window.renderDashboard),
+    directory:      () => render(window.renderAlumniGrid),
+    mentorship:     () => render(window.renderMentorships),
+    donations:      () => render(window.renderCampaignsEnhanced),
+    events:         () => render(window.renderEventsPage),
+    chapters:       () => render(window.renderChapters),
+    map:            () => render(window.renderMapClusters),
+    jobs:           () => { render(window.renderJobReferrals); render(window.renderJobsEnhanced); },
+    news:           () => {
+      render(window.renderNewsFeed);
+      render(window.renderActivePoll);
+      render(window.renderTrendingTags);
+      render(window.renderPastPolls);
+      render(window.renderSpotlightAlumni);
+    },
+    profile:        () => {
+      // Load the real row first; the ten sections read from FULL_USER_PROFILE.
+      if (typeof hydrateUserProfile === 'function') {
+        hydrateUserProfile().then(() => render(window.render10SectionProfile));
+      }
+      render(window.renderCareerTimeline);
+      render(window.paintProfileCompleteness, 'profile-completeness-bar',
+             'profile-completeness-ring', 'profile-completeness-text',
+             'profile-completeness-items');
+      render(window.renderEngagementScore);
+      render(window.renderAlumniBadges);
+    },
+    analytics:      () => {
+      if (!state.analyticsChart && typeof initAnalyticsChart === 'function') {
+        setTimeout(initAnalyticsChart, 100);
+      }
+      render(window.renderAnalyticsMetrics);
+      render(window.generateGeoHeatmap);
+    },
+
+    // Staff portal only. Each is a focused screen over an endpoint that already
+    // exists, rather than a tab inside the old single admin panel.
+    moderation:     () => render(window.renderModerationPanel),
+    broadcasts:     () => render(window.renderBroadcastHistory),
+    segmentation:   () => render(window.renderSegmentationPanel),
+    audit:          () => render(window.renderAuditLog, 'audit-log-page'),
+    administration: () => render(window.renderAdministrationPage),
+    compliance:     () => {
+      render(window.renderComplianceGrid);
+      render(window.renderNIDVaultPanel);
+    },
+  };
+
+  if (ON_ENTER[page]) ON_ENTER[page]();
 
   // Scroll to top
   const pagesContainer = document.getElementById('pages');

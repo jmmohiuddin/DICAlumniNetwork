@@ -45,7 +45,8 @@ async function handleLoginSubmit(e) {
   enterAuthenticatedApp(result.user);
 
   // Bulk-imported accounts share an initial password until it is replaced.
-  if (result.mustChangePassword) setTimeout(() => showChangePasswordModal(true), 700);
+  // enterAuthenticatedApp() owns the forced-change flow; firing it here too
+  // opened the modal twice.
 }
 
 /* The two instant-role-switch helpers that used to sit here were removed. Both
@@ -55,14 +56,70 @@ async function handleLoginSubmit(e) {
    /api/auth/login and /api/auth/me, read from the users row on every request;
    changing it requires an administrator changing users.role. */
 
+/* The admin portal admits staff only. An alumnus who reaches admin.<domain> —
+   by link, bookmark or curiosity — is signed straight back out with an
+   explanation rather than shown an empty shell. This is a courtesy, not the
+   boundary: the server refuses every administrative endpoint for their token
+   whatever page they are looking at. */
+function portalRejects(user) {
+  if (!isAdminPortal()) return null;
+  if (!user.isStaff) {
+    return 'This is the staff portal. Alumni sign in at the main site.';
+  }
+  return null;
+}
+
 function enterAuthenticatedApp(user) {
+  const rejection = portalRejects(user);
+  if (rejection) {
+    API.logout();
+    state.currentUser = null;
+    showLoginScreen();
+    showLoginError(rejection);
+    return;
+  }
+
   state.currentUser = user;
   document.getElementById('login-screen').classList.add('hidden');
   document.getElementById('main-app').classList.remove('hidden');
   updateUserUI();
   renderSidebarNav(user.role);
   initApp();
-  showToast(`🎉 Welcome to DIC Portal, ${user.name} (${user.roleLabel})`);
+
+  /* An account still on an issued temporary password cannot use the portal
+     until it chooses its own. The modal is non-dismissable, and the sidebar is
+     hidden underneath it so there is nothing to click past it to. */
+  if (user.mustChangePassword) {
+    lockUntilPasswordChanged();
+    return;
+  }
+
+  showToast(isAdminPortal()
+    ? `Signed in as ${user.name} — ${user.designation || user.roleLabel}`
+    : `🎉 Welcome to DIC Portal, ${user.name} (${user.roleLabel})`);
+}
+
+/* Blocks every screen until the password is replaced. showChangePasswordModal
+   already refuses to close when called with forced=true; this additionally
+   hides the navigation so no screen is reachable behind it, and re-opens the
+   modal if anything does manage to dismiss it. */
+function lockUntilPasswordChanged() {
+  document.body.classList.add('password-change-required');
+  const reopen = () => {
+    if (!document.body.classList.contains('password-change-required')) return;
+    if (document.getElementById('modal-overlay')?.classList.contains('hidden')) {
+      showChangePasswordModal(true);
+    }
+  };
+  showChangePasswordModal(true);
+  window._pwGuard = setInterval(reopen, 400);
+}
+
+// Called by handleChangePassword() once the server has accepted the new one.
+function releasePasswordLock() {
+  document.body.classList.remove('password-change-required');
+  if (window._pwGuard) { clearInterval(window._pwGuard); window._pwGuard = null; }
+  if (state.currentUser) state.currentUser.mustChangePassword = false;
 }
 
 function showLoginScreen() {
@@ -106,6 +163,9 @@ function logout() {
   // Drop the session token first — otherwise "signing out" left a valid
   // credential in localStorage that the next page load silently reused.
   API.logout();
+  // Otherwise the forced-change guard keeps re-opening its modal over the
+  // login screen.
+  releasePasswordLock();
   state.currentUser = null;
   showLoginError('');
 
@@ -235,6 +295,7 @@ async function handleChangePassword(e) {
   if (apiFailed(res)) return fail(res?.error || 'Could not update the password.');
 
   closeModal();
+  releasePasswordLock();
   showToast('✅ Password updated.');
 }
 

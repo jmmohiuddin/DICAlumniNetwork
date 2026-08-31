@@ -1349,6 +1349,17 @@ body {
    which compared against a period nothing recorded. */
 /* Names the column each mentor-suggestion comparison reads, in place of the
    invented percentage weights the criteria bars used to show. */
+/* While an account is still on an issued temporary password, the portal is
+   unusable: the navigation and page area are hidden behind the non-dismissable
+   change-password modal, so there is nothing to click past it to. */
+body.password-change-required .sidebar,
+body.password-change-required .pages-container,
+body.password-change-required .bottom-nav,
+body.password-change-required .topbar-actions {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .criterion-source {
   font-size: 10px;
   color: var(--text-muted);

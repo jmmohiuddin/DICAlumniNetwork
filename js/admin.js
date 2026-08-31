@@ -312,8 +312,12 @@ async function approveAlumni(id) {
 }
 
 // ─── IMMUTABLE AUDIT LOG ───
-async function renderAuditLog() {
-  const el = document.getElementById('audit-log');
+/* The super admin dashboard embeds its own #audit-log panel, so on the staff
+   portal two elements carried that id and getElementById() always returned the
+   dashboard's — the Audit Logs page stayed permanently empty. The target is now
+   a parameter; the dashboard keeps the default. */
+async function renderAuditLog(targetId = 'audit-log') {
+  const el = document.getElementById(targetId);
   if (!el) return;
 
   const rows = await API.getAuditLogs();
@@ -938,34 +942,10 @@ async function deleteCustomField(id, label) {
   showToast('🗑 Custom field deleted.');
   renderCustomFieldManager();
 }
-async function renderProfileCustomFields() {
-  const el = document.getElementById('profile-custom-fields-body');
-  if (!el) return;
-  const fields = await API.getCustomFields();
-  if (apiFailed(fields)) {
-    el.innerHTML = '<div class="chapter-empty-note">Custom fields could not be loaded.</div>';
-    return;
-  }
-  if (!fields.length) {
-    el.innerHTML = '<div class="chapter-empty-note">No custom fields have been defined for this institution.</div>';
-    return;
-  }
-  el.innerHTML = `
-    <div class="field-grid-2 mb-16">
-      ${fields.map(f => `
-        <div class="profile-field-row">
-          <div>
-            <div class="field-label">${escapeHtml(f.label)}${f.is_required ? ' *' : ''}</div>
-            <div class="field-val" style="color:var(--text-muted)">Not recorded</div>
-          </div>
-        </div>`).join('')}
-    </div>
-    <div class="chapter-empty-note">
-      These fields are defined by an administrator, but the system does not yet
-      store a value per alumnus for them.
-    </div>`;
-  if (window.lucide) lucide.createIcons();
-}
+/* renderProfileCustomFields() moved to profile.js: it renders Section 8 of an
+   alumnus's own profile, so it is alumni-facing, and the alumni site no longer
+   loads this file. The admin-side custom field manager above stays here. */
+
 let _segmentOptions = null;
 
 async function renderSegmentationPanel() {

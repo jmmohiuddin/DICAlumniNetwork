@@ -187,7 +187,9 @@ async function handleModerateChapter(id, action) {
     await API.moderateChapter(id, action);
   }
   showToast(`✅ Chapter ${action === 'approve' ? 'Approved & Published' : 'Rejected'}`);
-  renderModerationPanel();
+  // The moderation panel only exists on the staff portal; the chapter list is
+  // on both. Refresh whichever of the two this portal actually has.
+  if (typeof renderModerationPanel === 'function') renderModerationPanel();
   renderChapters();
 }
 

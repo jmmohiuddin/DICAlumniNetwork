@@ -188,33 +188,52 @@ function updateUserUI() {
 }
 
 // ─── APP INITIALIZATION & ROLE-BASED DASHBOARDS ──────────────
+/* Warms the screens a portal actually has.
+
+   Each call is guarded on the function existing, because the two entry points
+   load different module lists: the staff portal has no news feed or alumni map,
+   the alumni site has no administration screen. Calling a renderer whose module
+   is not loaded used to throw and abort the rest of the sequence, leaving the
+   page half-initialised. The guard means each portal simply skips what it does
+   not have, and no module needs to know which entry point it is running in. */
 function initApp() {
   updateUserUI();
   renderSidebarNav(state.currentUser.role);
   renderDashboard();
 
-  // Initialize background data
-  renderAlumniGrid();
-  renderMentorships();
-  renderCampaignsEnhanced();
-  renderEventsPage();
-  renderJobsEnhanced();
-  renderChapters();
-  renderNewsFeed();
-  renderMapClusters();
-  renderNotifications();
-  renderSpotlightAlumni();
-  renderRBACTableV2();          // every role may read its own permission row
-  generateGeoHeatmap();
+  const warm = (fn, ...args) => { if (typeof fn === 'function') fn(...args); };
 
-  // Staff-only surfaces. Calling these for an alumnus produced three 403s and a
-  // console error on every sign-in, for panels that role cannot even open.
-  if (STAFF_ROLES.includes(state.currentUser?.role)) {
-    renderAuditLog();
-    renderComplianceGrid();
-    renderAnalyticsMetrics();
+  // Shared between both portals.
+  warm(window.renderAlumniGrid);
+  warm(window.renderMentorships);
+  warm(window.renderCampaignsEnhanced);
+  warm(window.renderEventsPage);
+  warm(window.renderJobsEnhanced);
+  warm(window.renderChapters);
+  warm(window.renderNotifications);
+  warm(window.renderRBACTableV2);   // every role may read its own permission row
+
+  // Alumni site only.
+  warm(window.renderNewsFeed);
+  warm(window.renderMapClusters);
+  warm(window.renderSpotlightAlumni);
+  warm(window.generateGeoHeatmap);
+
+  /* Tiered exactly as the server is. The audit log and the compliance grid are
+     ADMIN_ROLES endpoints, so warming them for a moderator or a department
+     admin produced a 403 and a console error for panels their navigation does
+     not even offer. Analytics is MODERATOR_ROLES and warms for all staff. */
+  const role = state.currentUser?.role;
+  if (STAFF_ROLES.includes(role)) warm(window.renderAnalyticsMetrics);
+  if (ADMIN_ROLES_CLIENT.includes(role)) {
+    warm(window.renderAuditLog);
+    warm(window.renderComplianceGrid);
   }
 }
+
+// Mirrors ADMIN_ROLES on the server. Used only to avoid requesting things the
+// caller is not allowed to have; the server remains the boundary.
+const ADMIN_ROLES_CLIENT = ['super_admin', 'univ_admin'];
 
 // Matches MODERATOR_ROLES on the server; used only to avoid requesting things
 // the caller is not allowed to have.

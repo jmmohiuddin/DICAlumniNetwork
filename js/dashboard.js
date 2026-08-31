@@ -35,23 +35,50 @@ function paintStats(stats, formatters = {}) {
   });
 }
 
+/* The four staff dashboards live in admin.js, which only the staff portal
+   loads. When a staff account signs in at the alumni site — a bookmark, a
+   shared link — there is no staff dashboard to render, so they get a pointer to
+   the portal instead of a broken page. */
 function renderDashboard() {
   const page = document.getElementById('page-dashboard');
   if (!page) return;
 
   const role = state.currentUser.role;
 
-  if (role === 'alumni') {
-    renderAlumniDashboard(page);
-  } else if (role === 'moderator') {
-    renderModeratorDashboard(page);
-  } else if (role === 'dept_admin') {
-    renderDeptAdminDashboard(page);
-  } else if (role === 'univ_admin') {
-    renderUnivAdminDashboard(page);
-  } else {
-    renderSuperAdminDashboard(page);
-  }
+  if (role === 'alumni') return renderAlumniDashboard(page);
+
+  const byRole = {
+    moderator: window.renderModeratorDashboard,
+    dept_admin: window.renderDeptAdminDashboard,
+    univ_admin: window.renderUnivAdminDashboard,
+    super_admin: window.renderSuperAdminDashboard
+  };
+  const render = byRole[role] || window.renderSuperAdminDashboard;
+  if (typeof render === 'function') return render(page);
+
+  renderStaffElsewhereNotice(page);
+}
+
+// Shown on the alumni site to a staff account: their tools are at /admin.
+function renderStaffElsewhereNotice(page) {
+  const u = state.currentUser;
+  page.innerHTML = `
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Welcome, ${escapeHtml(u.name)}</h1>
+        <p class="page-subtitle">${escapeHtml(u.designation || u.roleLabel || '')}</p>
+      </div>
+    </div>
+    <div class="glass-card">
+      <div class="card-header"><h3 class="card-title"><i data-lucide="shield" class="ui-icon"></i> Staff tools are on the staff portal</h3></div>
+      <p style="font-size:13px;color:var(--text-secondary);margin:0 0 14px">
+        This is the alumni site. Administration, moderation, event management,
+        reports and compliance are on the staff portal, which is a separate
+        sign-in.
+      </p>
+      <a class="btn btn-primary" href="/admin"><i data-lucide="external-link" class="ui-icon"></i> Open the staff portal</a>
+    </div>`;
+  if (window.lucide) lucide.createIcons();
 }
 
 // 1. ALUMNI DASHBOARD
@@ -112,9 +139,16 @@ function renderAlumniDashboard(page) {
   renderAlumniGrid();
   renderEventsPage();
   renderDonorLeaderboard();
-  renderActivePoll();
   loadPlatformStats().then(s => paintStats(s));
-  paintProfileCompleteness('dash-pc-fill', 'dash-pc-ring', 'dash-pc-text');
+  /* The live poll and the profile-completeness banner belong to news.js and
+     profile.js, which the staff portal does not load. This dashboard is only
+     ever rendered for an alumnus, so the guard is belt and braces — but an
+     unguarded reference in a file both portals load is the kind of thing that
+     breaks later, quietly. */
+  if (typeof renderActivePoll === 'function') renderActivePoll();
+  if (typeof paintProfileCompleteness === 'function') {
+    paintProfileCompleteness('dash-pc-fill', 'dash-pc-ring', 'dash-pc-text');
+  }
 }
 
 /* Profile completeness, measured. PROFILE_COMPLETENESS_FIELDS is the list the

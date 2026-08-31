@@ -17,7 +17,28 @@ const PORT = process.env.PORT || 8000;
 // Trusting one hop makes req.ip the real client, which the login throttle needs.
 app.set('trust proxy', 1);
 
-app.use(cors());
+/* CORS.
+
+   Today both portals are served from this origin, so no cross-origin request is
+   made at all and this middleware never fires. It matters the moment
+   admin.<domain> is pointed at this deployment: set PUBLIC_ORIGIN and
+   ADMIN_ORIGIN and only those two are allowed. With neither set the previous
+   wildcard behaviour is kept, so nothing breaks in development.
+
+   Credentials are deliberately not enabled. The session is a bearer token in an
+   Authorization header, never a cookie, so there is nothing for the browser to
+   attach automatically and no CSRF surface to defend. */
+const ALLOWED_ORIGINS = [process.env.PUBLIC_ORIGIN, process.env.ADMIN_ORIGIN]
+  .filter(Boolean).map(o => o.trim().replace(/\/$/, '').toLowerCase());
+
+app.use(cors(ALLOWED_ORIGINS.length ? {
+  origin(origin, cb) {
+    // A same-origin request has no Origin header; so do curl and server-to-server.
+    if (!origin) return cb(null, true);
+    cb(null, ALLOWED_ORIGINS.includes(origin.replace(/\/$/, '').toLowerCase()));
+  },
+  credentials: false
+} : undefined));
 app.use(bodyParser.json());
 app.use(express.static(__dirname));
 
@@ -211,6 +232,10 @@ function publicUser(row) {
     status: row.status || 'active',
     icon: row.icon,
     verified: row.is_verified,
+    // Carried on the user object rather than only alongside it, so a session
+    // restored through /api/auth/me knows about it too — a page refresh used to
+    // walk straight past the forced change.
+    mustChangePassword: row.must_change_password === true,
     // Staff sign in at the admin portal; alumni at the main site. The client
     // uses this to refuse the wrong portal politely rather than showing an
     // empty shell.
@@ -1770,9 +1795,29 @@ app.use((req, res, next) => {
   next();
 });
 
-// Serve frontend SPA for all remaining routes
+/* Two entry points, one backend.
+
+   /admin serves the staff portal; everything else serves the alumni site. The
+   split is by path today so it can be tested and reverted without touching DNS.
+   When admin.<domain> is pointed at this deployment, the host check below picks
+   the same file — set ADMIN_ORIGIN and the subdomain works with no further
+   change. Both entry points call the same API on their own origin, so nothing
+   about authentication moves.
+
+   Note these serve different HTML but identical JavaScript files: the portals
+   differ by which modules they load, not by having their own copies. */
+const ADMIN_HOST_PREFIX = 'admin.';
+
+function wantsAdminPortal(req) {
+  if (/^\/admin(\/|$)/.test(req.path)) return true;
+  const host = String(req.hostname || '').toLowerCase();
+  if (host.startsWith(ADMIN_HOST_PREFIX)) return true;
+  const adminOrigin = (process.env.ADMIN_ORIGIN || '').toLowerCase();
+  return !!adminOrigin && adminOrigin.includes(host) && host !== '';
+}
+
 app.use((req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(__dirname, wantsAdminPortal(req) ? 'admin.html' : 'index.html'));
 });
 
 // Start Express Server locally or export for Vercel Serverless

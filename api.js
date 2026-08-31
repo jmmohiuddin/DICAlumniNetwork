@@ -411,6 +411,14 @@ Object.assign(API, {
   getStatsMap:          ()          => apiRequest('GET',    '/api/stats/map'),
   getRbacMatrix:        ()          => apiRequest('GET',    '/api/stats/rbac'),
   getVerificationQueue: ()          => apiRequest('GET',    '/api/verification-queue'),
+
+  // ─── ADMINISTRATOR ACCOUNTS (super admin only) ───
+  getAdministrators:    ()          => apiRequest('GET',    '/api/admin/administrators'),
+  getAdministrator:     (id)        => apiRequest('GET',    '/api/admin/administrators/' + id),
+  createAdministrator:  (d)         => apiRequest('POST',   '/api/admin/administrators', d),
+  updateAdministrator:  (id, d)     => apiRequest('PUT',    '/api/admin/administrators/' + id, d),
+  setAdministratorStatus: (id, s)   => apiRequest('PUT',    '/api/admin/administrators/' + id + '/status', { status: s }),
+  resetAdministratorPassword: (id)  => apiRequest('POST',   '/api/admin/administrators/' + id + '/reset-password', {}),
   getSegmentOptions:    ()          => apiRequest('GET',    '/api/segment/options'),
   getSegmentCount:      (q)         => apiRequest('GET',    '/api/segment/count?' + new URLSearchParams(q)),
   verifyUser:        (id, v = true) => apiRequest('PUT',    '/api/users/' + id + '/verify', { verified: v }),

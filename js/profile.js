@@ -465,6 +465,35 @@ function render10SectionProfile(filterSection = 'all') {
    column anywhere holding a given alumnus's answer, so the values are shown as
    not recorded rather than filled in with something plausible. */
 
+async function renderProfileCustomFields() {
+  const el = document.getElementById('profile-custom-fields-body');
+  if (!el) return;
+  const fields = await API.getCustomFields();
+  if (apiFailed(fields)) {
+    el.innerHTML = '<div class="chapter-empty-note">Custom fields could not be loaded.</div>';
+    return;
+  }
+  if (!fields.length) {
+    el.innerHTML = '<div class="chapter-empty-note">No custom fields have been defined for this institution.</div>';
+    return;
+  }
+  el.innerHTML = `
+    <div class="field-grid-2 mb-16">
+      ${fields.map(f => `
+        <div class="profile-field-row">
+          <div>
+            <div class="field-label">${escapeHtml(f.label)}${f.is_required ? ' *' : ''}</div>
+            <div class="field-val" style="color:var(--text-muted)">Not recorded</div>
+          </div>
+        </div>`).join('')}
+    </div>
+    <div class="chapter-empty-note">
+      These fields are defined by an administrator, but the system does not yet
+      store a value per alumnus for them.
+    </div>`;
+  if (window.lucide) lucide.createIcons();
+}
+
 function switchProfileHubSection(sectionTag, btn) {
   document.querySelectorAll('.profile-hub-tab').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
@@ -742,3 +771,84 @@ function showEditProfile() { return showEditProfileV2(); }
    One list, one workspace, one creation wizard. Light UI, Lucide icons,
    no emoji, no mock panels. Staff see management; alumni see discovery.
    ============================================================ */
+
+
+/* ─── DATA RIGHTS (PDPA 2026) ───────────────────────────────
+   An alumnus's own record: export it, or ask for it to be deleted. These live
+   with the profile because that is the page they are reached from; the
+   administrator's vault and compliance views are in compliance.js, which the
+   alumni site does not load. */
+
+// Downloads through fetch so the Authorization header is attached.
+async function exportUserData(format = 'json') {
+  showToast(`📦 Preparing your ${format.toUpperCase()} export…`);
+  try {
+    const res = await fetch(API.dsarExportUrl(format), {
+      headers: { Authorization: `Bearer ${localStorage.getItem('dic_session_token')}` }
+    });
+    if (!res.ok) throw new Error('export failed');
+    const text = await res.text();
+    downloadTextFile(`dic_my_data.${format}`, text, format === 'csv' ? 'text/csv' : 'application/json');
+    showToast('✅ Your data export has been downloaded.');
+  } catch {
+    showToast('⚠ Could not generate the export. Please try again.');
+  }
+}
+
+async function exportProfileDSAR() {
+  return exportUserData('json');
+}
+
+async function showDeleteAccount() {
+  const pending = await API.getDeletionRequest();
+  const hasPending = !apiFailed(pending) && pending;
+
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title"><i data-lucide="triangle-alert" class="ui-icon"></i> Delete Account</div>
+      <button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>
+    </div>
+    ${hasPending ? `
+      <div class="state-panel" style="border-color:rgba(255,140,66,0.4);background:rgba(255,140,66,0.08)">
+        <div class="state-icon"><i data-lucide="hourglass" class="ui-icon"></i></div>
+        <div class="state-title">Deletion already scheduled</div>
+        <div class="state-subtitle">Your account will be permanently purged on ${escapeHtml(formatDate(pending.purge_after))}. You can cancel until then.</div>
+      </div>
+      <button class="btn btn-primary btn-full mt-16" onclick="cancelAccountDeletion()"><i data-lucide="undo-2" class="ui-icon"></i> Cancel deletion request</button>
+    ` : `
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">
+        Under PDPA 2026 your account enters a <strong>30-day grace period</strong> before permanent deletion.
+        You can cancel at any point during that window. We recommend exporting your data first.
+      </p>
+      <button class="btn btn-outline btn-full" onclick="exportUserData('json')"><i data-lucide="package" class="ui-icon"></i> Export my data first</button>
+      <div class="input-group mt-16">
+        <label class="input-label">Reason (optional)</label>
+        <textarea id="delete-reason" class="form-input" rows="3" placeholder="Help us understand why you are leaving…"></textarea>
+      </div>
+      <button class="btn btn-danger btn-full" onclick="confirmAccountDeletion()">Request account deletion</button>
+    `}
+  `);
+}
+
+async function confirmAccountDeletion() {
+  if (!confirm('Schedule your account for deletion in 30 days?')) return;
+  const res = await API.requestDeletion(document.getElementById('delete-reason')?.value.trim());
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not submit the request.'}`); return; }
+  closeModal();
+  showToast(`⚠ Account deletion scheduled for ${formatDate(res.request.purge_after)}. You can cancel until then.`);
+  renderNotifications();
+}
+
+async function cancelAccountDeletion() {
+  const res = await API.cancelDeletion();
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not cancel.'}`); return; }
+  closeModal();
+  showToast('✓ Deletion request cancelled — your account is active.');
+}
+
+// Records consent with IP + policy version (PDPA 2026).
+async function recordConsent(consentType, granted = true) {
+  const res = await API.recordConsent({ consentType, granted });
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not record consent.'}`); return; }
+  showToast(granted ? '✓ Consent recorded.' : '✓ Consent withdrawn.');
+}
