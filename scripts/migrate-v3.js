@@ -1,7 +1,7 @@
 /* Applies schema_v3.sql. Idempotent.  Usage: node migrate_v3.js */
 const fs = require('fs');
 const path = require('path');
-const db = require('./db');
+const db = require('../src/server/db/pool');
 
 (async () => {
   await db.query(fs.readFileSync(path.join(__dirname, 'schema_v3.sql'), 'utf8'));

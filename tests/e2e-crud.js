@@ -3,7 +3,7 @@
    End-to-End Cloud PostgreSQL CRUD Verification Test Suite
    ============================================================ */
 
-const db = require('./db');
+const db = require('../src/server/db/pool');
 
 async function runCrudTests() {
   console.log('\n🧪 Starting Full E2E Cloud PostgreSQL CRUD Test Suite...\n');

@@ -9,7 +9,7 @@
    Idempotent — safe to re-run. Usage:  node migrate_alumni.js
    ============================================================ */
 
-const db = require('./db');
+const db = require('../src/server/db/pool');
 
 const ALUMNI = [
   { name: 'Fatima Khanam',   initials: 'FK', title: 'Senior Software Engineer', company: 'bKash Ltd',          batch: 2019, dept: 'CSE', domain: 'tech',     city: 'Dhaka',    country: 'Bangladesh', skills: 'React, Node.js, AWS',                    mentor: true,  color: '#00A859' },

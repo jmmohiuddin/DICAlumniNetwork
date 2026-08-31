@@ -8,13 +8,13 @@
    meetings, reports, analytics and the approval workflow.
    ============================================================ */
 
-const db = require('./db');
+const db = require('../../db/pool');
+const { ok } = require('../../shared/http');
 
 // Generic CRUD factory — every planner sub-module has the same shape, so the
 // routes are generated from a column map instead of nine copies of the code.
 function crud(app, guards, { path, table, columns, required = [], label }) {
   const { requireAuth, requireRole, MODERATOR_ROLES, writeAudit } = guards;
-  const ok = (res, fn) => fn().catch(err => res.status(500).json({ error: err.message }));
   const keys = Object.keys(columns);
 
   app.get(`/api/planner/${path}`, requireAuth, (req, res) => ok(res, async () => {
@@ -66,7 +66,6 @@ function crud(app, guards, { path, table, columns, required = [], label }) {
 
 module.exports = function mountPlanner(app, guards) {
   const { requireAuth, requireRole, ADMIN_ROLES, MODERATOR_ROLES, writeAudit } = guards;
-  const ok = (res, fn) => fn().catch(err => res.status(500).json({ error: err.message }));
 
   /* ─── CRUD for every planner sub-module ─── */
 

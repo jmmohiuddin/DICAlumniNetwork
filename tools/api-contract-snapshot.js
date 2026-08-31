@@ -13,7 +13,7 @@
 const path = require('path');
 const crypto = require('crypto');
 const ROOT = process.argv[2] || require('path').join(__dirname, '..');
-const db = require(path.join(ROOT, 'db.js'));
+const db = require(path.join(ROOT, 'src', 'server', 'db', 'pool.js'));
 const app = require(path.join(ROOT, 'server.js'));
 
 const SECRET = process.env.SESSION_SECRET;

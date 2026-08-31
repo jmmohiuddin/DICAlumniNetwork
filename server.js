@@ -1,115 +1,60 @@
 /* ============================================================
    DAFFODIL INTERNATIONAL COLLEGE (DIC) ALUMNI PLATFORM
-   Production-Ready Express REST API Server Powered by PostgreSQL
+   Express application — composition root.
+
+   This file wires the application together and declares the routes that have
+   not yet been extracted into src/server/modules/. Cross-cutting concerns now
+   live in dedicated modules:
+
+     src/server/config/     paths, .env loading, shared constants
+     src/server/db/         PostgreSQL pool
+     src/server/middleware/ authentication, RBAC guards
+     src/server/shared/     HTTP helpers, serialisers
+     src/server/modules/    per-domain route modules
+
+   Route registration order is load-bearing: Express matches in the order
+   routes are declared, and several concrete paths (/api/events/planner/:id,
+   /api/events/proposals, ...) must be registered before the parameterised
+   /api/events/:id routes that the modules declare. Run `npm run routes`
+   and diff the output before and after any change to this file.
    ============================================================ */
 
 const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const crypto = require('crypto');
-const db = require('./db');
-const path = require('path');
+
+const db = require('./src/server/db/pool');
+const { INDEX_HTML } = require('./src/server/config/paths');
+const {
+  ADMIN_ROLES,
+  MODERATOR_ROLES,
+  SESSION_TTL_MS,
+  DEFAULT_IMPORT_PASSWORD,
+} = require('./src/server/config/constants');
+const {
+  hashPassword,
+  verifyPassword,
+  signToken,
+  attachUser,
+  requireAuth,
+  requireRole,
+} = require('./src/server/middleware/auth');
+const { publicUser } = require('./src/server/shared/http');
+const { staticAssets } = require('./src/server/middleware/static-assets');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(__dirname));
-
-/* ============================================================
-   AUTHENTICATION — password hashing, signed sessions, RBAC
-   ============================================================ */
-
-const SESSION_SECRET = process.env.SESSION_SECRET || crypto.randomBytes(32).toString('hex');
-if (!process.env.SESSION_SECRET) {
-  console.warn('⚠  SESSION_SECRET not set — using an ephemeral secret. ' +
-               'Sessions will be invalidated on restart. Set SESSION_SECRET in .env for production.');
-}
-const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
-
-// Passwords are stored as `scrypt$<salt>$<derived>`. Seed rows still hold the
-// legacy plaintext '12345678', so verifyPassword accepts those once and the
-// login handler transparently re-hashes them.
-function hashPassword(plain) {
-  const salt = crypto.randomBytes(16).toString('hex');
-  const derived = crypto.scryptSync(plain, salt, 64).toString('hex');
-  return `scrypt$${salt}$${derived}`;
-}
-
-function verifyPassword(plain, stored) {
-  if (!stored) return false;
-  if (!stored.startsWith('scrypt$')) {
-    // Legacy plaintext row — constant-time compare, then caller upgrades it.
-    const a = Buffer.from(String(plain));
-    const b = Buffer.from(String(stored));
-    return a.length === b.length && crypto.timingSafeEqual(a, b);
-  }
-  const [, salt, expected] = stored.split('$');
-  const derived = crypto.scryptSync(plain, salt, 64).toString('hex');
-  const a = Buffer.from(derived, 'hex');
-  const b = Buffer.from(expected, 'hex');
-  return a.length === b.length && crypto.timingSafeEqual(a, b);
-}
-
-function signToken(payload) {
-  const body = Buffer.from(JSON.stringify(payload)).toString('base64url');
-  const sig = crypto.createHmac('sha256', SESSION_SECRET).update(body).digest('base64url');
-  return `${body}.${sig}`;
-}
-
-function verifyToken(token) {
-  if (!token || typeof token !== 'string' || !token.includes('.')) return null;
-  const [body, sig] = token.split('.');
-  const expected = crypto.createHmac('sha256', SESSION_SECRET).update(body).digest('base64url');
-  const a = Buffer.from(sig);
-  const b = Buffer.from(expected);
-  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
-  try {
-    const payload = JSON.parse(Buffer.from(body, 'base64url').toString());
-    if (!payload.exp || payload.exp < Date.now()) return null;
-    return payload;
-  } catch {
-    return null;
-  }
-}
-
-function readToken(req) {
-  const header = req.headers.authorization || '';
-  return header.startsWith('Bearer ') ? header.slice(7) : null;
-}
-
-// Attaches req.user when a valid token is present; never rejects.
-function attachUser(req, res, next) {
-  req.user = verifyToken(readToken(req));
-  next();
-}
+app.use(staticAssets());
 app.use(attachUser);
 
-function requireAuth(req, res, next) {
-  if (!req.user) return res.status(401).json({ error: 'Authentication required' });
-  next();
-}
-
-function requireRole(...roles) {
-  return (req, res, next) => {
-    if (!req.user) return res.status(401).json({ error: 'Authentication required' });
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ error: 'Insufficient permissions for this action' });
-    }
-    next();
-  };
-}
-
-const ADMIN_ROLES = ['super_admin', 'univ_admin'];
-const MODERATOR_ROLES = ['super_admin', 'univ_admin', 'dept_admin', 'moderator'];
-
-// Shared initial credential for bulk-imported accounts. Stored only as a
-// scrypt hash; every imported user is flagged must_change_password.
-const DEFAULT_IMPORT_PASSWORD = '12345678';
-
-// routes_v2 owns the hash-chained audit writer but is mounted after these
-// routes are declared, so calls are routed through this late-bound shim.
+// The hash-chained audit writer lives in the events module, which is mounted
+// after the routes below are declared, so calls route through this late-bound
+// shim. Until the mount runs it is a no-op — that window covers module load
+// only, never a live request.
 let _writeAudit = null;
 async function writeAuditSafe(action, meta, icon) {
   if (typeof _writeAudit === 'function') {
@@ -117,19 +62,6 @@ async function writeAuditSafe(action, meta, icon) {
   }
 }
 
-function publicUser(row) {
-  return {
-    id: row.id,
-    email: row.email,
-    name: row.full_name,
-    initials: row.initials,
-    role: row.role,
-    roleLabel: row.role_label,
-    dept: row.department,
-    icon: row.icon,
-    verified: row.is_verified
-  };
-}
 
 // ─── 1. HEALTH CHECK & CLOUD DB INITIALIZER ───
 app.get('/api/health', async (req, res) => {
@@ -1209,14 +1141,14 @@ const guards = { requireAuth, requireRole, ADMIN_ROLES, MODERATOR_ROLES };
 
 // v2: events, ticketing, jobs, campaigns/donations, custom fields,
 // mentorship, connections, polls, broadcasts, audit log.
-const v2 = require('./routes_v2')(app, guards);
+const v2 = require('./src/server/modules/_routes_v2')(app, guards);
 _writeAudit = v2.writeAudit;   // late-bind the audit writer declared above
 
 // Event Management Planner (Phase 6).
-require('./routes_planner')(app, { ...guards, writeAudit: v2.writeAudit });
+require('./src/server/modules/planner/routes')(app, { ...guards, writeAudit: v2.writeAudit });
 
 // PDPA 2026 / CA 2023 compliance: consent, encrypted vault, DSAR.
-require('./routes_compliance')(app, {
+require('./src/server/modules/compliance/routes')(app, {
   ...guards,
   encryptField: v2.encryptField,
   decryptField: v2.decryptField,
@@ -1232,7 +1164,7 @@ app.use('/api', (req, res) => {
 // A request for a real file that does not exist must 404, not fall through to
 // the SPA shell. Returning index.html for a missing image made <img onerror>
 // fallbacks download the whole page before failing to decode it.
-const STATIC_FILE = /\.(png|jpe?g|gif|svg|webp|avif|ico|css|js|mjs|map|json|txt|csv|woff2?|ttf|otf|eot|pdf|xml)$/i;
+const STATIC_FILE = /\.(sql|lock|md|png|jpe?g|gif|svg|webp|avif|ico|css|js|mjs|map|json|txt|csv|woff2?|ttf|otf|eot|pdf|xml)$/i;
 app.use((req, res, next) => {
   if (STATIC_FILE.test(req.path)) {
     return res.status(404).type('txt').send('Not found');
@@ -1242,7 +1174,7 @@ app.use((req, res, next) => {
 
 // Serve frontend SPA for all remaining routes
 app.use((req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(INDEX_HTML);
 });
 
 // Start Express Server locally or export for Vercel Serverless

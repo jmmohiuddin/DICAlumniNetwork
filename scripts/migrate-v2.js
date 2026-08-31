@@ -5,7 +5,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const db = require('./db');
+const db = require('../src/server/db/pool');
 
 async function run() {
   const ddl = fs.readFileSync(path.join(__dirname, 'schema_v2.sql'), 'utf8');

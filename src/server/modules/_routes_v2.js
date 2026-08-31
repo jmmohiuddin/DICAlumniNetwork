@@ -6,7 +6,8 @@
    ============================================================ */
 
 const crypto = require('crypto');
-const db = require('./db');
+const db = require('../db/pool');
+const { ok } = require('../shared/http');
 
 // ─── FIELD-LEVEL ENCRYPTION (REQ-14, PDPA 2026) ───
 // AES-256-GCM. The key comes from ENCRYPTION_KEY (64 hex chars). Without it the
@@ -59,7 +60,6 @@ const ref = (prefix) => `${prefix}-${Date.now().toString(36).toUpperCase()}-${cr
 
 module.exports = function mountV2(app, { requireAuth, requireRole, ADMIN_ROLES, MODERATOR_ROLES }) {
 
-  const ok = (res, fn) => fn().catch(err => res.status(500).json({ error: err.message }));
 
   /* ══════════════════════════════════════════════════════════
      EVENTS — full CRUD (table existed, zero endpoints)

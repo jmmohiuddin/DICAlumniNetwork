@@ -8,14 +8,14 @@
    implement the behaviour those claims describe.
    ============================================================ */
 
-const db = require('./db');
+const db = require('../../db/pool');
+const { ok } = require('../../shared/http');
 
 module.exports = function mountCompliance(app, {
   requireAuth, requireRole, ADMIN_ROLES,
   encryptField, decryptField, encryptionReady, writeAudit
 }) {
 
-  const ok = (res, fn) => fn().catch(err => res.status(500).json({ error: err.message }));
 
   const clientIp = (req) =>
     (req.headers['x-forwarded-for'] || '').split(',')[0].trim() ||
