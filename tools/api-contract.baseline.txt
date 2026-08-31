@@ -1,0 +1,137 @@
+DELETE /api/campaigns/:id                         anon=401
+DELETE /api/custom-fields/:id                     anon=401
+DELETE /api/dsar/delete                           anon=401
+DELETE /api/events/:id                            anon=401
+DELETE /api/events/:id/register                   anon=401
+DELETE /api/jobs/:id                              anon=401
+DELETE /api/planner/budgets/:id                   anon=401
+DELETE /api/planner/committees/:id                anon=401
+DELETE /api/planner/logistics/:id                 anon=401
+DELETE /api/planner/marketing/:id                 anon=401
+DELETE /api/planner/meetings/:id                  anon=401
+DELETE /api/planner/procurement/:id               anon=401
+DELETE /api/planner/risks/:id                     anon=401
+DELETE /api/planner/sponsors/:id                  anon=401
+DELETE /api/planner/tasks/:id                     anon=401
+DELETE /api/planner/timeline/:id                  anon=401
+DELETE /api/planner/vendors/:id                   anon=401
+DELETE /api/planner/volunteers/:id                anon=401
+FALLBACK api-404                                   status=404 type=application/json
+FALLBACK client-entry                              status=200 type=text/javascript
+FALLBACK deny-seed                                 status=404 type=text/plain
+FALLBACK deny-server                               status=404 type=text/plain
+FALLBACK root                                      status=200 type=text/html
+FALLBACK spa-shell                                 status=200 type=text/html
+FALLBACK static-404                                status=404 type=text/plain
+FALLBACK styles.css                                status=200 type=text/css
+GET    /api/alumni                                anon=401 alumni=200:{alumni:[object],limit:number,offset:number,total:number} admin=200:{alumni:[object],limit:number,offset:number,total:number}
+GET    /api/alumni/:id                            anon=401 alumni=404 admin=404
+GET    /api/audit-logs                            anon=401 alumni=403 admin=200:[{action:string,bg_color:string,created_at:string,hash:string,icon:string,id:number,meta:string}]
+GET    /api/auth/me                               anon=401 alumni=200:{user:{dept:string,email:string,icon:string,id:number,initials:string,name:string,role:string,roleLabel:string,verified:boolean}} admin=200:{user:{dept:string,email:string,icon:string,id:number,initials:string,name:string,role:string,roleLabel:string,verified:boolean}}
+GET    /api/broadcasts                            anon=401 alumni=403 admin=200:[{body:string,channels:array,created_at:string,delivered_count:number,id:number,read_count:number,recipients_count:number,sender_id:number,sender_name:string,status:string,target_batch:null,target_role:string,title:string}]
+GET    /api/campaigns                             anon=401 alumni=200:[{created_at:string,days_left:number,description:string,donors_count:number,donors_live:string,gateways:array,goal_amount:string,id:number,name:string,raised_amount:string,raised_live:string,tag:string}] admin=200:[{created_at:string,days_left:number,description:string,donors_count:number,donors_live:string,gateways:array,goal_amount:string,id:number,name:string,raised_amount:string,raised_live:string,tag:string}]
+GET    /api/chapters                              anon=401 alumni=200:[{created_at:string,created_by_id:null,description:string,events_count:number,icon:string,id:number,is_member:boolean,member_rows:number,members_count:number,name:string,parent_id:null,status:string,type:string}] admin=200:[{created_at:string,created_by_id:null,description:string,events_count:number,icon:string,id:number,is_member:boolean,member_rows:number,members_count:number,name:string,parent_id:null,status:string,type:string}]
+GET    /api/chapters/:id/members                  anon=200:[{batch:null,company:null,dept:null,id:number,initials:string,name:string,role:null}] alumni=200:[{batch:null,company:null,dept:null,id:number,initials:string,name:string,role:null}] admin=200:[{batch:null,company:null,dept:null,id:number,initials:string,name:string,role:null}]
+GET    /api/compliance/status                     anon=401 alumni=403 admin=200:[{desc:string,icon:string,status:string,title:string}]
+GET    /api/connections                           anon=401 alumni=200:[] admin=200:[]
+GET    /api/consent                               anon=401 alumni=200:[] admin=200:[]
+GET    /api/custom-fields                         anon=401 alumni=200:[{created_at:string,field_type:string,id:string,is_required:boolean,label:string,section:string}] admin=200:[{created_at:string,field_type:string,id:string,is_required:boolean,label:string,section:string}]
+GET    /api/donations/leaderboard                 anon=401 alumni=200:[{batch:number,ignored:string,name:string,total:string}] admin=200:[{batch:number,ignored:string,name:string,total:string}]
+GET    /api/donations/mine                        anon=401 alumni=200:[{amount:string,campaign_id:number,campaign_name:string,completed_at:string,created_at:string,currency:string,donor_name:string,donor_user_id:number,failure_reason:null,id:number,is_anonymous:boolean,payment_gateway:string,receipt_code:string,status:string,transaction_reference:string}] admin=200:[]
+GET    /api/dsar/delete                           anon=401 alumni=200:null admin=200:null
+GET    /api/dsar/export                           anon=401 alumni=200:{chapterMemberships:[object],consentHistory:[],donations:[object],eventRegistrations:[object],exportedAt:string,mentorships:[object],policyVersion:string,profile:{admission_year:number,alt_mobile:string,awards:string,batch:number,bio:string,blood_group:string,can_mentor:boolean,certifications:string,cgpa:string,city:string,clubs:string,collaboration:boolean,color:string,country:string,current_company:string,current_status:string,degree:string,department:string,district:string,division:string,dob:string,emergency_name:string,emergency_phone:string,emergency_relation:string,employment_type:string,facebook:string,gender:string,github:string,hiring:boolean,hometown:string,hsc_group:null,hsc_version:null,id:number,industry:string,job_title:string,linkedin:string,looking_for_job:boolean,looking_for_mentor:boolean,mobile_number:string,occupation:null,passing_year:number,permanent_address:string,photo_url:null,postal_code:string,present_address:string,primary_email:string,privacy_settings:object,program:string,publications:string,registration_number:string,roll_number:string,scholarship:string,secondary_email:string,section_code:string,skills:string,student_id:string,twitter:string,updated_at:string,user_id:number,website:string,years_experience:string},stories:[],subject:{created_at:string,department:string,email:string,full_name:string,id:number,role:string}} admin=200:{chapterMemberships:[],consentHistory:[],donations:[],eventRegistrations:[],exportedAt:string,mentorships:[],policyVersion:string,profile:null,stories:[],subject:{created_at:string,department:string,email:string,full_name:string,id:number,role:string}}
+GET    /api/events                                anon=401 alumni=200:[{capacity:number,created_at:string,emoji:string,event_date:string,event_time:string,id:number,is_registered:boolean,price:string,registered_count:number,registered_live:number,status:string,title:string,type:string,venue:string}] admin=200:[{capacity:number,created_at:string,emoji:string,event_date:string,event_time:string,id:number,is_registered:boolean,price:string,registered_count:number,registered_live:number,status:string,title:string,type:string,venue:string}]
+GET    /api/events/:id/attendees                  anon=401 alumni=403 admin=200:[]
+GET    /api/events/:id/my-ticket                  anon=401 alumni=200:null admin=200:null
+GET    /api/events/planner/:id                    anon=200:{budgets:[],committees:[],procurement:[],proposal:null,risks:[],sponsors:[],tasks:[],volunteers:[]} alumni=200:{budgets:[],committees:[],procurement:[],proposal:null,risks:[],sponsors:[],tasks:[],volunteers:[]} admin=200:{budgets:[],committees:[],procurement:[],proposal:null,risks:[],sponsors:[],tasks:[],volunteers:[]}
+GET    /api/health                                anon=200:{database:string,is_cloud:boolean,status:string,time:string,total_users:number} alumni=200:{database:string,is_cloud:boolean,status:string,time:string,total_users:number} admin=200:{database:string,is_cloud:boolean,status:string,time:string,total_users:number}
+GET    /api/import-history                        anon=401 alumni=403 admin=200:[{admin_name:string,batch_code:string,created_at:string,duplicate_count:number,failed_count:number,filename:string,id:number,processing_time:string,success_count:number,total_records:number}]
+GET    /api/jobs                                  anon=401 alumni=200:[{applicants:number,batch:number,company:string,created_at:string,days_ago:number,emoji:string,has_applied:boolean,id:number,location:string,posted_by_id:null,posted_by_name:string,salary:string,tags:array,title:string,type:string}] admin=200:[{applicants:number,batch:number,company:string,created_at:string,days_ago:number,emoji:string,has_applied:boolean,id:number,location:string,posted_by_id:null,posted_by_name:string,salary:string,tags:array,title:string,type:string}]
+GET    /api/jobs/:id/applicants                   anon=401 alumni=404 admin=404
+GET    /api/mentorships                           anon=401 alumni=200:{asMentee:[object],asMentor:[],incoming:[]} admin=200:{asMentee:[],asMentor:[],incoming:[]}
+GET    /api/mentorships/suggestions               anon=401 alumni=200:[{batch:number,city:string,color:string,company:string,department:string,id:number,industry:string,initials:string,match_score:number,name:string,role:string}] admin=200:[{batch:number,city:string,color:string,company:string,department:string,id:number,industry:null,initials:string,match_score:number,name:string,role:string}]
+GET    /api/moderation                            anon=401 alumni=403 admin=200:{pendingChapters:[],pendingProposals:[],pendingStories:[]}
+GET    /api/notifications                         anon=401 alumni=200:[{created_at:string,icon:string,id:number,is_unread:boolean,subtitle:string,target_role:null,title:string,user_id:number}] admin=200:[{created_at:string,icon:string,id:number,is_unread:boolean,subtitle:string,target_role:null,title:string,user_id:number}]
+GET    /api/planner/analytics/:eventId            anon=401 alumni=200:{budget:{actual:number,estimated:number,lines:number,utilisation:number,variance:number},marketing:{conversions:number,costPerConversion:number,reach:number,spend:number},procurement:{items:number,spend:number},risks:{},sponsors:{count:number,coverage:number,pipeline:number,secured:number},tasks:{completionRate:number,total:number},timeline:{avgProgress:number,done:number,milestones:number},vendors:{committed:number,count:number},volunteers:{}} admin=200:{budget:{actual:number,estimated:number,lines:number,utilisation:number,variance:number},marketing:{conversions:number,costPerConversion:number,reach:number,spend:number},procurement:{items:number,spend:number},risks:{},sponsors:{count:number,coverage:number,pipeline:number,secured:number},tasks:{completionRate:number,total:number},timeline:{avgProgress:number,done:number,milestones:number},vendors:{committed:number,count:number},volunteers:{}}
+GET    /api/planner/committees                    anon=401 alumni=200:[{budget_allocated:string,created_at:string,event_id:number,id:number,leader_name:string,members_count:number,name:string}] admin=200:[{budget_allocated:string,created_at:string,event_id:number,id:number,leader_name:string,members_count:number,name:string}]
+GET    /api/planner/logistics                     anon=401 alumni=200:[{category:string,created_at:string,event_id:number,id:number,item:string,location:string,notes:null,quantity:number,responsible:string,status:string}] admin=200:[{category:string,created_at:string,event_id:number,id:number,item:string,location:string,notes:null,quantity:number,responsible:string,status:string}]
+GET    /api/planner/marketing                     anon=401 alumni=200:[{audience:string,budget:string,campaign_name:string,channel:string,conversions:number,created_at:string,event_id:number,id:number,reach:number,scheduled_for:string,status:string}] admin=200:[{audience:string,budget:string,campaign_name:string,channel:string,conversions:number,created_at:string,event_id:number,id:number,reach:number,scheduled_for:string,status:string}]
+GET    /api/planner/meetings                      anon=401 alumni=200:[{agenda:string,attendees:string,created_at:string,event_id:number,id:number,location:string,meeting_date:string,meeting_time:string,minutes:null,status:string,title:string}] admin=200:[{agenda:string,attendees:string,created_at:string,event_id:number,id:number,location:string,meeting_date:string,meeting_time:string,minutes:null,status:string,title:string}]
+GET    /api/planner/proposals                     anon=401 alumni=200:[{category:string,created_at:string,department:string,description:string,duration:string,event_date:string,expected_attendance:number,id:number,name:string,objectives:string,organizer_name:string,outcomes:string,owner_id:number,status:string,target_audience:string,type:string,venue:string}] admin=200:[{category:string,created_at:string,department:string,description:string,duration:string,event_date:string,expected_attendance:number,id:number,name:string,objectives:string,organizer_name:string,outcomes:string,owner_id:number,status:string,target_audience:string,type:string,venue:string}]
+GET    /api/planner/report/:eventId               anon=401 alumni=200 admin=200
+GET    /api/planner/risks                         anon=401 alumni=200:[{category:string,contingency_plan:string,created_at:string,event_id:number,id:number,risk_title:string,severity:string}] admin=200:[{category:string,contingency_plan:string,created_at:string,event_id:number,id:number,risk_title:string,severity:string}]
+GET    /api/planner/timeline                      anon=401 alumni=200:[{created_at:string,description:string,ends_at:string,event_id:number,id:number,owner:string,phase:string,progress:number,starts_at:string,status:string,title:string}] admin=200:[{created_at:string,description:string,ends_at:string,event_id:number,id:number,owner:string,phase:string,progress:number,starts_at:string,status:string,title:string}]
+GET    /api/planner/vendors                       anon=401 alumni=200:[{category:string,contact_person:string,contract_value:string,created_at:string,email:null,event_id:number,id:number,name:string,notes:null,phone:string,rating:number,status:string}] admin=200:[{category:string,contact_person:string,contract_value:string,created_at:string,email:null,event_id:number,id:number,name:string,notes:null,phone:string,rating:number,status:string}]
+GET    /api/planner/volunteers                    anon=401 alumni=200:[{assigned_committee:string,attendance_status:string,certificate_issued:boolean,created_at:string,event_id:number,id:number,shift_time:string,volunteer_name:string}] admin=200:[{assigned_committee:string,attendance_status:string,certificate_issued:boolean,created_at:string,event_id:number,id:number,shift_time:string,volunteer_name:string}]
+GET    /api/planner/workspace/:eventId            anon=401 alumni=200:{budgets:[],committees:[],logistics:[],marketing:[],meetings:[],procurement:[],proposal:null,risks:[],sponsors:[],tasks:[],timeline:[],vendors:[],volunteers:[]} admin=200:{budgets:[],committees:[],logistics:[],marketing:[],meetings:[],procurement:[],proposal:null,risks:[],sponsors:[],tasks:[],timeline:[],vendors:[],volunteers:[]}
+GET    /api/polls/active                          anon=401 alumni=200:{closes_at:string,counts:[number],created_at:string,id:number,is_active:boolean,myVote:number,options:[string],question:string,total:number} admin=200:{closes_at:string,counts:[number],created_at:string,id:number,is_active:boolean,myVote:null,options:[string],question:string,total:number}
+GET    /api/profile/me                            anon=401 alumni=200:{admission_year:number,alt_mobile:string,awards:string,batch:number,bio:string,blood_group:string,can_mentor:boolean,certifications:string,cgpa:string,city:string,clubs:string,collaboration:boolean,color:string,country:string,created_via:string,current_company:string,current_status:string,degree:string,department:string,district:string,division:string,dob:string,email:string,emergency_name:string,emergency_phone:string,emergency_relation:string,employment_type:string,facebook:string,full_name:string,gender:string,github:string,hiring:boolean,hometown:string,hsc_group:null,hsc_version:null,id:number,industry:string,initials:string,is_verified:boolean,job_title:string,linkedin:string,looking_for_job:boolean,looking_for_mentor:boolean,mobile_number:string,must_change_password:boolean,occupation:null,passing_year:number,permanent_address:string,photo_url:null,postal_code:string,present_address:string,primary_email:string,privacy_settings:{address:string,cgpa:string,email:string,github:string,linkedin:string,mobile:string},program:string,publications:string,registration_number:string,role:string,role_label:string,roll_number:string,scholarship:string,secondary_email:string,section_code:string,skills:string,student_id:string,twitter:string,updated_at:string,user_department:string,user_id:number,website:string,years_experience:string} admin=200:{admission_year:null,alt_mobile:null,awards:null,batch:null,bio:null,blood_group:null,can_mentor:null,certifications:null,cgpa:null,city:null,clubs:null,collaboration:null,color:null,country:null,created_via:string,current_company:null,current_status:null,degree:null,department:null,district:null,division:null,dob:null,email:string,emergency_name:null,emergency_phone:null,emergency_relation:null,employment_type:null,facebook:null,full_name:string,gender:null,github:null,hiring:null,hometown:null,hsc_group:null,hsc_version:null,id:null,industry:null,initials:string,is_verified:boolean,job_title:null,linkedin:null,looking_for_job:null,looking_for_mentor:null,mobile_number:null,must_change_password:boolean,occupation:null,passing_year:null,permanent_address:null,photo_url:null,postal_code:null,present_address:null,primary_email:null,privacy_settings:null,program:null,publications:null,registration_number:null,role:string,role_label:string,roll_number:null,scholarship:null,secondary_email:null,section_code:null,skills:null,student_id:null,twitter:null,updated_at:null,user_department:string,user_id:null,website:null,years_experience:null}
+GET    /api/stories                               anon=200:[{author_id:null,author_name:string,category:string,content:string,created_at:string,emoji:string,excerpt:string,id:number,published_date:string,status:string,title:string}] alumni=200:[{author_id:null,author_name:string,category:string,content:string,created_at:string,emoji:string,excerpt:string,id:number,published_date:string,status:string,title:string}] admin=200:[{author_id:null,author_name:string,category:string,content:string,created_at:string,emoji:string,excerpt:string,id:number,published_date:string,status:string,title:string}]
+GET    /api/vault                                 anon=401 alumni=403 admin=200:{encryptionEnabled:boolean,entries:[]}
+GET    /api/vault/access-logs                     anon=401 alumni=403 admin=200:[]
+POST   /api/auth/change-password                  anon=401
+POST   /api/auth/login                            anon=400
+POST   /api/auth/register                         anon=400
+POST   /api/broadcasts                            anon=401
+POST   /api/bulk-import                           anon=401
+POST   /api/campaigns                             anon=401
+POST   /api/chapters                              anon=401
+POST   /api/chapters/:id/join                     anon=401
+POST   /api/connections/:userId                   anon=401
+POST   /api/consent                               anon=401
+POST   /api/custom-fields                         anon=401
+POST   /api/donations                             anon=401
+POST   /api/donations/:id/confirm                 anon=401
+POST   /api/dsar/delete                           anon=401
+POST   /api/events                                anon=401
+POST   /api/events/:id/register                   anon=401
+POST   /api/events/ai-estimate                    anon=500
+POST   /api/events/budgets                        anon=401
+POST   /api/events/checkin                        anon=401
+POST   /api/events/procurement                    anon=401
+POST   /api/events/proposals                      anon=401
+POST   /api/events/sponsors                       anon=401
+POST   /api/events/tasks                          anon=401
+POST   /api/jobs                                  anon=401
+POST   /api/jobs/:id/apply                        anon=401
+POST   /api/jobs/:id/refer                        anon=401
+POST   /api/mentorships                           anon=401
+POST   /api/moderation/chapter/:id/:action        anon=401
+POST   /api/moderation/proposal/:id/:action       anon=401
+POST   /api/moderation/story/:id/:action          anon=401
+POST   /api/planner/committees                    anon=401
+POST   /api/planner/logistics                     anon=401
+POST   /api/planner/marketing                     anon=401
+POST   /api/planner/meetings                      anon=401
+POST   /api/planner/risks                         anon=401
+POST   /api/planner/timeline                      anon=401
+POST   /api/planner/vendors                       anon=401
+POST   /api/planner/volunteers                    anon=401
+POST   /api/polls/:id/vote                        anon=401
+POST   /api/seed-db                               anon=401
+POST   /api/stories                               anon=401
+POST   /api/vault                                 anon=401
+POST   /api/vault/:id/reveal                      anon=401
+PUT    /api/campaigns/:id                         anon=401
+PUT    /api/events/:id                            anon=401
+PUT    /api/events/tasks/:id/status               anon=401
+PUT    /api/jobs/:id                              anon=401
+PUT    /api/mentorships/:id/:action               anon=401
+PUT    /api/notifications/:id/read                anon=401
+PUT    /api/notifications/read-all                anon=401
+PUT    /api/planner/budgets/:id                   anon=401
+PUT    /api/planner/committees/:id                anon=401
+PUT    /api/planner/logistics/:id                 anon=401
+PUT    /api/planner/marketing/:id                 anon=401
+PUT    /api/planner/meetings/:id                  anon=401
+PUT    /api/planner/procurement/:id               anon=401
+PUT    /api/planner/proposals/:id/status          anon=401
+PUT    /api/planner/risks/:id                     anon=401
+PUT    /api/planner/sponsors/:id                  anon=401
+PUT    /api/planner/tasks/:id                     anon=401
+PUT    /api/planner/timeline/:id                  anon=401
+PUT    /api/planner/vendors/:id                   anon=401
+PUT    /api/planner/volunteers/:id                anon=401
+PUT    /api/profile/me                            anon=401
+
+ROUTES: 127 (reads probed 3x: 45, writes probed anon-only: 82)

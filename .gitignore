@@ -15,4 +15,5 @@ _tmp_*
 CLAUDE-SECURITY-*/
 
 # Baseline artifacts produced by tools/ (regenerate with npm run contract)
-tools/*.baseline.txt
+# committed on purpose: the API contract baseline to diff against
+!tools/api-contract.baseline.txt

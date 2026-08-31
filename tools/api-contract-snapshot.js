@@ -90,13 +90,22 @@ function shape(v, depth = 0) {
     lines.push(`${r.method.padEnd(6)} ${r.path.padEnd(42)} ${cells.join(' ')}`);
   }
 
+  // Static-serving behaviour. The client entry script is derived from
+  // index.html rather than hardcoded, so splitting the client does not
+  // invalidate the baseline.
+  const { scripts } = require(path.join(ROOT, 'tools', 'client-scripts.js'));
+  const entryScript = scripts(path.join(ROOT, 'index.html'))[0];
+
   for (const [label, url] of [
-    ['api-404',    base + '/api/definitely-not-a-route'],
-    ['static-404', base + '/definitely-missing.png'],
-    ['spa-shell',  base + '/some/client/route'],
-    ['root',       base + '/'],
-    ['app.js',     base + '/app.js'],
-    ['styles.css', base + '/styles.css'],
+    ['api-404',      base + '/api/definitely-not-a-route'],
+    ['static-404',   base + '/definitely-missing.png'],
+    ['spa-shell',    base + '/some/client/route'],
+    ['root',         base + '/'],
+    ['client-entry', base + '/' + entryScript],
+    ['styles.css',   base + '/styles.css'],
+    // Backend source must never be served. See static-assets.js.
+    ['deny-server',  base + '/server.js'],
+    ['deny-seed',    base + '/db/seed.sql'],
   ]) {
     const res = await fetch(url);
     lines.push(`FALLBACK ${label.padEnd(41)} status=${res.status} type=${(res.headers.get('content-type')||'').split(';')[0]}`);
