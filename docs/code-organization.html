@@ -475,6 +475,11 @@ GET /db/seed.sql                    -&gt; 200  <i>new exposed path</i></pre>
     <td><code>node --check</code> across all tracked JS</td>
     <td>Cheap standing guard.</td>
   </tr>
+  <tr>
+    <td class="mono">where.js</td>
+    <td>Resolves a symbol to its file and line after the split</td>
+    <td>Every <code>app.js:NNNN</code> reference in the older notes is now unresolvable, and line numbers shifted by 44 when the superseded functions were removed. <code>npm run where -- renderRBACTable</code> answers exactly.</td>
+  </tr>
 </table>
 </div>
 
