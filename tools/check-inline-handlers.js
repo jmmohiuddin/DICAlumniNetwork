@@ -1,15 +1,24 @@
 /* Verifies every function name referenced from an inline on*= attribute
- * (in index.html AND in HTML template strings inside app.js) is actually
- * declared as a top-level global in api.js or app.js.
+ * (in index.html AND in HTML template strings inside the client scripts) is
+ * actually declared as a top-level global somewhere under src/client/.
  * With classic <script> tags this is the app's real public surface.
+ *
+ * app.js/api.js were split into per-feature files under src/client/ (see
+ * docs/code-organization.html). This tool now sources the same list
+ * tools/client-scripts.js derives from index.html's <script> tags, so it
+ * keeps covering exactly what ships regardless of how the client is split.
  */
 const fs = require('fs'), path = require('path');
 const ROOT = process.argv[2] || require('path').join(__dirname, '..');
 const read = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
+const { scripts } = require('./client-scripts');
 
 const html = read('index.html');
-const appjs = read('app.js');
-const apijs = read('api.js');
+const clientFiles = scripts(path.join(ROOT, 'index.html'));
+const apiClientFile = clientFiles.find(f => f.endsWith('api-client.js'));
+const appFiles = clientFiles.filter(f => f !== apiClientFile);
+const apijs = apiClientFile ? read(apiClientFile) : '';
+const appjs = appFiles.map(read).join('\n');
 
 // 1. Collect referenced handler names from on*= attributes in both sources.
 const refs = new Map(); // name -> Set(source)

@@ -18,7 +18,7 @@
  * NOTE: this closes the hole for the Express server (local, and any non-Vercel
  * host). On Vercel the CDN serves static files itself, before the function is
  * invoked, so it is NOT covered by this middleware — see
- * docs/CODE_ORGANIZATION.md, "Vercel static exposure", for that fix.
+ * docs/code-organization.html, "Vercel static exposure", for that fix.
  */
 const express = require('express');
 const { PUBLIC_DIR } = require('../config/paths');
@@ -30,10 +30,6 @@ const PUBLIC_FILES = new Set([
   '/styles.css',
   '/manifest.json',
   '/favicon.ico',
-  // Client scripts still living at the repository root. These move under
-  // /src/client/ when app.js is split; drop them from this list then.
-  '/app.js',
-  '/api.js',
 ]);
 
 // Directory prefixes whose contents are public.

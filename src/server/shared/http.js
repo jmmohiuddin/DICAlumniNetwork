@@ -7,7 +7,7 @@
  *
  * NOTE: returning err.message leaks internal detail (SQL text, constraint
  * names) on a 500. That is pre-existing behaviour and is preserved here rather
- * than silently changed; see docs/CODE_ORGANIZATION.md for the recommended fix.
+ * than silently changed; see docs/code-organization.html for the recommended fix.
  */
 
 /** Runs an async route body and turns a rejection into a 500 JSON error. */
