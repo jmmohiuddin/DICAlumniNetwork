@@ -1,4 +1,22 @@
 {
+  "name": "dic-alumni-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Daffodil International College (DIC) Alumni Networking & Management Platform",
+  "main": "server.js",
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "check:syntax": "node tools/check-syntax.js",
+    "check:handlers": "node tools/check-inline-handlers.js",
+    "routes": "node tools/dump-routes.js",
+    "contract": "node tools/api-contract-snapshot.js",
+    "verify": "npm run check:syntax && npm run check:handlers && npm run routes",
+    "test:e2e": "node test_e2e_crud.js"
+  },
   "dependencies": {
     "body-parser": "^2.3.0",
     "cors": "^2.8.6",

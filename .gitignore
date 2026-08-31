@@ -9,3 +9,10 @@ node_modules/
 *.csv
 !sample_alumni_import_template.csv
 _tmp_*
+
+# Tool / scan output directories
+.playwright-mcp/
+CLAUDE-SECURITY-*/
+
+# Baseline artifacts produced by tools/ (regenerate with npm run contract)
+tools/*.baseline.txt
