@@ -12,10 +12,11 @@
     "dev": "node --watch server.js",
     "check:syntax": "node tools/check-syntax.js",
     "check:handlers": "node tools/check-inline-handlers.js",
+    "check:client": "node tools/smoke-load-client.js",
     "routes": "node tools/dump-routes.js",
     "contract": "node tools/api-contract-snapshot.js",
-    "verify": "npm run check:syntax && npm run check:handlers && npm run routes",
-    "test:e2e": "node test_e2e_crud.js"
+    "verify": "npm run check:syntax && npm run check:client && npm run check:handlers && npm run routes",
+    "test:e2e": "node tests/e2e-crud.js"
   },
   "dependencies": {
     "body-parser": "^2.3.0",

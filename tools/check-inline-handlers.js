@@ -61,16 +61,48 @@ if (missing.length) {
   for (const [n, srcs] of missing.sort()) console.log(`  ${n.padEnd(38)} referenced from: ${[...srcs].join(', ')}`);
 }
 
-// 4. Duplicate top-level function definitions (later silently wins).
+// 4. Functions defined more than once. Two different things look alike here:
+//
+//    (a) a DECORATOR WRAPPER — `const _origX = X;` captures the previous
+//        implementation and the replacement delegates to it. Both definitions
+//        are live and the order is load-bearing. Deleting the first one, or
+//        hoisting the second over it, makes the wrapper call itself.
+//    (b) a genuine DUPLICATE — the later definition silently wins and the
+//        earlier one is unreachable.
+//
+// Only (b) is a finding. Wrappers are reported separately so they are not
+// mistaken for dead code.
+const wrapped = new Set();
+let wm; const WRAP = /^const\s+_orig[A-Za-z_$][\w$]*\s*=\s*([A-Za-z_$][\w$]*)\s*;/gm;
+while ((wm = WRAP.exec(appjs))) wrapped.add(wm[1]);
+
 const counts = new Map();
 let d; const FN = /^(?:async\s+)?function\s+([A-Za-z_$][\w$]*)/gm;
 while ((d = FN.exec(appjs))) counts.set(d[1], (counts.get(d[1]) || 0) + 1);
-const dupes = [...counts.entries()].filter(([, c]) => c > 1);
+// A reassignment counts as a definition too.
+let rm; const REASSIGN = /^([A-Za-z_$][\w$]*)\s*=\s*(?:async\s+)?function\b/gm;
+while ((rm = REASSIGN.exec(appjs))) counts.set(rm[1], (counts.get(rm[1]) || 0) + 1);
+
+const lineOf = (n) => {
+  const out = [];
+  appjs.split('\n').forEach((L, i) => {
+    if (new RegExp(`^(async )?function ${n}\\s*\\(`).test(L) ||
+        new RegExp(`^${n}\\s*=\\s*(async )?function\\b`).test(L)) out.push(i + 1);
+  });
+  return out;
+};
+
+const multi = [...counts.entries()].filter(([, c]) => c > 1);
+const wrappers = multi.filter(([n]) => wrapped.has(n));
+const dupes = multi.filter(([n]) => !wrapped.has(n));
+
 console.log(`\ntop-level functions in app.js   : ${counts.size} unique`);
+console.log(`decorator wrappers (intentional) : ${wrappers.length}`);
+for (const [n] of wrappers.sort()) {
+  console.log(`  ${n.padEnd(38)} lines ${lineOf(n).join(', ')}   [_orig capture — do NOT delete the first]`);
+}
 console.log(`DUPLICATE definitions            : ${dupes.length}`);
 for (const [n, c] of dupes.sort()) {
-  const lines = [];
-  appjs.split('\n').forEach((L, i) => { if (new RegExp(`^(async )?function ${n}\\s*\\(`).test(L)) lines.push(i + 1); });
-  console.log(`  ${n.padEnd(38)} x${c}  lines ${lines.join(', ')}`);
+  console.log(`  ${n.padEnd(38)} x${c}  lines ${lineOf(n).join(', ')}`);
 }
-process.exit(missing.length ? 1 : 0);
+process.exit(missing.length || dupes.length ? 1 : 0);

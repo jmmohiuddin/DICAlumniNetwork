@@ -2780,7 +2780,6 @@ function switchAdmin(section, btn) {
 // ─── MISC ACTIONS ────────────────────────────────────────────
 
 
-function showEditProfile() { showToast('✏ Profile editor loading…'); }
 
 
 
@@ -4553,50 +4552,7 @@ function switchProfileHubSection(sectionTag, btn) {
 }
 
 // ─── 7. FULL PROFILE EDITOR MODAL ───────────────────────────
-function showEditProfileV2() {
-  const p = FULL_USER_PROFILE;
-  openModal(`
-    <div class="onboarding-header">
-      <div class="onboarding-title">✎ Edit Comprehensive Profile</div>
-      <div class="onboarding-sub">Update your 10-section profile details and field privacy settings</div>
-    </div>
 
-    <form onsubmit="handleSaveProfileV2(event)" style="display:flex;flex-direction:column;gap:14px;margin-top:14px;max-height:60vh;overflow-y:auto;padding-right:6px">
-      <div class="input-group"><label class="input-label">Full Name</label><input type="text" id="edit-fullname" class="form-input" value="${p.fullName}" required /></div>
-      <div class="input-group"><label class="input-label">Current Company &amp; Job Title</label><input type="text" id="edit-company" class="form-input" value="${p.currentCompany}" required /></div>
-      <div class="input-group"><label class="input-label">Technical Skills (Comma separated)</label><input type="text" id="edit-skills" class="form-input" value="${p.skills}" required /></div>
-      <div class="input-group"><label class="input-label">LinkedIn Profile URL</label><input type="url" id="edit-linkedin" class="form-input" value="${p.linkedin}" /></div>
-      <div class="input-group"><label class="input-label">Mobile Number Privacy Level</label>
-        <select class="form-select" id="edit-priv-mobile">
-          <option value="public" ${PROFILE_PRIVACY_SETTINGS.mobile === 'public' ? 'selected' : ''}>🌐 Public (Everyone)</option>
-          <option value="alumni" ${PROFILE_PRIVACY_SETTINGS.mobile === 'alumni' ? 'selected' : ''}>👥 DIC Alumni Only</option>
-          <option value="private" ${PROFILE_PRIVACY_SETTINGS.mobile === 'private' ? 'selected' : ''}>🔒 Private (Only Me)</option>
-        </select>
-      </div>
-      <div class="input-group"><label class="input-label">Biography</label><textarea id="edit-bio" class="form-input" rows="3">${p.bio}</textarea></div>
-      <button type="submit" class="btn btn-primary btn-full mt-16">💾 Save Profile &amp; Update ID Card</button>
-    </form>
-  `);
-}
-
-function handleSaveProfileV2(e) {
-  e.preventDefault();
-  FULL_USER_PROFILE.fullName = document.getElementById('edit-fullname').value.trim();
-  FULL_USER_PROFILE.currentCompany = document.getElementById('edit-company').value.trim();
-  FULL_USER_PROFILE.skills = document.getElementById('edit-skills').value.trim();
-  FULL_USER_PROFILE.linkedin = document.getElementById('edit-linkedin').value.trim();
-  FULL_USER_PROFILE.bio = document.getElementById('edit-bio').value.trim();
-  PROFILE_PRIVACY_SETTINGS.mobile = document.getElementById('edit-priv-mobile').value;
-
-  closeModal();
-  render10SectionProfile();
-
-  // Update Digital ID & topbar name
-  const nameEl = document.getElementById('id-card-name');
-  if (nameEl) nameEl.textContent = FULL_USER_PROFILE.fullName;
-  
-  showToast('✅ User Profile & Field Privacy Settings Saved!');
-}
 
 // ─── 8. AUDIENCE SEGMENTATION ENGINE (ADMIN) ─────────────────
 function renderSegmentationPanel() {
