@@ -47,7 +47,32 @@ function renderSidebarNav(role) {
 }
 
 // ─── NAVIGATION ─────────────────────────────────────────────
+/* Pages the signed-in role may not open, whatever it types into the console.
+   showPage() used to be a pure DOM toggle: the sidebar link was role-gated, but
+   showPage('admin') rendered the whole DIC Admin Control Center shell for an
+   alumnus — the tab bar naming Bulk Import, RBAC, Audit Log, Compliance Vault
+   and the rest. Every panel inside was empty because the API refuses the token,
+   so nothing leaked but the structure; it still had no business being reachable.
+
+   This is a usability guard, not the security boundary. The boundary is the
+   server, which refuses all 20 admin endpoints for a non-staff token. */
+const PAGE_ROLES = {
+  admin: ['univ_admin', 'super_admin'],
+  analytics: ['dept_admin', 'univ_admin', 'super_admin'],
+};
+
+function canOpenPage(page) {
+  const allowed = PAGE_ROLES[page];
+  if (!allowed) return true;
+  return !!state.currentUser && allowed.includes(state.currentUser.role);
+}
+
 function showPage(page) {
+  if (!canOpenPage(page)) {
+    if (typeof showToast === 'function') showToast('⚠ You do not have access to that page.');
+    return;
+  }
+
   document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   const target = document.getElementById('page-' + page);

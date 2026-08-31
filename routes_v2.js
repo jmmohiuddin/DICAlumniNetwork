@@ -39,7 +39,13 @@ function decryptField({ ciphertext, iv, auth_tag }) {
 // ─── IMMUTABLE AUDIT TRAIL ───
 // Each entry is chained to the previous one's hash, so a deleted or edited row
 // breaks verification. audit_logs had a table but nothing ever wrote to it.
-async function writeAudit(action, meta, icon = '🛡') {
+/* The actor used to be recorded only inside the free-text meta string ("by user
+   5"), which cannot be queried, joined or filtered. An optional fifth argument
+   now carries { actorId, targetType, targetId, ip } into first-class columns.
+   Existing call sites pass three arguments and keep working; their entries
+   simply leave the new columns NULL. The hash chain is unchanged — it still
+   covers action + meta + timestamp, so no historical entry is invalidated. */
+async function writeAudit(action, meta, icon = '🛡', ctx = {}) {
   try {
     const prev = await db.query('SELECT hash FROM audit_logs ORDER BY id DESC LIMIT 1');
     const prevHash = prev.rows[0]?.hash || 'GENESIS';
@@ -47,8 +53,10 @@ async function writeAudit(action, meta, icon = '🛡') {
       .update(prevHash + action + meta + new Date().toISOString())
       .digest('hex').slice(0, 16);
     await db.query(
-      'INSERT INTO audit_logs (icon, action, meta, hash) VALUES ($1, $2, $3, $4)',
-      [icon, action, meta, `0x${hash.toUpperCase()}`]
+      `INSERT INTO audit_logs (icon, action, meta, hash, actor_id, target_type, target_id, ip)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [icon, action, meta, `0x${hash.toUpperCase()}`,
+       ctx.actorId ?? null, ctx.targetType ?? null, ctx.targetId ?? null, ctx.ip ?? null]
     );
   } catch (e) {
     console.warn('audit write failed:', e.message);

@@ -102,9 +102,19 @@ async function attachUser(req, res, next) {
   if (!payload) { req.user = null; return next(); }
 
   try {
-    const r = await db.query('SELECT id, role FROM users WHERE id = $1', [payload.uid]);
+    const r = await db.query('SELECT id, role, status FROM users WHERE id = $1', [payload.uid]);
     // Account deleted since the token was issued — the token is now inert.
     if (r.rows.length === 0) { req.user = null; return next(); }
+    /* Suspension takes effect on the next request, not when the token expires.
+       Sessions are stateless bearer tokens with a 12-hour life, so without this
+       check suspending an administrator would leave them working for the rest
+       of the day. Reading status here costs nothing: the row is already being
+       fetched for the role. */
+    if (r.rows[0].status === 'suspended') {
+      req.user = null;
+      req.suspended = true;
+      return next();
+    }
     req.user = { ...payload, role: r.rows[0].role };
   } catch {
     // The database is unreachable. Fail closed rather than fall back to the
@@ -115,13 +125,19 @@ async function attachUser(req, res, next) {
 }
 app.use(attachUser);
 
+// A suspended account gets a distinct message so the holder knows to ask an
+// administrator rather than retrying their password.
+const SUSPENDED = { error: 'This account is suspended. Contact an administrator.' };
+
 function requireAuth(req, res, next) {
+  if (req.suspended) return res.status(403).json(SUSPENDED);
   if (!req.user) return res.status(401).json({ error: 'Authentication required' });
   next();
 }
 
 function requireRole(...roles) {
   return (req, res, next) => {
+    if (req.suspended) return res.status(403).json(SUSPENDED);
     if (!req.user) return res.status(401).json({ error: 'Authentication required' });
     if (!roles.includes(req.user.role)) {
       return res.status(403).json({ error: 'Insufficient permissions for this action' });
@@ -130,8 +146,23 @@ function requireRole(...roles) {
   };
 }
 
+/* Three authorisation tiers, widest last. These constants are the only place
+   permissions are defined: every guard spreads one of them, and
+   GET /api/stats/rbac derives the displayed matrix from them, so the screen
+   cannot disagree with the middleware.
+
+   SUPER_ONLY separates platform authority from institutional authority. Before
+   this, super_admin and univ_admin were interchangeable everywhere except
+   /api/seed-db, so a college administrator could provision other
+   administrators. Account provisioning and destructive platform operations are
+   now super_admin only. */
+const SUPER_ONLY = ['super_admin'];
 const ADMIN_ROLES = ['super_admin', 'univ_admin'];
 const MODERATOR_ROLES = ['super_admin', 'univ_admin', 'dept_admin', 'moderator'];
+
+// Roles that belong to the institutional admin portal rather than the alumni
+// site. Used by the portal gate and by the administrator directory.
+const STAFF_ROLES = MODERATOR_ROLES;
 
 // Initial credential for bulk-imported accounts. This used to be the constant
 // '12345678', which was also the label of the only option in the wizard's
@@ -152,10 +183,16 @@ function generateImportPassword() {
 // routes_v2 owns the hash-chained audit writer but is mounted after these
 // routes are declared, so calls are routed through this late-bound shim.
 let _writeAudit = null;
-async function writeAuditSafe(action, meta, icon) {
+async function writeAuditSafe(action, meta, icon, ctx) {
   if (typeof _writeAudit === 'function') {
-    try { await _writeAudit(action, meta, icon); } catch { /* audit must never break a request */ }
+    try { await _writeAudit(action, meta, icon, ctx); } catch { /* audit must never break a request */ }
   }
+}
+
+// Shorthand for the common case: "this signed-in user did something to that
+// record", with the client address, so an administrator action is attributable.
+function auditCtx(req, targetType, targetId) {
+  return { actorId: req.user?.uid ?? null, targetType, targetId, ip: clientIp(req) };
 }
 
 function publicUser(row) {
@@ -166,9 +203,18 @@ function publicUser(row) {
     initials: row.initials,
     role: row.role,
     roleLabel: row.role_label,
+    // Display title, deliberately separate from role: nothing authorises on it.
+    designation: row.designation || null,
     dept: row.department,
+    phone: row.phone || null,
+    photoUrl: row.photo_url || null,
+    status: row.status || 'active',
     icon: row.icon,
-    verified: row.is_verified
+    verified: row.is_verified,
+    // Staff sign in at the admin portal; alumni at the main site. The client
+    // uses this to refuse the wrong portal politely rather than showing an
+    // empty shell.
+    isStaff: STAFF_ROLES.includes(row.role)
   };
 }
 
@@ -189,9 +235,23 @@ app.get('/api/health', async (req, res) => {
 });
 
 // Destructive: re-runs schema + seed. Super admin only.
-app.post('/api/seed-db', requireRole('super_admin'), async (req, res) => {
+/* Destructive: re-runs the schema and re-seeds. Super admin only, and refused
+   outright in production. A single mistaken click here would replace live
+   alumni records with seed data, and no role is a good enough guard for that on
+   a running deployment — so the environment decides, not the caller. Set
+   ALLOW_DB_RESEED=true to override it deliberately on a staging box. */
+app.post('/api/seed-db', requireRole(...SUPER_ONLY), async (req, res) => {
+  const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
+  if (isProduction && process.env.ALLOW_DB_RESEED !== 'true') {
+    await writeAuditSafe('Database Re-seed Refused',
+      `blocked in production; requested by user ${req.user.uid}`, '🛑');
+    return res.status(403).json({
+      error: 'Re-seeding is disabled in production. Set ALLOW_DB_RESEED=true to override.'
+    });
+  }
   try {
     const result = await db.initDbSchemaAndSeed();
+    await writeAuditSafe('Database Re-seeded', `by user ${req.user.uid}`, '⚠');
     res.json(result);
   } catch (err) {
     res.status(500).json({ status: 'error', message: err.message });
@@ -308,16 +368,48 @@ app.post('/api/auth/login', async (req, res) => {
     // returned a super_admin session for any unrecognised address.
     if (result.rows.length === 0 || !verifyPassword(password, result.rows[0].password_hash)) {
       loginRecordFailure(req, email);
+      /* The in-process limiter above is lost on restart and, on a serverless
+         deployment, is per-instance. Counting failures on the row as well gives
+         a lock that survives both. Only for an account that exists — counting
+         against a missing address would leak which addresses are real. */
+      if (result.rows.length) {
+        await db.query(`
+          UPDATE users
+             SET failed_login_count = failed_login_count + 1,
+                 locked_until = CASE WHEN failed_login_count + 1 >= $2
+                                     THEN NOW() + INTERVAL '15 minutes' ELSE locked_until END
+           WHERE id = $1`, [result.rows[0].id, RL_MAX_PER_ACCOUNT]);
+      }
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
     loginRecordSuccess(req, email);
     const row = result.rows[0];
 
+    // A suspended account cannot sign in at all. Checking here as well as in
+    // attachUser() means the holder gets a clear message instead of a session
+    // that fails on its first real request.
+    if (row.status === 'suspended') {
+      return res.status(403).json({ error: 'This account is suspended. Contact an administrator.' });
+    }
+    if (row.locked_until && new Date(row.locked_until) > new Date()) {
+      return res.status(429).json({
+        error: 'This account is temporarily locked. Please try again later.',
+        retryAfter: Math.ceil((new Date(row.locked_until) - Date.now()) / 1000)
+      });
+    }
+
     // Transparently upgrade legacy plaintext rows on first successful login.
     if (!row.password_hash.startsWith('scrypt$')) {
       await db.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hashPassword(password), row.id]);
     }
+
+    // Nothing recorded a sign-in against the account before; the administrator
+    // list needs it, and a stale last_login_at is how a dormant account is
+    // spotted. The durable failure counters reset on the way through.
+    await db.query(
+      'UPDATE users SET last_login_at = NOW(), failed_login_count = 0, locked_until = NULL WHERE id = $1',
+      [row.id]);
 
     const user = publicUser(row);
     const token = signToken({ uid: user.id, role: user.role, exp: Date.now() + SESSION_TTL_MS });
@@ -413,7 +505,9 @@ app.post('/api/auth/change-password', requireAuth, async (req, res) => {
       return res.status(401).json({ error: 'Current password is incorrect' });
     }
     await db.query(
-      'UPDATE users SET password_hash = $1, must_change_password = FALSE WHERE id = $2',
+      `UPDATE users SET password_hash = $1, must_change_password = FALSE,
+                        last_password_changed_at = NOW(), updated_at = NOW()
+        WHERE id = $2`,
       [hashPassword(newPassword), req.user.uid]
     );
     await writeAuditSafe('Password Changed', `user ${req.user.uid}`, '🔑');
@@ -1643,6 +1737,13 @@ require('./routes_events')(app, { ...guards, writeAudit: v2.writeAudit });
 // Event "Advanced" modules: budget, sponsors, vendors, marketing, meetings,
 // risks, committees, volunteers, logistics, timeline. Staff-only.
 require('./routes_planner')(app, { ...guards, writeAudit: v2.writeAudit });
+
+// Administrator account provisioning and lifecycle. Super admin only; these are
+// ordinary users rows, not a second identity system.
+require('./routes_admin_users')(app, {
+  ...guards, SUPER_ONLY, STAFF_ROLES,
+  hashPassword, writeAudit: v2.writeAudit, auditCtx, publicUser
+});
 
 // PDPA 2026 / CA 2023 compliance: consent, encrypted vault, DSAR.
 require('./routes_compliance')(app, {

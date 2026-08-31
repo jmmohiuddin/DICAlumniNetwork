@@ -1353,7 +1353,13 @@ module.exports = function mountEvents(app, guards) {
      (on staff login) and is idempotent for a given day.
      ══════════════════════════════════════════════════════════ */
 
-  app.post('/api/events/tasks/reminder-sweep', requireAuth, (req, res) => ok(res, async () => {
+  /* Staff only. This was requireAuth, so any signed-in alumnus could advance
+     every event's run status platform-wide and fan out overdue-task
+     notifications. Nothing about the sweep is per-user: it is a maintenance
+     pass over the whole events table, and only the people who manage events
+     have any reason to trigger it. The client already calls it exclusively
+     from evRunMaintenanceSweep(), which is itself gated on evCanManage(). */
+  app.post('/api/events/tasks/reminder-sweep', requireRole(...MODERATOR_ROLES), (req, res) => ok(res, async () => {
     /* Advance event run status from the calendar. Nothing did this before, so
        an event stayed 'upcoming' for ever and the Past filter was always empty. */
     const advanced = await db.query(`
