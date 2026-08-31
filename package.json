@@ -17,6 +17,7 @@
     "routes": "node tools/dump-routes.js",
     "contract": "node tools/api-contract-snapshot.js",
     "verify": "npm run check:syntax && npm run check:client && npm run check:handlers && npm run routes",
+    "set-password": "node scripts/set-password.js",
     "test:e2e": "node tests/e2e-crud.js"
   },
   "dependencies": {
