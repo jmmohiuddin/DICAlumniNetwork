@@ -1141,7 +1141,7 @@ const guards = { requireAuth, requireRole, ADMIN_ROLES, MODERATOR_ROLES };
 
 // v2: events, ticketing, jobs, campaigns/donations, custom fields,
 // mentorship, connections, polls, broadcasts, audit log.
-const v2 = require('./src/server/modules/_routes_v2')(app, guards);
+const v2 = require('./src/server/modules')(app, guards);
 _writeAudit = v2.writeAudit;   // late-bind the audit writer declared above
 
 // Event Management Planner (Phase 6).

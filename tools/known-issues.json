@@ -1,0 +1,12 @@
+{
+  "_comment": "Pre-existing defects found during the code-organization pass. They are recorded, not fixed, because fixing them changes product behaviour and that is a separate decision. The verify gate fails on anything NOT listed here, so this file must shrink over time — never grow to silence a new break.",
+
+  "unresolvedInlineHandlers": [
+    {
+      "name": "triggerResumeUpload",
+      "referencedFrom": "index.html:644",
+      "problem": "The 'Upload Resume (PDF)' zone on the Jobs page calls a function that is defined nowhere, so clicking it throws a ReferenceError and nothing happens.",
+      "why_not_fixed": "There is no resume-upload endpoint and no file storage anywhere in the backend, and the job-application flow collects a resume URL instead (app.js:5205). Implementing upload would be a new feature; deleting the zone removes a user-visible affordance. Both are product decisions, not refactoring."
+    }
+  ]
+}

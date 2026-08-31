@@ -50,14 +50,28 @@ const BUILTIN = new Set(['alert','confirm','prompt','fetch','setTimeout','setInt
   'parseInt','parseFloat','encodeURIComponent','decodeURIComponent','JSON','Object','Array','String','Number','Boolean',
   'Date','Math','console','event','this','require','Number','isNaN','String','open','print','focus','blur','scrollTo']);
 
-const missing = [...refs.entries()].filter(([n]) => !declared.has(n) && !BUILTIN.has(n));
+// Defects that predate this tooling are recorded in known-issues.json so the
+// gate still fails loudly on anything NEW while not blocking on a bug whose
+// fix is a product decision. That file should only ever shrink.
+const known = new Set(
+  require('./known-issues.json').unresolvedInlineHandlers.map(i => i.name)
+);
+
+const unresolved = [...refs.entries()].filter(([n]) => !declared.has(n) && !BUILTIN.has(n));
+const missing = unresolved.filter(([n]) => !known.has(n));
+const accepted = unresolved.filter(([n]) => known.has(n));
 const resolved = [...refs.keys()].filter(n => declared.has(n));
 
 console.log(`inline handler names referenced : ${refs.size}`);
 console.log(`  resolved to a global          : ${resolved.length}`);
-console.log(`  UNRESOLVED (broken UI)        : ${missing.length}`);
+console.log(`  known pre-existing breaks     : ${accepted.length}`);
+console.log(`  NEW UNRESOLVED (fails build)  : ${missing.length}`);
+if (accepted.length) {
+  console.log('\nknown pre-existing (see tools/known-issues.json):');
+  for (const [n, srcs] of accepted.sort()) console.log(`  ${n.padEnd(38)} ${[...srcs].join(', ')}`);
+}
 if (missing.length) {
-  console.log('\nUNRESOLVED HANDLERS:');
+  console.log('\nNEW UNRESOLVED HANDLERS — these will throw at runtime:');
   for (const [n, srcs] of missing.sort()) console.log(`  ${n.padEnd(38)} referenced from: ${[...srcs].join(', ')}`);
 }
 
