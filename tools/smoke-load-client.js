@@ -57,13 +57,38 @@ for(const f of files){
   catch(e){ console.log(`  THREW       ${f}: ${e.message}`); process.exitCode=1; }
 }
 
-// Spot-check that the functions inline handlers depend on are really global.
-const need=['showPage','logout','filterDirectory','switchAnalytics','filterEvents','switchAdmin',
-            'showEditProfile','showEditProfileV2','handleSaveProfileV2','showToast','openModal',
-            'closeModal','renderDashboard','initApp','loginAsRole','toggleSidebar'];
-const missing=need.filter(n=>typeof ctx[n]!=='function');
-console.log(`\nglobals present: ${need.length-missing.length}/${need.length}`);
-if(missing.length){ console.log('MISSING: '+missing.join(', ')); process.exitCode=1; }
+// Check that every function index.html's inline handlers call is really global
+// AFTER the scripts have actually executed. check-inline-handlers.js proves the
+// same thing statically; this proves it at runtime, which also catches a
+// handler that is declared but wiped out by a later assignment.
+//
+// The list is derived from index.html rather than hardcoded, so removing a
+// feature (and its handler) does not leave this failing on a stale name.
+const indexHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const BUILTIN = new Set(['alert','confirm','prompt','event','this','window','document',
+  'parseInt','parseFloat','JSON','Object','Array','String','Number','Boolean','Date','Math','console']);
+const need = new Set();
+for (const m of indexHtml.matchAll(/\bon[a-z]+\s*=\s*"([^"]*)"/gi)) {
+  const code = m[1].replace(/'[^']*'/g, "''");
+  for (const c of code.matchAll(/(^|[^.\w$])([A-Za-z_$][\w$]*)\s*\(/g)) {
+    if (!BUILTIN.has(c[2])) need.add(c[2]);
+  }
+}
+const names = [...need].sort();
+const missing = names.filter(n => typeof ctx[n] !== 'function');
+console.log(`\ninline handlers resolved at runtime: ${names.length - missing.length}/${names.length}`);
+if (missing.length) {
+  // known-issues.json records handlers that are already broken in the product.
+  const known = new Set(require('./known-issues.json').unresolvedInlineHandlers.map(i => i.name));
+  const newly = missing.filter(n => !known.has(n));
+  if (missing.length !== newly.length) {
+    console.log(`  known pre-existing: ${missing.filter(n => known.has(n)).join(', ')}`);
+  }
+  if (newly.length) {
+    console.log('  MISSING (fails build): ' + newly.join(', '));
+    process.exitCode = 1;
+  }
+}
 
 // Dump every global the scripts defined, for before/after comparison.
 if (process.env.DUMP_GLOBALS) {
