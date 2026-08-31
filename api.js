@@ -411,6 +411,8 @@ Object.assign(API, {
   getStatsMap:          ()          => apiRequest('GET',    '/api/stats/map'),
   getRbacMatrix:        ()          => apiRequest('GET',    '/api/stats/rbac'),
   getVerificationQueue: ()          => apiRequest('GET',    '/api/verification-queue'),
+  getSegmentOptions:    ()          => apiRequest('GET',    '/api/segment/options'),
+  getSegmentCount:      (q)         => apiRequest('GET',    '/api/segment/count?' + new URLSearchParams(q)),
   verifyUser:        (id, v = true) => apiRequest('PUT',    '/api/users/' + id + '/verify', { verified: v }),
   getSyncMutations:     ()          => apiRequest('GET',    '/api/sync-mutations'),
   getJobReferrals:      ()          => apiRequest('GET',    '/api/job-referrals'),

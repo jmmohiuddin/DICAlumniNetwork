@@ -290,8 +290,11 @@
       <div class="page hidden" id="page-mentorship">
         <div class="page-header">
           <div>
-            <h1 class="page-title">AI Mentorship Hub</h1>
-            <p class="page-subtitle">Weighted 6-criteria AI matching engine</p>
+            <!-- "AI Mentorship Hub / Weighted 6-criteria AI matching engine".
+                 There is no model and no engine: suggestions come from a SQL
+                 comparison of four profile fields. -->
+            <h1 class="page-title">Mentorship Hub</h1>
+            <p class="page-subtitle">Mentors suggested by shared profile attributes</p>
           </div>
           <button class="btn btn-primary" onclick="showMentorModal()">+ Request a Mentor</button>
         </div>
@@ -301,77 +304,53 @@
             <div class="glass-card">
               <div class="card-header">
                 <h3 class="card-title">My Active Connections</h3>
-                <span class="badge-count">4</span>
+                <!-- read a literal 4 against a mentorships table holding no rows -->
+                <span class="badge-count" id="mentorship-active-count">&mdash;</span>
               </div>
               <div class="mentorship-list" id="mentorship-list"></div>
             </div>
             <div class="glass-card mt-16">
               <div class="card-header">
                 <h3 class="card-title">Pending Requests</h3>
-                <span class="card-badge amber">3 pending</span>
+                <!-- read a literal "3 pending" -->
+                <span class="card-badge amber" id="mentorship-pending-count">&mdash;</span>
               </div>
               <div id="pending-requests"></div>
             </div>
-            <!-- AI Matching Criteria -->
+            <!-- A "ConnectAI Matching Criteria - 6 Dimensions" card sat here with
+                 six weighted bars: Industry 25%, Skill Gap 20%, Geographic 15%,
+                 Shared Campus 15%, Language Preference 15%, Calendar Availability
+                 10%. Four described real comparisons the suggestion query makes.
+                 The other two did not: alumni_profiles has no language column at
+                 all, and "calendar availability" scored can_mentor, which every
+                 suggested mentor has by definition. Only the comparisons that
+                 actually run are listed now. -->
             <div class="glass-card mt-16">
               <div class="card-header">
-                <h3 class="card-title">ConnectAI Matching Criteria</h3>
-                <span class="card-badge indigo">6 Dimensions</span>
+                <h3 class="card-title">How mentors are suggested</h3>
+                <span class="card-badge indigo">4 comparisons</span>
               </div>
-              <div class="matching-criteria">
-                <div class="criterion-item">
-                  <div class="criterion-label">Industry Domain</div>
-                  <div class="criterion-bar-track"><div class="criterion-bar" style="width:25%">25%</div></div>
-                </div>
-                <div class="criterion-item">
-                  <div class="criterion-label">Skill Gap Analysis</div>
-                  <div class="criterion-bar-track"><div class="criterion-bar" style="width:20%">20%</div></div>
-                </div>
-                <div class="criterion-item">
-                  <div class="criterion-label">Geographic Proximity</div>
-                  <div class="criterion-bar-track"><div class="criterion-bar" style="width:15%">15%</div></div>
-                </div>
-                <div class="criterion-item">
-                  <div class="criterion-label">Shared Campus</div>
-                  <div class="criterion-bar-track"><div class="criterion-bar" style="width:15%">15%</div></div>
-                </div>
-                <div class="criterion-item">
-                  <div class="criterion-label">Language Preference</div>
-                  <div class="criterion-bar-track"><div class="criterion-bar" style="width:15%">15%</div></div>
-                </div>
-                <div class="criterion-item">
-                  <div class="criterion-label">Calendar Availability</div>
-                  <div class="criterion-bar-track"><div class="criterion-bar" style="width:10%">10%</div></div>
-                </div>
-              </div>
+              <div class="matching-criteria" id="matching-criteria"></div>
             </div>
           </div>
           <!-- Right: Suggested Mentors -->
           <div class="mentorship-sidebar">
             <div class="glass-card">
               <div class="card-header">
-                <h3 class="card-title">AI-Suggested Mentors</h3>
-                <span class="card-badge teal">Personalized</span>
+                <h3 class="card-title">Suggested Mentors</h3>
+                <span class="card-badge teal">By shared profile</span>
               </div>
               <div id="suggested-mentors"></div>
             </div>
+            <!-- A Quota Tracker sat here showing "2/5 Mentee Slots" on a filled
+                 progress ring with "3 available this month". No quota, slot or
+                 limit is stored anywhere and nothing enforces one, so all three
+                 numbers were invented. Replaced by the caller's real counts. -->
             <div class="glass-card mt-16">
               <div class="card-header">
-                <h3 class="card-title">Quota Tracker</h3>
+                <h3 class="card-title">My mentorship activity</h3>
               </div>
-              <div class="quota-display">
-                <div class="quota-ring">
-                  <svg width="80" height="80" viewBox="0 0 80 80">
-                    <circle cx="40" cy="40" r="32" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8"/>
-                    <circle cx="40" cy="40" r="32" fill="none" stroke="#6C63FF" stroke-width="8" stroke-dasharray="201" stroke-dashoffset="80" stroke-linecap="round" transform="rotate(-90 40 40)"/>
-                  </svg>
-                  <div class="quota-text">2/5</div>
-                </div>
-                <div class="quota-info">
-                  <div class="quota-label">Mentee Slots</div>
-                  <div class="quota-sub">3 available this month</div>
-                </div>
-              </div>
+              <div id="mentorship-activity"></div>
             </div>
           </div>
         </div>

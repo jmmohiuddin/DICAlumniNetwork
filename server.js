@@ -542,6 +542,11 @@ app.get('/api/alumni/:id', requireAuth, async (req, res) => {
       company: row.current_company,
       jobTitle: row.job_title,
       location: [row.city, row.country].filter(Boolean).join(', ') || null,
+      // city and industry are returned alongside the joined location string so
+      // the profile view can say which attributes it shares with the viewer.
+      // location already exposes the city, so neither adds anything new.
+      city: row.city,
+      industry: row.industry,
       bio: row.bio,
       skills: row.skills ? row.skills.split(',').map(s => s.trim()).filter(Boolean) : [],
       mobile: canSee('mobile') ? row.mobile_number : null,
@@ -1504,6 +1509,81 @@ app.get('/api/job-referrals', requireAuth, async (req, res) => {
       LIMIT 100
     `, [req.user.uid, isStaff]);
     res.json(rows.rows);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* Audience segmentation, staff only.
+
+   The panel this serves used to be entirely invented. Its match count started
+   at a literal 3,420 and every filter change called updateSegmentCount(), whose
+   whole body was Math.floor(Math.random() * 2000) + 1500 — a fresh random
+   number between 1,500 and 3,500 each time, presented as "Alumni matched"
+   beside a badge reading "Real-Time Vector Filtering". The filter options were
+   invented too: a batch range of 2000-2026 over profiles that run 2014-2021,
+   and three industry domains that did not match the values in the column.
+
+   GET /api/segment/options returns the values that exist; GET /api/segment/count
+   counts the profiles a filter combination actually selects. */
+app.get('/api/segment/options', requireRole(...MODERATOR_ROLES), async (req, res) => {
+  try {
+    const [batches, depts, industries, span] = await Promise.all([
+      db.query(`SELECT DISTINCT batch FROM alumni_profiles WHERE batch IS NOT NULL ORDER BY batch`),
+      db.query(`SELECT department, COUNT(*)::int AS n FROM alumni_profiles
+                WHERE department IS NOT NULL AND department <> '' GROUP BY department ORDER BY n DESC, department`),
+      db.query(`SELECT industry, COUNT(*)::int AS n FROM alumni_profiles
+                WHERE industry IS NOT NULL AND industry <> '' GROUP BY industry ORDER BY n DESC, industry`),
+      db.query(`SELECT MIN(batch)::int AS min_batch, MAX(batch)::int AS max_batch,
+                       COUNT(*)::int AS total,
+                       COUNT(*) FILTER (WHERE can_mentor)::int AS mentors
+                FROM alumni_profiles`)
+    ]);
+    res.json({
+      batches: batches.rows.map(r => r.batch),
+      departments: depts.rows,
+      industries: industries.rows,
+      ...span.rows[0],
+      // Donor status is derived from settled donations, not a stored flag.
+      donors: (await db.query(
+        `SELECT COUNT(DISTINCT donor_user_id)::int AS n FROM donations WHERE status = 'SUCCESS'`)).rows[0].n
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+/* Counts the alumni profiles a filter combination selects, and returns the
+   same filters back so the caller can show what was counted. Every filter maps
+   to a column that exists; there is no filter here the query cannot honour. */
+app.get('/api/segment/count', requireRole(...MODERATOR_ROLES), async (req, res) => {
+  const { batchFrom, batchTo, department, industry, donor, mentor } = req.query;
+  const where = ['1=1'];
+  const params = [];
+
+  const from = parseInt(batchFrom, 10);
+  const to = parseInt(batchTo, 10);
+  if (Number.isInteger(from)) { params.push(from); where.push(`ap.batch >= $${params.length}`); }
+  if (Number.isInteger(to))   { params.push(to);   where.push(`ap.batch <= $${params.length}`); }
+  if (department && department !== 'all') { params.push(department); where.push(`ap.department = $${params.length}`); }
+  if (industry && industry !== 'all')     { params.push(industry);   where.push(`ap.industry = $${params.length}`); }
+  if (mentor === 'true') where.push('ap.can_mentor = TRUE');
+
+  if (donor === 'donors') {
+    where.push(`EXISTS (SELECT 1 FROM donations d WHERE d.donor_user_id = u.id AND d.status = 'SUCCESS')`);
+  } else if (donor === 'nondonors') {
+    where.push(`NOT EXISTS (SELECT 1 FROM donations d WHERE d.donor_user_id = u.id AND d.status = 'SUCCESS')`);
+  }
+
+  try {
+    const r = await db.query(`
+      SELECT COUNT(*)::int AS matched
+      FROM users u JOIN alumni_profiles ap ON ap.user_id = u.id
+      WHERE ${where.join(' AND ')}
+    `, params);
+    const total = (await db.query(
+      'SELECT COUNT(*)::int AS n FROM users u JOIN alumni_profiles ap ON ap.user_id = u.id')).rows[0].n;
+    res.json({ matched: r.rows[0].matched, total, filters: { batchFrom, batchTo, department, industry, donor, mentor } });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

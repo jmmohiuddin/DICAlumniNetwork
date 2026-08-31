@@ -1396,7 +1396,12 @@ async function viewAlumniProfile(id) {
   const unset = '<span class="field-unset">Not provided</span>';
   const val = (v) => (v === null || v === undefined || v === '') ? unset : escapeHtml(v);
 
-  const matchScore = 96; // AI Mentorship Vector Match Score (REQ-04)
+  /* A constant "96% AI Mentorship Career Vector Match" used to be shown here,
+     on every profile, for every viewer. Nothing computed it and no model exists.
+     What the database can compare is which profile attributes the viewer and
+     this alumnus have in common, so that is what is listed. */
+  const shared = sharedProfileAttributes(profile);
+
 
   showModal(`
     <div class="onboarding-header">
@@ -1415,17 +1420,17 @@ async function viewAlumniProfile(id) {
     </div>
 
     <div style="display:flex;flex-direction:column;gap:12px;margin-top:14px;max-height:62vh;overflow-y:auto;padding-right:6px">
-      <!-- AI MENTORSHIP VECTOR MATCH BADGE (REQ-04) -->
-      <div style="background:linear-gradient(135deg, rgba(0,168,89,0.15), rgba(0,86,145,0.15));border:1px solid rgba(0,168,89,0.3);border-radius:var(--radius-sm);padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
+      <!-- What the two profiles genuinely have in common. No score. -->
+      ${shared.length ? `
+      <div style="background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm);padding:10px 14px">
         <div style="display:flex;align-items:center;gap:8px">
-          <span style="font-size:22px"><i data-lucide="bot" class="ui-icon"></i></span>
+          <i data-lucide="link-2" class="ui-icon"></i>
           <div>
-            <div style="font-weight:700;font-size:13px;color:var(--teal)">${matchScore}% AI Mentorship Career Vector Match</div>
-            <div style="font-size:11px;color:var(--text-secondary)">Evaluated against Industry (25%), Skill Gap (20%), and Campus Involvement</div>
+            <div style="font-weight:700;font-size:13px;color:var(--teal)">You have ${shared.length} thing${shared.length === 1 ? '' : 's'} in common</div>
+            <div style="font-size:11px;color:var(--text-secondary)">${shared.map(escapeHtml).join(' · ')}</div>
           </div>
         </div>
-        <span class="card-badge teal">${matchScore}% Match</span>
-      </div>
+      </div>` : ''}
 
       <!-- VERIFICATION BADGES -->
       <div class="verification-badges-grid">
@@ -1476,7 +1481,64 @@ async function viewAlumniProfile(id) {
 
 
 
+/* Attributes the signed-in user and another profile actually share, compared
+   field by field against alumni_profiles. Used in place of the invented match
+   percentage; returns an empty list when nothing matches, and the caller then
+   shows nothing rather than a low score dressed up as a high one. */
+function sharedProfileAttributes(profile) {
+  const me = FULL_USER_PROFILE || {};
+  const same = (a, b) => a && b && String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+  const out = [];
+  if (same(me.department, profile.department)) out.push('Department: ' + profile.department);
+  if (same(me.batch, profile.batch)) out.push('Batch ' + profile.batch);
+  if (same(me.city, profile.city)) out.push('City: ' + profile.city);
+  if (same(me.industry, profile.industry)) out.push('Industry: ' + profile.industry);
+  if (same(me.currentCompany, profile.company)) out.push('Organisation: ' + profile.company);
+
+  // Skills overlap. The profile endpoint returns an array; the signed-in user's
+  // own row is a comma-separated string, so both shapes are normalised here.
+  const list = (v) => (Array.isArray(v) ? v : String(v || '').split(','))
+    .map(x => String(x).trim().toLowerCase()).filter(Boolean);
+  const mine = list(me.skills);
+  const theirs = list(profile.skills);
+  const both = mine.filter(x => theirs.includes(x));
+  if (both.length) out.push('Shared skill' + (both.length === 1 ? '' : 's') + ': ' + both.slice(0, 3).join(', '));
+  return out;
+}
+
 // ─── MENTORSHIP (REQ-04) ───
+/* The suggestion card used to show "${m.match_score}%" from a weighted score
+   that handed every mentor 25 points before comparing anything real (see the
+   note on /api/mentorships/suggestions). The API now returns which of the four
+   comparable attributes matched, so the card names them. */
+/* Replaces the Quota Tracker, which showed "2/5 Mentee Slots" and "3 available
+   this month" to everyone. No quota exists in the schema and nothing limits how
+   many mentees a mentor may take, so this reports the caller's real counts. */
+function renderMentorshipActivity(data) {
+  const el = document.getElementById('mentorship-activity');
+  if (!el) return;
+  const all = [...data.asMentor, ...data.asMentee];
+  const rows = [
+    ['Mentoring others', data.asMentor.filter(m => m.status === 'accepted').length],
+    ['Being mentored', data.asMentee.filter(m => m.status === 'accepted').length],
+    ['Requests awaiting my answer', data.incoming.length],
+    ['Requests I have sent', data.asMentee.filter(m => m.status === 'pending').length],
+    ['Completed', all.filter(m => m.status === 'completed').length]
+  ];
+  el.innerHTML = `<div class="totals-list">${rows.map(([k, v]) => `
+    <div class="totals-row"><span class="totals-key">${k}</span><span class="totals-val">${v}</span></div>`).join('')}</div>`;
+}
+
+function matchSummary(m) {
+  const hits = [];
+  if (m.matched_industry) hits.push('industry');
+  if (m.matched_skill) hits.push('skills');
+  if (m.matched_city) hits.push('city');
+  if (m.matched_department) hits.push('department');
+  if (!hits.length) return '<span class="match-score-badge" title="No shared industry, skill, city or department">No shared attributes</span>';
+  return `<span class="match-score-badge" title="Shared with you: ${escapeHtml(hits.join(', '))}">Shares ${hits.length} of 4</span>`;
+}
+
 async function renderMentorships() {
   const list = document.getElementById('mentorship-list');
   const pending = document.getElementById('pending-requests');
@@ -1532,6 +1594,37 @@ async function renderMentorships() {
     }
   }
 
+  // The two card badges read a literal 4 and "3 pending"; they now count the
+  // rows this same request returned.
+  if (!apiFailed(data)) {
+    const activeEl = document.getElementById('mentorship-active-count');
+    const pendEl = document.getElementById('mentorship-pending-count');
+    const activeN = [...data.asMentor, ...data.asMentee].filter(m => m.status === 'accepted').length;
+    if (activeEl) activeEl.textContent = String(activeN);
+    if (pendEl) pendEl.textContent = data.incoming.length + ' pending';
+    renderMentorshipActivity(data);
+  }
+
+  // What the four comparisons behind the suggestion list actually are.
+  const crit = document.getElementById('matching-criteria');
+  if (crit) {
+    crit.innerHTML = [
+      ['Same industry', 'alumni_profiles.industry'],
+      ['Overlapping skills', 'alumni_profiles.skills'],
+      ['Same city', 'alumni_profiles.city'],
+      ['Same department', 'alumni_profiles.department']
+    ].map(([label, src]) => `
+      <div class="criterion-item">
+        <div class="criterion-label">${label}</div>
+        <div class="criterion-source">${src}</div>
+      </div>`).join('') +
+      `<div class="chapter-empty-note" style="margin-top:10px">
+        A mentor is suggested when they offer mentoring and you have no open
+        request with them. The card shows how many of these four match; there is
+        no weighting and no score.
+      </div>`;
+  }
+
   if (suggested) {
     if (apiFailed(suggestions)) {
       suggested.innerHTML = renderErrorState('Could not load mentor suggestions.', 'renderMentorships()');
@@ -1545,8 +1638,8 @@ async function renderMentorships() {
             <div style="font-weight:700;font-size:13px">${escapeHtml(m.name)}</div>
             <div style="font-size:11px;color:var(--text-secondary)">${escapeHtml([m.role, m.company].filter(Boolean).join(' · ') || 'DIC Alumni')}</div>
           </div>
-          <span class="match-score-badge">${m.match_score}%</span>
-          <button class="btn btn-sm btn-primary" onclick="showMentorModal('${escapeHtml(m.name).replace(/'/g, '&#39;')}', ${m.id}, ${m.match_score})">Request</button>
+          ${matchSummary(m)}
+          <button class="btn btn-sm btn-primary" onclick="showMentorModal('${escapeHtml(m.name).replace(/'/g, '&#39;')}', ${m.id})">Request</button>
         </div>`).join('');
     }
   }
@@ -2232,7 +2325,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 // ─── MENTOR REQUEST MODAL ───
-function showMentorModal(mentorName = '', mentorId = null, matchScore = 0) {
+function showMentorModal(mentorName = '', mentorId = null) {
   if (!mentorId) {
     showToast('ℹ Open a mentor from the suggestions list to send a request.');
     return;
@@ -2251,7 +2344,6 @@ function showMentorModal(mentorName = '', mentorId = null, matchScore = 0) {
     <div style="margin-bottom:14px;padding:12px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
       <div style="font-size:12px;color:var(--text-muted)">Requesting mentorship from</div>
       <div style="font-size:15px;font-weight:700;margin-top:2px">${escapeHtml(mentorName)}</div>
-      ${matchScore ? `<div style="font-size:12px;color:var(--teal);margin-top:2px">${matchScore}% career vector match</div>` : ''}
     </div>
     <div class="input-group">
       <label class="input-label">What do you need help with?</label>
@@ -2261,7 +2353,7 @@ function showMentorModal(mentorName = '', mentorId = null, matchScore = 0) {
       <label class="input-label">Your message</label>
       <textarea id="mentor-message" class="form-input" rows="5" placeholder="Introduce yourself, your background and what specific guidance would help most…"></textarea>
     </div>
-    <button class="btn btn-primary btn-full" onclick="submitMentorRequest(${mentorId}, ${matchScore})"><i data-lucide="handshake" class="ui-icon"></i> Send Request</button>
+    <button class="btn btn-primary btn-full" onclick="submitMentorRequest(${mentorId})"><i data-lucide="handshake" class="ui-icon"></i> Send Request</button>
     <div style="font-size:11px;color:var(--text-muted);margin-top:10px;text-align:center">Unanswered requests expire automatically after 5 days.</div>
   `);
 }
@@ -4131,55 +4223,138 @@ function handleSaveProfileV2(e) {
 }
 
 // ─── 8. AUDIENCE SEGMENTATION ENGINE (ADMIN) ─────────────────
-function renderSegmentationPanel() {
+/* Audience segmentation. The count under these filters used to start at a
+   literal 3,420 and be replaced on every change by updateSegmentCount(), whose
+   entire body was Math.floor(Math.random() * 2000) + 1500 — a random number
+   between 1,500 and 3,500, labelled "Alumni matched" beside a badge reading
+   "Real-Time Vector Filtering". The three filters were invented as well: a
+   batch range of 2000-2026 against profiles that run 2014-2021, and industry
+   options that did not match the values stored in the column.
+
+   The filters are now built from the values that exist and the count is a
+   COUNT over alumni_profiles. */
+let _segmentOptions = null;
+
+async function renderSegmentationPanel() {
   const el = document.getElementById('segmentation-panel');
   if (!el) return;
+
+  el.innerHTML = '<div class="glass-card"><div style="padding:16px;color:var(--text-muted);font-size:12px">Loading…</div></div>';
+  const opt = await API.getSegmentOptions();
+
+  if (apiFailed(opt)) {
+    el.innerHTML = `<div class="glass-card">${renderErrorState(
+      opt?.error || 'Could not load segmentation options.', 'renderSegmentationPanel()')}</div>`;
+    return;
+  }
+  _segmentOptions = opt;
+
+  if (!opt.total) {
+    el.innerHTML = `<div class="glass-card">${renderEmptyState(
+      '<i data-lucide="target" class="ui-icon"></i>', 'No alumni profiles to segment',
+      'Filters and counts appear here once alumni profiles exist.')}</div>`;
+    if (window.lucide) lucide.createIcons();
+    return;
+  }
+
+  const years = opt.batches.map(b => `<option value="${b}">${b}</option>`).join('');
   el.innerHTML = `
     <div class="glass-card">
       <div class="card-header">
-        <h3 class="card-title"><i data-lucide="target" class="ui-icon"></i> Advanced Alumni Audience Segmentation</h3>
-        <span class="card-badge teal">Real-Time Vector Filtering</span>
+        <h3 class="card-title"><i data-lucide="target" class="ui-icon"></i> Alumni Audience Segmentation</h3>
+        <span class="card-badge teal">${opt.total.toLocaleString('en-IN')} profiles</span>
       </div>
+      <p style="font-size:12px;color:var(--text-secondary);margin:0 0 12px">
+        Every option below is a value that exists in the data. Batches run
+        ${opt.min_batch}–${opt.max_batch}; ${opt.mentors} profile(s) offer mentoring and
+        ${opt.donors} account(s) have a settled donation.
+      </p>
       <div class="segment-builder">
         <div class="input-group">
-          <label class="input-label">Batch Range</label>
-          <select class="form-select" onchange="updateSegmentCount()">
-            <option value="all">All Batches (2000 - 2026)</option>
-            <option value="recent">Recent Graduates (2020 - 2026)</option>
-            <option value="senior">Senior Alumni (2000 - 2015)</option>
+          <label class="input-label">Batch from</label>
+          <select class="form-select" id="seg-batch-from" onchange="updateSegmentCount()">
+            <option value="">Any</option>${years}
           </select>
         </div>
         <div class="input-group">
-          <label class="input-label">Industry Domain</label>
-          <select class="form-select" onchange="updateSegmentCount()">
-            <option value="all">All Domains</option>
-            <option value="tech">Software &amp; Technology</option>
-            <option value="finance">Banking &amp; Finance</option>
-            <option value="business">Business &amp; Entrepreneurship</option>
+          <label class="input-label">Batch to</label>
+          <select class="form-select" id="seg-batch-to" onchange="updateSegmentCount()">
+            <option value="">Any</option>${years}
           </select>
         </div>
         <div class="input-group">
-          <label class="input-label">Donation History</label>
-          <select class="form-select" onchange="updateSegmentCount()">
-            <option value="all">Any Donor Status</option>
-            <option value="donors">Active Donors (FY26)</option>
-            <option value="nondonors">Non-Donors</option>
+          <label class="input-label">Department</label>
+          <select class="form-select" id="seg-dept" onchange="updateSegmentCount()">
+            <option value="all">All departments</option>
+            ${opt.departments.map(d => `<option value="${escapeHtml(d.department)}">${escapeHtml(d.department)} (${d.n})</option>`).join('')}
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Industry</label>
+          <select class="form-select" id="seg-industry" onchange="updateSegmentCount()">
+            <option value="all">All industries</option>
+            ${opt.industries.map(i => `<option value="${escapeHtml(i.industry)}">${escapeHtml(i.industry)} (${i.n})</option>`).join('')}
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Donation history</label>
+          <select class="form-select" id="seg-donor" onchange="updateSegmentCount()">
+            <option value="all">Any donor status</option>
+            <option value="donors">Has a settled donation</option>
+            <option value="nondonors">No settled donation</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label class="input-label">Mentoring</label>
+          <select class="form-select" id="seg-mentor" onchange="updateSegmentCount()">
+            <option value="">Anyone</option>
+            <option value="true">Offers mentoring</option>
           </select>
         </div>
       </div>
-      <div style="margin-top:16px;padding:12px;background:var(--bg-glass);border-radius:var(--radius-sm);display:flex;justify-content:space-between;align-items:center">
-        <div><strong style="color:var(--teal)">Segment Match:</strong> <span id="segment-count-val">3,420</span> Alumni matched</div>
-        <button class="btn btn-primary btn-sm" onclick="showBroadcastModal()"><i data-lucide="megaphone" class="ui-icon"></i> Broadcast to Segment</button>
+      <div style="margin-top:16px;padding:12px;background:var(--bg-glass);border-radius:var(--radius-sm)">
+        <div><strong style="color:var(--teal)">Segment:</strong>
+          <span id="segment-count-val">${opt.total.toLocaleString('en-IN')}</span>
+          of ${opt.total.toLocaleString('en-IN')} alumni profiles
+        </div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:6px" id="segment-query"></div>
+      </div>
+      <!-- The broadcast composer targets a role and optionally one batch; it
+           cannot take an arbitrary segment, so this says so rather than
+           implying the filters above carry over. -->
+      <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn btn-primary btn-sm" onclick="showBroadcastModal()"><i data-lucide="megaphone" class="ui-icon"></i> Open broadcast composer</button>
+        <span style="font-size:11px;color:var(--text-muted)">A broadcast targets a role and optionally one batch, not this segment.</span>
       </div>
     </div>
   `;
+  if (window.lucide) lucide.createIcons();
+  updateSegmentCount();
 }
 
-function updateSegmentCount() {
-  const el = document.getElementById('segment-count-val');
-  if (!el) return;
-  const count = Math.floor(Math.random() * 2000) + 1500;
-  el.textContent = count.toLocaleString() + ' Alumni';
+async function updateSegmentCount() {
+  const out = document.getElementById('segment-count-val');
+  const desc = document.getElementById('segment-query');
+  if (!out) return;
+
+  const v = (id) => document.getElementById(id)?.value || '';
+  const q = {
+    batchFrom: v('seg-batch-from'), batchTo: v('seg-batch-to'),
+    department: v('seg-dept'), industry: v('seg-industry'),
+    donor: v('seg-donor'), mentor: v('seg-mentor')
+  };
+  Object.keys(q).forEach(k => { if (!q[k] || q[k] === 'all') delete q[k]; });
+
+  out.textContent = '…';
+  const res = await API.getSegmentCount(q);
+  if (apiFailed(res)) { out.textContent = '—'; if (desc) desc.textContent = 'Count unavailable.'; return; }
+
+  out.textContent = res.matched.toLocaleString('en-IN');
+  if (desc) {
+    const parts = Object.entries(q).map(([k, val]) => `${k}=${val}`);
+    desc.textContent = 'COUNT over users JOIN alumni_profiles' +
+      (parts.length ? ' WHERE ' + parts.join(' AND ') : ' with no filter applied');
+  }
 }
 
 // ─── 6. NEWS POLLS & TRENDING TAGS ───────────────────────────
@@ -4666,12 +4841,14 @@ async function deleteCampaignPrompt(id, name) {
 
 // ─── MENTORSHIP ───
 
-async function submitMentorRequest(mentorId, matchScore) {
+// The score is no longer passed from the browser: the server computes and
+// stores it from the two profiles, so it cannot be set by the caller.
+async function submitMentorRequest(mentorId) {
   const subject = document.getElementById('mentor-subject')?.value.trim();
   const message = document.getElementById('mentor-message')?.value.trim();
   if (!subject) { showToast('⚠ Please describe what you need help with.'); return; }
 
-  const res = await API.requestMentorship({ mentorId, subject, message, matchScore });
+  const res = await API.requestMentorship({ mentorId, subject, message });
   if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Request failed.'}`); return; }
 
   closeModal();

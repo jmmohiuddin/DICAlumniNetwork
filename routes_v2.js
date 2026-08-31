@@ -415,17 +415,31 @@ module.exports = function mountV2(app, { requireAuth, requireRole, ADMIN_ROLES, 
     `, [req.user.uid]);
     const p = me.rows[0] || {};
 
+    /* match_score is a count of the profile attributes this mentor shares with
+       the caller, out of the four the database can actually compare. It used to
+       be a weighted percentage carrying two terms that measured nothing:
+       "+ 15 -- language preference 15%" was added to every row unconditionally
+       (alumni_profiles has no language column at all), and a 10-point
+       can_mentor term that every row scores, since can_mentor = TRUE is the
+       WHERE clause below. Together they handed a stranger 25% before any real
+       attribute was compared, which is why the weakest possible match still
+       read as a respectable score.
+
+       Each matched_* flag is returned with the count so the interface can name
+       the attributes that matched rather than show a bare percentage. */
     const rows = await db.query(`
       SELECT u.id, u.full_name AS name, u.initials,
              ap.current_company AS company, ap.job_title AS role, ap.batch, ap.color,
              ap.department, ap.industry, ap.city,
+             ($2::text IS NOT NULL AND ap.industry   IS NOT DISTINCT FROM $2) AS matched_industry,
+             ($3::text IS NOT NULL AND ap.skills     ILIKE '%' || $3 || '%')  AS matched_skill,
+             ($4::text IS NOT NULL AND ap.city       IS NOT DISTINCT FROM $4) AS matched_city,
+             ($5::text IS NOT NULL AND ap.department IS NOT DISTINCT FROM $5) AS matched_department,
              (
-                 CASE WHEN ap.industry   IS NOT DISTINCT FROM $2 THEN 25 ELSE 0 END   -- industry domain 25%
-               + CASE WHEN ap.skills     ILIKE '%' || COALESCE($3,'~') || '%' THEN 20 ELSE 0 END -- skill overlap 20%
-               + CASE WHEN ap.city       IS NOT DISTINCT FROM $4 THEN 15 ELSE 0 END   -- geo proximity 15%
-               + CASE WHEN ap.department IS NOT DISTINCT FROM $5 THEN 15 ELSE 0 END   -- shared campus/dept 15%
-               + 15                                                                    -- language preference 15%
-               + CASE WHEN ap.can_mentor THEN 10 ELSE 0 END                            -- availability 10%
+                 CASE WHEN $2::text IS NOT NULL AND ap.industry   IS NOT DISTINCT FROM $2 THEN 1 ELSE 0 END
+               + CASE WHEN $3::text IS NOT NULL AND ap.skills     ILIKE '%' || $3 || '%'  THEN 1 ELSE 0 END
+               + CASE WHEN $4::text IS NOT NULL AND ap.city       IS NOT DISTINCT FROM $4 THEN 1 ELSE 0 END
+               + CASE WHEN $5::text IS NOT NULL AND ap.department IS NOT DISTINCT FROM $5 THEN 1 ELSE 0 END
              ) AS match_score
       FROM users u
       JOIN alumni_profiles ap ON ap.user_id = u.id
@@ -443,7 +457,11 @@ module.exports = function mountV2(app, { requireAuth, requireRole, ADMIN_ROLES, 
   }));
 
   app.post('/api/mentorships', requireAuth, (req, res) => ok(res, async () => {
-    const { mentorId, subject, message, matchScore } = req.body;
+    // matchScore used to be read from the request body and stored as though it
+    // had been computed. Any caller could write any number into the column, and
+    // the browser was sending back whatever the suggestion list had shown it.
+    // It is recomputed here from the two profiles instead.
+    const { mentorId, subject, message } = req.body;
     const mentor = parseInt(mentorId);
     if (!mentor) return res.status(400).json({ error: 'mentorId is required' });
     if (mentor === req.user.uid) return res.status(400).json({ error: 'You cannot mentor yourself' });
@@ -454,10 +472,23 @@ module.exports = function mountV2(app, { requireAuth, requireRole, ADMIN_ROLES, 
       [mentor, req.user.uid]);
     if (dup.rows.length) return res.status(409).json({ error: 'You already have an open request with this mentor' });
 
+    // Same four comparisons as /api/mentorships/suggestions, so the stored score
+    // means the same thing wherever it is read.
+    const scored = await db.query(`
+      SELECT (
+          CASE WHEN me.industry   IS NOT NULL AND them.industry   IS NOT DISTINCT FROM me.industry   THEN 1 ELSE 0 END
+        + CASE WHEN me.skills     IS NOT NULL AND them.skills     ILIKE '%' || split_part(me.skills, ',', 1) || '%' THEN 1 ELSE 0 END
+        + CASE WHEN me.city       IS NOT NULL AND them.city       IS NOT DISTINCT FROM me.city       THEN 1 ELSE 0 END
+        + CASE WHEN me.department IS NOT NULL AND them.department IS NOT DISTINCT FROM me.department THEN 1 ELSE 0 END
+      )::int AS score
+      FROM alumni_profiles me, alumni_profiles them
+      WHERE me.user_id = $1 AND them.user_id = $2
+    `, [req.user.uid, mentor]);
+
     const row = await db.query(`
       INSERT INTO mentorships (mentor_id, mentee_id, subject, message, match_score)
       VALUES ($1,$2,$3,$4,$5) RETURNING *
-    `, [mentor, req.user.uid, subject.trim(), message || null, parseInt(matchScore) || 0]);
+    `, [mentor, req.user.uid, subject.trim(), message || null, scored.rows[0]?.score ?? 0]);
 
     const me = await db.query('SELECT full_name FROM users WHERE id=$1', [req.user.uid]);
     await db.query(`INSERT INTO notifications (user_id, icon, title, subtitle) VALUES ($1,'🤝','New Mentorship Request',$2)`,

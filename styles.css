@@ -1347,6 +1347,14 @@ body {
 /* Names the query behind each Key Metrics figure, so the number can be checked
    rather than taken on trust. Replaces the "+8.4% vs last period" captions,
    which compared against a period nothing recorded. */
+/* Names the column each mentor-suggestion comparison reads, in place of the
+   invented percentage weights the criteria bars used to show. */
+.criterion-source {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+}
+
 .analytics-metric-source {
   font-size: 10px;
   color: var(--text-muted);
