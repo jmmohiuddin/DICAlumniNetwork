@@ -8,6 +8,28 @@ product decisions, which is a different job from reorganizing files.
 Machine-checkable entries also live in `tools/known-issues.json`, which
 `npm run verify` reads. This file is the human-readable detail.
 
+## Resolving the `app.js:NNNN` references below
+
+These findings were recorded against the original `app.js`, which no longer
+exists — it was split into 21 files under `src/client/`. Line numbers are also
+the wrong anchor: three superseded functions were removed before the split,
+shifting everything after line 4555 by 44 lines.
+
+Resolve by name instead:
+
+```
+npm run where -- renderRBACTable
+  → src/client/features/planner-workspace.js:875
+
+npm run where            # no argument: the file/range map
+  → app.js:1-59      src/client/core/state.js
+    app.js:60-133    src/client/core/helpers.js
+    …
+```
+
+Where a symbol has two definitions, `where` says so — for the four decorator
+wrappers that is expected and both are live.
+
 ---
 
 ## A. Security

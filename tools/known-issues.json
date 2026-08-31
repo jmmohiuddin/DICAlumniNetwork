@@ -6,7 +6,7 @@
       "name": "triggerResumeUpload",
       "referencedFrom": "index.html:644",
       "problem": "The 'Upload Resume (PDF)' zone on the Jobs page calls a function that is defined nowhere, so clicking it throws a ReferenceError and nothing happens.",
-      "why_not_fixed": "There is no resume-upload endpoint and no file storage anywhere in the backend, and the job-application flow collects a resume URL instead (app.js:5205). Implementing upload would be a new feature; deleting the zone removes a user-visible affordance. Both are product decisions, not refactoring."
+      "why_not_fixed": "There is no resume-upload endpoint and no file storage anywhere in the backend, and the job-application flow collects a resume URL instead (src/client/features/actions-api.js, the apply modal). Implementing upload would be a new feature; deleting the zone removes a user-visible affordance. Both are product decisions, not refactoring."
     }
   ],
 
