@@ -1,0 +1,245 @@
+/* ============================================================
+   DAFFODIL INTERNATIONAL COLLEGE — ALUMNI PLATFORM
+   auth.js
+
+   Sign-in, sign-up, session expiry, sign-out and the change-password flow.
+   Identity comes only from the server: see the note in enterAuthenticatedApp.
+
+   Split out of app.js. Loaded as a classic script in the order listed in
+   index.html; all module files share one global scope.
+   ============================================================ */
+
+
+// ─── AUTHENTICATION ─────────────────────────────────────────
+// The only way into the app is POST /api/auth/login with credentials the user
+// types. The client never holds a password and never chooses a role.
+
+function showLoginError(message) {
+  const el = document.getElementById('login-error');
+  if (!el) return;
+  el.textContent = message;
+  el.classList.toggle('hidden', !message);
+}
+
+function setLoginBusy(busy) {
+  const btn = document.getElementById('login-submit-btn');
+  if (!btn) return;
+  btn.disabled = busy;
+  btn.textContent = busy ? 'Signing in…' : 'Sign In to DIC →';
+}
+
+async function handleLoginSubmit(e) {
+  if (e) e.preventDefault();
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+
+  showLoginError('');
+  setLoginBusy(true);
+  const result = await API.login(email, password);
+  setLoginBusy(false);
+
+  if (!result || result.error) {
+    showLoginError(result?.error || 'Sign in failed. Please try again.');
+    return;
+  }
+  enterAuthenticatedApp(result.user);
+
+  // Bulk-imported accounts share an initial password until it is replaced.
+  if (result.mustChangePassword) setTimeout(() => showChangePasswordModal(true), 700);
+}
+
+/* The two instant-role-switch helpers that used to sit here were removed. Both
+   signed in with the hardcoded administrator credentials above, so any visitor
+   — or any alumnus from the browser console — could obtain a super_admin
+   session. A user role is now whatever the server says it is on
+   /api/auth/login and /api/auth/me, read from the users row on every request;
+   changing it requires an administrator changing users.role. */
+
+function enterAuthenticatedApp(user) {
+  state.currentUser = user;
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('main-app').classList.remove('hidden');
+  updateUserUI();
+  renderSidebarNav(user.role);
+  initApp();
+  showToast(`🎉 Welcome to DIC Portal, ${user.name} (${user.roleLabel})`);
+}
+
+function showLoginScreen() {
+  const mainApp = document.getElementById('main-app');
+  const loginScreen = document.getElementById('login-screen');
+  if (mainApp) mainApp.classList.add('hidden');
+  if (loginScreen) loginScreen.classList.remove('hidden');
+}
+
+// Called by api.js when the server rejects a stored token.
+function onSessionExpired() {
+  API.logout();
+  state.currentUser = null;
+  showLoginScreen();
+  showLoginError('Your session expired. Please sign in again.');
+}
+
+// ─── LOGIN FLOW ─────────────────────────────────────────────
+function goToStep2() {
+  document.getElementById('step-1').classList.add('hidden');
+  document.getElementById('step-2').classList.remove('hidden');
+}
+
+function goToStep1() {
+  document.getElementById('step-2').classList.add('hidden');
+  document.getElementById('step-1').classList.remove('hidden');
+}
+
+function goToStep3() {
+  document.getElementById('step-2').classList.add('hidden');
+  document.getElementById('step-3').classList.remove('hidden');
+
+  setTimeout(() => {
+    document.querySelector('.sis-match-animation').style.display = 'none';
+    document.getElementById('sis-result').style.display = 'flex';
+    document.getElementById('continue-btn').classList.remove('hidden');
+  }, 2000);
+}
+
+function logout() {
+  // Drop the session token first — otherwise "signing out" left a valid
+  // credential in localStorage that the next page load silently reused.
+  API.logout();
+  state.currentUser = null;
+  showLoginError('');
+
+  const mainApp = document.getElementById('main-app');
+  const loginScreen = document.getElementById('login-screen');
+  const step1 = document.getElementById('step-1');
+  const step2 = document.getElementById('step-2');
+  const step3 = document.getElementById('step-3');
+  const sisResult = document.getElementById('sis-result');
+  const continueBtn = document.getElementById('continue-btn');
+  const sisAnim = document.querySelector('.sis-match-animation');
+
+  if (mainApp) mainApp.classList.add('hidden');
+  if (loginScreen) loginScreen.classList.remove('hidden');
+  if (step1) step1.classList.remove('hidden');
+  if (step2) step2.classList.add('hidden');
+  if (step3) step3.classList.add('hidden');
+  if (sisResult) sisResult.style.display = 'none';
+  if (continueBtn) continueBtn.classList.add('hidden');
+  if (sisAnim) sisAnim.style.display = 'none';
+}
+
+function switchAuthMode(mode) {
+  const signin = document.getElementById('auth-panel-signin');
+  const signup = document.getElementById('auth-panel-signup');
+  const tabIn = document.getElementById('auth-tab-signin');
+  const tabUp = document.getElementById('auth-tab-signup');
+  if (!signin || !signup) return;
+
+  const isSignup = mode === 'signup';
+  signup.classList.toggle('hidden', !isSignup);
+  signin.classList.toggle('hidden', isSignup);
+  tabUp.classList.toggle('active', isSignup);
+  tabIn.classList.toggle('active', !isSignup);
+
+  showLoginError('');
+  showSignupError('');
+}
+
+function showSignupError(message) {
+  const el = document.getElementById('signup-error');
+  if (!el) return;
+  el.textContent = message;
+  el.classList.toggle('hidden', !message);
+}
+
+async function handleSignupSubmit(e) {
+  if (e) e.preventDefault();
+
+  const name = document.getElementById('signup-name').value.trim();
+  const email = document.getElementById('signup-email').value.trim();
+  const password = document.getElementById('signup-password').value;
+  const confirm = document.getElementById('signup-password2').value;
+
+  showSignupError('');
+
+  if (password !== confirm) { showSignupError('The two passwords do not match.'); return; }
+  if (password.length < 8) { showSignupError('Password must be at least 8 characters.'); return; }
+  if (!document.getElementById('signup-consent').checked) {
+    showSignupError('Please accept the data processing consent to continue.');
+    return;
+  }
+
+  const btn = document.getElementById('signup-submit-btn');
+  btn.disabled = true; btn.textContent = 'Creating your account…';
+
+  const result = await API.register({
+    name, email, password,
+    hscPassingYear: document.getElementById('signup-hsc-year').value,
+    hscGroup: document.getElementById('signup-hsc-group').value,
+    mobile: document.getElementById('signup-mobile').value.trim(),
+    bloodGroup: document.getElementById('signup-blood-group').value
+  });
+
+  btn.disabled = false; btn.textContent = 'Create Account →';
+
+  if (!result || result.error) { showSignupError(result?.error || 'Registration failed.'); return; }
+
+  // Consent is logged server-side with IP and policy version (PDPA 2026).
+  await API.recordConsent({ consentType: 'data_processing', granted: true });
+
+  enterAuthenticatedApp(result.user);
+  showToast('🎓 Account created. An administrator will verify your alumni status shortly.');
+}
+
+// Prompts users still on an issued temporary password to replace it.
+function showChangePasswordModal(forced = false) {
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title"><i data-lucide="key" class="ui-icon"></i> ${forced ? 'Set a New Password' : 'Change Password'}</div>
+      ${forced ? '' : '<button type="button" class="modal-close" aria-label="Close"><i data-lucide="x" class="ui-icon"></i></button>'}
+    </div>
+    ${forced ? `<p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">
+      Your account still uses the temporary password it was issued.
+      Please choose your own before continuing.</p>` : ''}
+    <form onsubmit="handleChangePassword(event)">
+      <div class="input-group">
+        <label class="input-label">Current Password</label>
+        <input type="password" id="cp-current" class="form-input" autocomplete="current-password" required />
+      </div>
+      <div class="input-group">
+        <label class="input-label">New Password</label>
+        <input type="password" id="cp-new" class="form-input" autocomplete="new-password" minlength="8" required />
+      </div>
+      <div class="input-group">
+        <label class="input-label">Confirm New Password</label>
+        <input type="password" id="cp-new2" class="form-input" autocomplete="new-password" minlength="8" required />
+      </div>
+      <div class="login-error hidden" id="cp-error" role="alert"></div>
+      <button type="submit" class="btn btn-primary btn-full">Update Password</button>
+    </form>
+  `);
+}
+
+async function handleChangePassword(e) {
+  if (e) e.preventDefault();
+  const cur = document.getElementById('cp-current').value;
+  const nw = document.getElementById('cp-new').value;
+  const nw2 = document.getElementById('cp-new2').value;
+  const err = document.getElementById('cp-error');
+
+  const fail = (m) => { err.textContent = m; err.classList.remove('hidden'); };
+  if (nw !== nw2) return fail('The two passwords do not match.');
+  if (nw.length < 8) return fail('Password must be at least 8 characters.');
+
+  const res = await API.changePassword(cur, nw);
+  if (apiFailed(res)) return fail(res?.error || 'Could not update the password.');
+
+  closeModal();
+  showToast('✅ Password updated.');
+}
+
+/* ============================================================
+   PROFILE EDITOR — includes the fields added for the reunion CSV:
+   Blood Group, Occupation, Current Organization / Institution,
+   Current Designation, HSC Passing Year / Group / Version.
+   ============================================================ */

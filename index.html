@@ -869,7 +869,7 @@
   </div>
 
   <!-- MODALS -->
-  <!-- Backdrop clicks are handled in app.js: a data-entry form ignores them so
+  <!-- Backdrop clicks are handled in js/core.js: a data-entry form ignores them so
        a stray click cannot discard what the user typed. -->
   <div class="modal-overlay hidden" id="modal-overlay">
     <div class="modal-content glass-card" id="modal-content">
@@ -891,6 +891,32 @@
 
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.474.0/dist/umd/lucide.js"></script>
   <script src="api.js"></script>
-  <script src="app.js"></script>
+
+  <!-- app.js was a single 8,481-line file. It is now fifteen plain scripts, one
+       per area of the application. They are classic scripts, not modules, so
+       they still share one global scope: a function declared in any of them is
+       callable from any other and from the inline handlers in the markup above,
+       exactly as before.
+
+       Order is deliberate and must not be changed to async or module type.
+       Nothing runs while these load except a few listener registrations, so the
+       order below is for readability rather than correctness: shared
+       infrastructure, then sign-in and navigation, then one file per screen,
+       with the largest module last. -->
+  <script src="js/core.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/navigation.js"></script>
+  <script src="js/notifications.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/directory.js"></script>
+  <script src="js/profile.js"></script>
+  <script src="js/mentorship.js"></script>
+  <script src="js/donations.js"></script>
+  <script src="js/jobs.js"></script>
+  <script src="js/chapters.js"></script>
+  <script src="js/news.js"></script>
+  <script src="js/admin.js"></script>
+  <script src="js/compliance.js"></script>
+  <script src="js/events.js"></script>
 </body>
 </html>
