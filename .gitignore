@@ -9,3 +9,8 @@ node_modules/
 *.csv
 !sample_alumni_import_template.csv
 _tmp_*
+
+# Generated administrator passwords written by rotate_credentials.js.
+# Store them in a password manager and delete the file — never commit it.
+admin-credentials.local.txt
+*credentials*.local.txt
