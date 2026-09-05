@@ -16,9 +16,10 @@ if (!process.env.SESSION_SECRET) {
 }
 
 /* ─── Passwords ───────────────────────────────────────────────
-   Stored as `scrypt$<salt>$<derived>`. Seed rows still hold the legacy
-   plaintext '12345678', so verifyPassword accepts those once and the login
-   handler transparently re-hashes them.
+   Stored as `scrypt$<salt>$<derived>` — the only format that can ever
+   authenticate. Legacy rows holding anything else (plaintext, a sentinel,
+   an empty string) are non-authenticating by design: they must be reset out
+   of band by provisioning a real password, never silently upgraded on login.
    ──────────────────────────────────────────────────────────── */
 
 function hashPassword(plain) {
@@ -29,13 +30,10 @@ function hashPassword(plain) {
 
 function verifyPassword(plain, stored) {
   if (!stored) return false;
-  if (!stored.startsWith('scrypt$')) {
-    // Legacy plaintext row — constant-time compare, then caller upgrades it.
-    const a = Buffer.from(String(plain));
-    const b = Buffer.from(String(stored));
-    return a.length === b.length && crypto.timingSafeEqual(a, b);
-  }
+  // Anything that is not a scrypt$ hash can never authenticate.
+  if (!stored.startsWith('scrypt$')) return false;
   const [, salt, expected] = stored.split('$');
+  if (!salt || !expected) return false;
   const derived = crypto.scryptSync(plain, salt, 64).toString('hex');
   const a = Buffer.from(derived, 'hex');
   const b = Buffer.from(expected, 'hex');

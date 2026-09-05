@@ -101,7 +101,7 @@ function renderPlannerTabContent(tab) {
           <div class="pmetric-lab">Tasks Completed</div>
         </div>
         <div class="pmetric-card">
-          <div class="pmetric-val">${p.expected_attendance}</div>
+          <div class="pmetric-val">${escapeHtml(p.expected_attendance)}</div>
           <div class="pmetric-lab">Expected Pax</div>
         </div>
       </div>
@@ -112,13 +112,13 @@ function renderPlannerTabContent(tab) {
             <h3 class="card-title">🚀 Proposal Charter &amp; Executive Summary</h3>
             <span class="card-badge teal">APPROVED</span>
           </div>
-          <div style="font-size:14px;font-weight:700;margin-bottom:8px">${p.name}</div>
-          <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:14px">${p.description}</p>
+          <div style="font-size:14px;font-weight:700;margin-bottom:8px">${escapeHtml(p.name)}</div>
+          <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;margin-bottom:14px">${escapeHtml(p.description)}</p>
           <div class="field-grid-2">
-            <div><div class="field-label">Target Audience</div><div class="field-val">${p.target_audience}</div></div>
-            <div><div class="field-label">Venue &amp; Date</div><div class="field-val">📍 ${p.venue} · 📅 ${p.event_date}</div></div>
-            <div><div class="field-label">Event Organizer</div><div class="field-val">${p.organizer_name}</div></div>
-            <div><div class="field-label">Department</div><div class="field-val">${p.department}</div></div>
+            <div><div class="field-label">Target Audience</div><div class="field-val">${escapeHtml(p.target_audience)}</div></div>
+            <div><div class="field-label">Venue &amp; Date</div><div class="field-val">📍 ${escapeHtml(p.venue)} · 📅 ${escapeHtml(p.event_date)}</div></div>
+            <div><div class="field-label">Event Organizer</div><div class="field-val">${escapeHtml(p.organizer_name)}</div></div>
+            <div><div class="field-label">Department</div><div class="field-val">${escapeHtml(p.department)}</div></div>
           </div>
         </div>
 
@@ -127,8 +127,8 @@ function renderPlannerTabContent(tab) {
           <div style="display:flex;flex-direction:column;gap:10px">
             ${c.map(comm => `
               <div style="padding:10px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
-                <div style="font-weight:700;font-size:13px;color:var(--teal)">${comm.name}</div>
-                <div style="font-size:12px;color:var(--text-secondary)">Lead: ${comm.leader_name} · ${comm.members_count} Members</div>
+                <div style="font-weight:700;font-size:13px;color:var(--teal)">${escapeHtml(comm.name)}</div>
+                <div style="font-size:12px;color:var(--text-secondary)">Lead: ${escapeHtml(comm.leader_name)} · ${escapeHtml(comm.members_count)} Members</div>
                 <div style="font-size:11px;color:var(--text-muted);margin-top:4px">Budget Limit: ৳${(comm.budget_allocated/1000).toFixed(0)}k</div>
               </div>
             `).join('')}
@@ -175,14 +175,14 @@ function renderPlannerTabContent(tab) {
           <tbody>
             ${b.map(item => `
               <tr style="border-bottom:1px solid var(--border-glass)">
-                <td style="padding:8px;font-weight:600">${item.category}</td>
-                <td style="padding:8px;color:var(--text-secondary)">${item.vendor_name}</td>
+                <td style="padding:8px;font-weight:600">${escapeHtml(item.category)}</td>
+                <td style="padding:8px;color:var(--text-secondary)">${escapeHtml(item.vendor_name)}</td>
                 <td style="padding:8px">৳${Number(item.estimated_cost).toLocaleString()}</td>
                 <td style="padding:8px;font-weight:700">৳${Number(item.actual_cost).toLocaleString()}</td>
                 <td style="padding:8px;color:${item.estimated_cost >= item.actual_cost ? 'var(--teal)' : 'var(--red)'}">
                   ৳${(item.estimated_cost - item.actual_cost).toLocaleString()}
                 </td>
-                <td style="padding:8px"><span class="card-badge teal">${item.payment_status.toUpperCase()}</span></td>
+                <td style="padding:8px"><span class="card-badge teal">${escapeHtml(item.payment_status.toUpperCase())}</span></td>
               </tr>
             `).join('')}
           </tbody>
@@ -197,15 +197,15 @@ function renderPlannerTabContent(tab) {
         </div>
         <div class="campaigns-grid" style="margin-top:12px">
           ${s.map(sp => `
-            <div class="glass-card sponsor-tier-card ${sp.package_tier}-tier">
+            <div class="glass-card sponsor-tier-card ${escapeHtml(sp.package_tier)}-tier">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-                <span class="priority-tag critical" style="text-transform:uppercase;background:var(--primary-glow)">${sp.package_tier} SPONSOR</span>
-                <span class="card-badge teal">${sp.pipeline_status.toUpperCase()}</span>
+                <span class="priority-tag critical" style="text-transform:uppercase;background:var(--primary-glow)">${escapeHtml(sp.package_tier)} SPONSOR</span>
+                <span class="card-badge teal">${escapeHtml(sp.pipeline_status.toUpperCase())}</span>
               </div>
-              <div style="font-size:16px;font-weight:800">${sp.company}</div>
-              <div style="font-size:12px;color:var(--text-secondary)">👤 ${sp.contact_person}</div>
+              <div style="font-size:16px;font-weight:800">${escapeHtml(sp.company)}</div>
+              <div style="font-size:12px;color:var(--text-secondary)">👤 ${escapeHtml(sp.contact_person)}</div>
               <div style="font-size:18px;font-weight:800;color:var(--teal);margin:8px 0">৳${Number(sp.contribution_amount).toLocaleString()}</div>
-              <div style="font-size:11px;color:var(--text-muted)">📋 ${sp.deliverables}</div>
+              <div style="font-size:11px;color:var(--text-muted)">📋 ${escapeHtml(sp.deliverables)}</div>
             </div>
           `).join('')}
         </div>
@@ -261,13 +261,13 @@ function renderPlannerTabContent(tab) {
           <tbody>
             ${CURRENT_PLANNER_DATA.procurement.map(item => `
               <tr style="border-bottom:1px solid var(--border-glass)">
-                <td style="padding:8px;font-weight:700">${item.item_name}</td>
-                <td style="padding:8px">${item.category}</td>
-                <td style="padding:8px">${item.quantity}</td>
+                <td style="padding:8px;font-weight:700">${escapeHtml(item.item_name)}</td>
+                <td style="padding:8px">${escapeHtml(item.category)}</td>
+                <td style="padding:8px">${escapeHtml(item.quantity)}</td>
                 <td style="padding:8px">৳${Number(item.estimated_price).toLocaleString()}</td>
                 <td style="padding:8px">৳${Number(item.actual_price).toLocaleString()}</td>
-                <td style="padding:8px;color:var(--text-secondary)">${item.vendor_name}</td>
-                <td style="padding:8px"><span class="card-badge teal">${item.delivery_status.toUpperCase()}</span></td>
+                <td style="padding:8px;color:var(--text-secondary)">${escapeHtml(item.vendor_name)}</td>
+                <td style="padding:8px"><span class="card-badge teal">${escapeHtml(item.delivery_status.toUpperCase())}</span></td>
               </tr>
             `).join('')}
           </tbody>
@@ -281,10 +281,10 @@ function renderPlannerTabContent(tab) {
           <div style="display:flex;flex-direction:column;gap:10px;margin-top:10px">
             ${CURRENT_PLANNER_DATA.volunteers.map(v => `
               <div style="padding:10px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
-                <div style="font-weight:700;font-size:13px">${v.volunteer_name}</div>
-                <div style="font-size:12px;color:var(--text-secondary)">${v.assigned_committee} · ⏱ ${v.shift_time}</div>
+                <div style="font-weight:700;font-size:13px">${escapeHtml(v.volunteer_name)}</div>
+                <div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(v.assigned_committee)} · ⏱ ${escapeHtml(v.shift_time)}</div>
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px">
-                  <span class="card-badge teal">${v.attendance_status.toUpperCase()}</span>
+                  <span class="card-badge teal">${escapeHtml(v.attendance_status.toUpperCase())}</span>
                   <span style="font-size:11px;color:var(--teal)">🎓 Certificate Ready</span>
                 </div>
               </div>
@@ -298,10 +298,10 @@ function renderPlannerTabContent(tab) {
             ${CURRENT_PLANNER_DATA.risks.map(r => `
               <div style="padding:10px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
                 <div style="display:flex;justify-content:space-between;align-items:center">
-                  <span style="font-weight:700;font-size:13px">${r.risk_title}</span>
-                  <span class="priority-tag critical">${r.severity.toUpperCase()}</span>
+                  <span style="font-weight:700;font-size:13px">${escapeHtml(r.risk_title)}</span>
+                  <span class="priority-tag critical">${escapeHtml(r.severity.toUpperCase())}</span>
                 </div>
-                <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">🛡 Contingency: ${r.contingency_plan}</div>
+                <div style="font-size:12px;color:var(--text-secondary);margin-top:4px">🛡 Contingency: ${escapeHtml(r.contingency_plan)}</div>
               </div>
             `).join('')}
           </div>
@@ -325,7 +325,7 @@ function renderPlannerTabContent(tab) {
             Number(m.reach).toLocaleString(),
             `${Number(m.conversions).toLocaleString()}${Number(m.reach) ? ` (${((m.conversions / m.reach) * 100).toFixed(1)}%)` : ''}`,
             `<span class="card-badge ${m.status === 'live' ? 'teal' : m.status === 'completed' ? '' : 'amber'}">${escapeHtml(m.status)}</span>`,
-            `<button class="btn btn-sm btn-ghost" onclick="deletePlannerItem('marketing', ${m.id})">🗑</button>`
+            `<button class="btn btn-sm btn-ghost" onclick="deletePlannerItem('marketing', ${Number(m.id)})">🗑</button>`
           ],
           '📢', 'No marketing campaigns planned yet')}
         <button class="btn btn-sm btn-outline mt-14" onclick="showBroadcastModal()">📣 Send a broadcast now</button>
@@ -345,7 +345,7 @@ function renderPlannerTabContent(tab) {
             escapeHtml(mt.location || '—'),
             escapeHtml(mt.attendees || '—'),
             `<span class="card-badge ${mt.status === 'held' ? 'teal' : 'amber'}">${escapeHtml(mt.status)}</span>`,
-            `<button class="btn btn-sm btn-ghost" onclick="deletePlannerItem('meetings', ${mt.id})">🗑</button>`
+            `<button class="btn btn-sm btn-ghost" onclick="deletePlannerItem('meetings', ${Number(mt.id)})">🗑</button>`
           ],
           '📝', 'No meetings scheduled yet')}
       </div>`;
@@ -384,15 +384,15 @@ function renderKanbanCards(taskList) {
   return taskList.map(task => `
     <div class="kanban-card">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
-        <span class="priority-tag ${task.priority}">${task.priority}</span>
-        <span style="font-size:10px;color:var(--text-muted)">📅 ${task.deadline}</span>
+        <span class="priority-tag ${escapeHtml(task.priority)}">${escapeHtml(task.priority)}</span>
+        <span style="font-size:10px;color:var(--text-muted)">📅 ${escapeHtml(task.deadline)}</span>
       </div>
-      <div style="font-size:13px;font-weight:700;margin-bottom:4px">${task.title}</div>
-      <div style="font-size:11px;color:var(--text-secondary)">👤 Assigned: ${task.assigned_to}</div>
+      <div style="font-size:13px;font-weight:700;margin-bottom:4px">${escapeHtml(task.title)}</div>
+      <div style="font-size:11px;color:var(--text-secondary)">👤 Assigned: ${escapeHtml(task.assigned_to)}</div>
       <div style="display:flex;gap:4px;margin-top:8px">
-        ${task.status !== 'todo' ? `<button class="btn btn-xs btn-outline" onclick="moveTaskStatus(${task.id}, 'todo')">◀ To Do</button>` : ''}
-        ${task.status !== 'in_progress' ? `<button class="btn btn-xs btn-outline" onclick="moveTaskStatus(${task.id}, 'in_progress')">⚡ In Prog</button>` : ''}
-        ${task.status !== 'completed' ? `<button class="btn btn-xs btn-primary" onclick="moveTaskStatus(${task.id}, 'completed')">✓ Done</button>` : ''}
+        ${task.status !== 'todo' ? `<button class="btn btn-xs btn-outline" onclick="moveTaskStatus(${Number(task.id)}, 'todo')">◀ To Do</button>` : ''}
+        ${task.status !== 'in_progress' ? `<button class="btn btn-xs btn-outline" onclick="moveTaskStatus(${Number(task.id)}, 'in_progress')">⚡ In Prog</button>` : ''}
+        ${task.status !== 'completed' ? `<button class="btn btn-xs btn-primary" onclick="moveTaskStatus(${Number(task.id)}, 'completed')">✓ Done</button>` : ''}
       </div>
     </div>
   `).join('');
@@ -421,16 +421,16 @@ async function runEventAIEstimate() {
       <div class="glass-card" style="border-color:var(--teal)">
         <div style="font-size:16px;font-weight:800;color:var(--teal);margin-bottom:8px">✨ EventAI Recommendation Summary</div>
         <div class="field-grid-2 mb-16">
-          <div><div class="field-label">Recommended Total Budget</div><div class="field-val" style="font-size:18px;color:var(--teal);font-weight:800">৳${res.recommendedBudget.toLocaleString()}</div></div>
-          <div><div class="field-label">Catering (Food 40%)</div><div class="field-val">৳${res.breakdown.food.toLocaleString()}</div></div>
-          <div><div class="field-label">Venue &amp; Hall (25%)</div><div class="field-val">৳${res.breakdown.venue.toLocaleString()}</div></div>
-          <div><div class="field-label">Stage &amp; Tech (15%)</div><div class="field-val">৳${res.breakdown.stageTech.toLocaleString()}</div></div>
+          <div><div class="field-label">Recommended Total Budget</div><div class="field-val" style="font-size:18px;color:var(--teal);font-weight:800">৳${escapeHtml(res.recommendedBudget.toLocaleString())}</div></div>
+          <div><div class="field-label">Catering (Food 40%)</div><div class="field-val">৳${escapeHtml(res.breakdown.food.toLocaleString())}</div></div>
+          <div><div class="field-label">Venue &amp; Hall (25%)</div><div class="field-val">৳${escapeHtml(res.breakdown.venue.toLocaleString())}</div></div>
+          <div><div class="field-label">Stage &amp; Tech (15%)</div><div class="field-val">৳${escapeHtml(res.breakdown.stageTech.toLocaleString())}</div></div>
         </div>
 
         <div style="font-weight:700;font-size:13px;margin-bottom:6px">📅 Suggested Milestone Timeline</div>
         <div style="display:flex;flex-direction:column;gap:6px">
           ${res.suggestedTimeline.map(item => `
-            <div style="font-size:12px;padding:6px 10px;background:var(--bg-glass);border-radius:4px"><strong>${item.week}:</strong> ${item.milestone}</div>
+            <div style="font-size:12px;padding:6px 10px;background:var(--bg-glass);border-radius:4px"><strong>${escapeHtml(item.week)}:</strong> ${escapeHtml(item.milestone)}</div>
           `).join('')}
         </div>
       </div>`;
@@ -672,15 +672,15 @@ function selectChapter(id) {
   detail.innerHTML = `
     <div class="chapter-detail-content">
       <div class="chapter-detail-header">
-        <div class="chapter-detail-icon">${c.icon}</div>
+        <div class="chapter-detail-icon">${escapeHtml(c.icon)}</div>
         <div>
-          <div class="chapter-detail-title">${c.name}</div>
-          <div class="chapter-detail-sub">${c.type.charAt(0).toUpperCase() + c.type.slice(1)} Chapter · Est. 2020 · PostgreSQL Synced</div>
+          <div class="chapter-detail-title">${escapeHtml(c.name)}</div>
+          <div class="chapter-detail-sub">${escapeHtml(c.type.charAt(0).toUpperCase() + c.type.slice(1))} Chapter · Est. 2020 · PostgreSQL Synced</div>
         </div>
       </div>
       <div class="chapter-stats-grid">
-        <div class="chapter-stat"><div class="chapter-stat-val" id="chap-member-count-${c.id}">${c.members.toLocaleString()}</div><div class="chapter-stat-lab">Members</div></div>
-        <div class="chapter-stat"><div class="chapter-stat-val">${c.events}</div><div class="chapter-stat-lab">Events</div></div>
+        <div class="chapter-stat"><div class="chapter-stat-val" id="chap-member-count-${Number(c.id)}">${escapeHtml(c.members.toLocaleString())}</div><div class="chapter-stat-lab">Members</div></div>
+        <div class="chapter-stat"><div class="chapter-stat-val">${escapeHtml(c.events)}</div><div class="chapter-stat-lab">Events</div></div>
         <div class="chapter-stat"><div class="chapter-stat-val">94%</div><div class="chapter-stat-lab">Active Rate</div></div>
       </div>
       <div style="font-size:14px;font-weight:700;margin-bottom:12px">Chapter Leadership &amp; Officers</div>
@@ -688,10 +688,10 @@ function selectChapter(id) {
         <div class="chapter-member"><span style="font-size:20px">👤</span><span>${m}</span></div>
       `).join('')}
       <div style="margin-top:16px;display:flex;gap:8px">
-        <button class="btn ${isJoined ? 'btn-outline' : 'btn-primary'} btn-sm" id="btn-join-${c.id}" onclick="toggleJoinChapter(${c.id})">
+        <button class="btn ${isJoined ? 'btn-outline' : 'btn-primary'} btn-sm" id="btn-join-${Number(c.id)}" onclick="toggleJoinChapter(${Number(c.id)})">
           ${isJoined ? '✓ Joined Chapter' : '+ Join Chapter'}
         </button>
-        <button class="btn btn-outline btn-sm" onclick="showChapterMembersModal(${c.id})">👥 View Members</button>
+        <button class="btn btn-outline btn-sm" onclick="showChapterMembersModal(${Number(c.id)})">👥 View Members</button>
       </div>
     </div>`;
 }
@@ -749,15 +749,15 @@ async function showChapterMembersModal(id) {
         <div class="glass-card" style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px">
           <div style="display:flex;align-items:center;gap:10px">
             <div class="alumni-avatar" style="width:36px;height:36px;font-size:13px;background:var(--teal)">
-              <span>${m.initials || (m.name ? m.name.slice(0,2).toUpperCase() : 'AL')}</span>
+              <span>${escapeHtml(m.initials || (m.name ? m.name.slice(0,2).toUpperCase() : 'AL'))}</span>
             </div>
             <div>
               <div style="font-weight:700;font-size:14px;color:var(--text-primary)">${escapeHtml(m.name)}</div>
               <div style="font-size:12px;color:var(--text-secondary)">${escapeHtml([m.role, m.company].filter(Boolean).join(" · ") || "Profile incomplete")}</div>
-              <div style="font-size:11px;color:var(--text-muted)">Batch ${m.batch || "—"} · ${escapeHtml(m.dept || "—")}</div>
+              <div style="font-size:11px;color:var(--text-muted)">Batch ${escapeHtml(m.batch || "—")} · ${escapeHtml(m.dept || "—")}</div>
             </div>
           </div>
-          <button class="btn btn-outline btn-sm" onclick="closeModal(); viewAlumniProfile(${m.id || 5})">View Profile</button>
+          <button class="btn btn-outline btn-sm" onclick="closeModal(); viewAlumniProfile(${Number(m.id) || 5})">View Profile</button>
         </div>
       `).join('')}
     </div>
@@ -827,10 +827,10 @@ async function renderSpotlightAlumni() {
 
   el.innerHTML = spotlights.map(a => `
     <div class="spotlight-card">
-      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,${a.color}40,${a.color}20);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${a.color};flex-shrink:0">${escapeHtml(a.initials)}</div>
+      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,${escapeHtml(a.color)}40,${escapeHtml(a.color)}20);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${escapeHtml(a.color)};flex-shrink:0">${escapeHtml(a.initials)}</div>
       <div class="spotlight-info">
         <div class="spotlight-name">${escapeHtml(a.name)}</div>
-        <div class="spotlight-sub">${escapeHtml(a.company || "—")} · Batch ${a.batch || "—"}</div>
+        <div class="spotlight-sub">${escapeHtml(a.company || "—")} · Batch ${escapeHtml(a.batch || "—")}</div>
       </div>
     </div>
   `).join('');

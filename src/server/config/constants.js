@@ -13,13 +13,12 @@ const MODERATOR_ROLES = ['super_admin', 'univ_admin', 'dept_admin', 'moderator']
 // Signed-session lifetime.
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
 
-// Shared initial credential for bulk-imported accounts. Stored only as a
-// scrypt hash; every imported user is flagged must_change_password.
-const DEFAULT_IMPORT_PASSWORD = '12345678';
+// There is deliberately no shared import credential. Bulk-imported accounts
+// each get their own random secret, hashed and discarded, so no account is
+// created with a password anyone knows. Do not reintroduce a constant here.
 
 module.exports = {
   ADMIN_ROLES,
   MODERATOR_ROLES,
   SESSION_TTL_MS,
-  DEFAULT_IMPORT_PASSWORD,
 };

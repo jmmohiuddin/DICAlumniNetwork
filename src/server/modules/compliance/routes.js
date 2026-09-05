@@ -11,15 +11,42 @@
 const db = require('../../db/pool');
 const { ok } = require('../../shared/http');
 
+// A DSAR export carries other people's text into the requester's file (a
+// mentorship counterpart's name, for one), so a cell opening with = + - @ TAB
+// or CR would run as a formula when a *different* person opens their own lawful
+// export. Neutralise the leading character with an apostrophe, then quote per
+// RFC 4180 — wrap in double quotes, double any embedded double quote.
+function csvCell(value) {
+  const text = String(value ?? '');
+  const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  return `"${safe.replace(/"/g, '""')}"`;
+}
+
 module.exports = function mountCompliance(app, {
   requireAuth, requireRole, ADMIN_ROLES,
   encryptField, decryptField, encryptionReady, writeAudit
 }) {
 
 
-  const clientIp = (req) =>
-    (req.headers['x-forwarded-for'] || '').split(',')[0].trim() ||
-    req.socket?.remoteAddress || 'unknown';
+  /* The IP on a consent record is legal evidence under PDPA 2026, so it must
+   * not be attacker-supplied. This used to read the left-most X-Forwarded-For
+   * entry, which is exactly the hop a client writes itself: any caller could
+   * stamp a consent record with any IP they liked.
+   *
+   * `req.ip` is the Express-sanctioned answer. It consults the app's
+   * `trust proxy` setting: with it off (the default, and this app's current
+   * state) Express ignores X-Forwarded-For entirely and returns the socket
+   * address; with it set to a hop count or a subnet, Express walks the header
+   * from the right and stops at the first untrusted hop.
+   *
+   * DEPLOYMENT: when this app runs behind a proxy or CDN (Vercel, nginx),
+   * server.js must declare it — `app.set('trust proxy', 1)`, where 1 is the
+   * number of proxies in front of the app. Never `app.set('trust proxy', true)`:
+   * that trusts the whole chain and re-opens the forgery above. Until that line
+   * exists, consent records behind a proxy carry the proxy's address, which is
+   * wrong but honest — unlike a client-chosen one.
+   */
+  const clientIp = (req) => req.ip || req.socket?.remoteAddress || 'unknown';
 
   /* ─── CONSENT LOGGING ───
      PDPA 2026 requires IP, timestamp and policy version behind each consent. */
@@ -170,14 +197,13 @@ module.exports = function mountCompliance(app, {
           lines.push(`# ${section}`);
           if (value.length) {
             lines.push(Object.keys(value[0]).join(','));
-            value.forEach(r => lines.push(Object.values(r)
-              .map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')));
+            value.forEach(r => lines.push(Object.values(r).map(csvCell).join(',')));
           }
           lines.push('');
         } else if (value && typeof value === 'object') {
           lines.push(`# ${section}`);
           lines.push(Object.keys(value).join(','));
-          lines.push(Object.values(value).map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(','));
+          lines.push(Object.values(value).map(csvCell).join(','));
           lines.push('');
         }
       }

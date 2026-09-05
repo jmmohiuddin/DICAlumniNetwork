@@ -11,6 +11,17 @@
 const db = require('../../db/pool');
 const { ok } = require('../../shared/http');
 
+// Free-text planner columns (risk_title, contingency_plan, vendor_name,
+// volunteer_name, item, assigned_to …) reach this report verbatim. A cell that
+// opens with = + - @ TAB or CR is evaluated as a formula by Excel, LibreOffice
+// and Sheets when the report is opened, so prefix those with an apostrophe.
+// Quoting is RFC 4180: wrap in double quotes, double any embedded double quote.
+function csvCell(value) {
+  const text = String(value ?? '');
+  const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  return `"${safe.replace(/"/g, '""')}"`;
+}
+
 // Generic CRUD factory — every planner sub-module has the same shape, so the
 // routes are generated from a column map instead of nine copies of the code.
 function crud(app, guards, { path, table, columns, required = [], label }) {
@@ -260,8 +271,7 @@ module.exports = function mountPlanner(app, guards) {
       lines.push(`## ${key.toUpperCase()}`);
       if (rows.rows.length) {
         lines.push(Object.keys(rows.rows[0]).join(','));
-        rows.rows.forEach(r => lines.push(
-          Object.values(r).map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')));
+        rows.rows.forEach(r => lines.push(Object.values(r).map(csvCell).join(',')));
       } else {
         lines.push('(no records)');
       }

@@ -143,7 +143,10 @@ async function showAttendeesModal(eventId) {
 
 // ─── DONATIONS ───
 
-async function processDonation(campaignId, campaignName) {
+// campaignName was an unused second parameter. Passing it required embedding an
+// admin-controlled string in an inline onclick, which was an XSS sink; the name
+// is not needed here, so the parameter is gone. See showDonateModal.
+async function processDonation(campaignId) {
   const custom = document.getElementById('custom-amount');
   const amount = state.selectedAmount || (custom && parseFloat(custom.value));
 

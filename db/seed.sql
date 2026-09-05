@@ -4,13 +4,26 @@
 -- ============================================================
 
 -- 1. SEED RBAC USERS
+-- ============================================================
+-- !! THESE ACCOUNTS ARE INTENTIONALLY LOGIN-DISABLED !!
+--
+-- password_hash is the sentinel 'disabled:set-via-bootstrap'. It is not a
+-- 'scrypt$<salt>$<derived>' hash, and verifyPassword() rejects anything that
+-- is not one, so no password can ever authenticate these rows.
+--
+-- The rows exist only so the demo/reference data below has stable user ids to
+-- point at. To actually use an account, provision a real password out of band
+-- (generate a scrypt hash with hashPassword() and UPDATE the row). Never
+-- restore a literal password here, and never let the app upgrade the sentinel
+-- on login.
+-- ============================================================
 INSERT INTO users (id, email, password_hash, full_name, initials, role, role_label, department, icon, is_verified)
 VALUES 
-  (1, 'admin@dic.edu.bd', '12345678', 'Super Admin', 'SA', 'super_admin', 'Super Admin', 'System & Security', '👑', true),
-  (2, 'collegeadmin@dic.edu.bd', '12345678', 'College Admin', 'CA', 'univ_admin', 'College Admin', 'DIC Administration', '🏛', true),
-  (3, 'departmentadmin@dic.edu.bd', '12345678', 'Dr. Shahabuddin', 'DA', 'dept_admin', 'Dept Admin (CSE)', 'CSE Department', '🏢', true),
-  (4, 'moderator@dic.edu.bd', '12345678', 'Content Moderator', 'CM', 'moderator', 'Moderator', 'DIC Community', '🛡', true),
-  (5, 'alumni@dic.edu.bd', '12345678', 'Mohiuddin Rahman', 'MR', 'alumni', 'Alumni Member', 'BSc CSE (2020)', '🎓', true)
+  (1, 'admin@dic.edu.bd', 'disabled:set-via-bootstrap', 'Super Admin', 'SA', 'super_admin', 'Super Admin', 'System & Security', '👑', true),
+  (2, 'collegeadmin@dic.edu.bd', 'disabled:set-via-bootstrap', 'College Admin', 'CA', 'univ_admin', 'College Admin', 'DIC Administration', '🏛', true),
+  (3, 'departmentadmin@dic.edu.bd', 'disabled:set-via-bootstrap', 'Dr. Shahabuddin', 'DA', 'dept_admin', 'Dept Admin (CSE)', 'CSE Department', '🏢', true),
+  (4, 'moderator@dic.edu.bd', 'disabled:set-via-bootstrap', 'Content Moderator', 'CM', 'moderator', 'Moderator', 'DIC Community', '🛡', true),
+  (5, 'alumni@dic.edu.bd', 'disabled:set-via-bootstrap', 'Mohiuddin Rahman', 'MR', 'alumni', 'Alumni Member', 'BSc CSE (2020)', '🎓', true)
 ON CONFLICT (id) DO NOTHING;
 
 SELECT setval('users_id_seq', (SELECT MAX(id) FROM users));

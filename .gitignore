@@ -21,3 +21,10 @@ CLAUDE-SECURITY-*/
 # Any .env variant (.env.local, .env.bak.<ts>, …) — never commit secrets
 .env*
 !.env.example
+
+# Business documents — this remote is public. Keep contracts, negotiation
+# strategy and client-facing PDFs out of the repository.
+legal/
+*.pdf
+*.docx
+.claude/

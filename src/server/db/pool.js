@@ -14,10 +14,23 @@ const { SCHEMA_SQL, SEED_SQL } = require('../config/paths');
 
 const connectionString = process.env.DATABASE_URL || process.env.POSTGRES_URL;
 
+/* TLS certificate validation. Managed Postgres (Neon, Supabase, Render) presents
+ * a publicly-trusted certificate, so validation simply works and is the default.
+ * PGSSL_INSECURE=true is the escape hatch for a self-signed development server;
+ * it accepts ANY certificate, which is indistinguishable from an attacker's. */
+const sslInsecure = process.env.PGSSL_INSECURE === 'true';
+const sslOptions = { rejectUnauthorized: !sslInsecure };
+
+if (sslInsecure) {
+  console.warn('⚠  PGSSL_INSECURE=true — database TLS certificates are NOT validated. ' +
+               'Any certificate is accepted, so anyone able to intercept the database connection ' +
+               'can read and alter every query and its results. Development only — never set this in production.');
+}
+
 const poolConfig = connectionString
   ? {
       connectionString,
-      ssl: { rejectUnauthorized: false },
+      ssl: sslOptions,
       max: 10,
       idleTimeoutMillis: 5000,
       connectionTimeoutMillis: 10000,
@@ -28,7 +41,7 @@ const poolConfig = connectionString
       database: process.env.PGDATABASE || 'dic_alumni_db',
       user: process.env.PGUSER || process.env.USER || 'mohiuddin',
       password: process.env.PGPASSWORD || '',
-      ssl: process.env.PGSSL === 'true' ? { rejectUnauthorized: false } : false,
+      ssl: process.env.PGSSL === 'true' ? sslOptions : false,
       max: 10,
       idleTimeoutMillis: 5000,
       connectionTimeoutMillis: 5000,

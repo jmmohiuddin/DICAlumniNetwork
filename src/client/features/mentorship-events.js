@@ -6,6 +6,31 @@
  * gap-fixes-req.js).
  */
 
+// Suggested-mentor records currently on screen, keyed by id. The Request button
+// passes the numeric id and resolves the name here: interpolating a name into
+// an onclick="" string puts it inside a JS string literal, which HTML-entity
+// escaping cannot protect (the browser decodes &#39; back to ' first).
+const mentorSuggestionIndex = new Map();
+
+function requestMentorSuggestion(id) {
+  const m = mentorSuggestionIndex.get(String(id));
+  if (m) showMentorModal(m.name, m.id, m.match_score);
+}
+
+// Same treatment for the event cards: the ticket buttons carry the event id
+// only and the title is resolved from the record at click time.
+const eventCardIndex = new Map();
+
+function registerForEventById(id, isFull) {
+  const e = eventCardIndex.get(String(id));
+  if (e) registerForEvent(e.id, e.title, isFull);
+}
+
+function cancelTicketById(id) {
+  const e = eventCardIndex.get(String(id));
+  if (e) cancelTicket(e.id, e.title);
+}
+
 // ─── MENTORSHIP (REQ-04) ───
 async function renderMentorships() {
   const list = document.getElementById('mentorship-list');
@@ -33,7 +58,7 @@ async function renderMentorships() {
             <div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(m.subject)}</div>
           </div>
           <span class="mentorship-type-badge ${isMentor ? 'mentor' : 'mentee'}">${isMentor ? '🎓 Mentoring' : '📚 Learning'}</span>
-          <button class="btn btn-ghost btn-sm" onclick="respondToMentorship(${m.id}, 'complete')">Complete</button>
+          <button class="btn btn-ghost btn-sm" onclick="respondToMentorship(${Number(m.id)}, 'complete')">Complete</button>
         </div>`;
       }).join('') : renderEmptyState('🤝', 'No active mentorships', 'Accepted mentorship connections will appear here.');
     }
@@ -55,8 +80,8 @@ async function renderMentorships() {
             <div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(r.subject)}</div>
           </div>
           <span class="expiry-badge">⏱ ${daysLeft}d left</span>
-          <button class="btn btn-sm btn-primary" onclick="respondToMentorship(${r.id}, 'accept')">Accept</button>
-          <button class="btn btn-sm btn-ghost" onclick="respondToMentorship(${r.id}, 'decline')">Decline</button>
+          <button class="btn btn-sm btn-primary" onclick="respondToMentorship(${Number(r.id)}, 'accept')">Accept</button>
+          <button class="btn btn-sm btn-ghost" onclick="respondToMentorship(${Number(r.id)}, 'decline')">Decline</button>
         </div>`;
       }).join('');
     }
@@ -68,16 +93,20 @@ async function renderMentorships() {
     } else if (suggestions.length === 0) {
       suggested.innerHTML = renderEmptyState('✨', 'No mentor matches yet');
     } else {
-      suggested.innerHTML = suggestions.map(m => `
+      suggested.innerHTML = suggestions.map(m => {
+        mentorSuggestionIndex.set(String(m.id), m);
+        const color = escapeHtml(m.color || '#00A859');
+        return `
         <div class="suggested-mentor-card">
-          <div class="alumni-avatar" style="width:40px;height:40px;background:linear-gradient(135deg,${m.color || '#00A859'}40,${m.color || '#00A859'}20);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:${m.color || '#00A859'}">${escapeHtml(m.initials)}</div>
+          <div class="alumni-avatar" style="width:40px;height:40px;background:linear-gradient(135deg,${color}40,${color}20);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:${color}">${escapeHtml(m.initials)}</div>
           <div style="flex:1;min-width:0">
             <div style="font-weight:700;font-size:13px">${escapeHtml(m.name)}</div>
             <div style="font-size:11px;color:var(--text-secondary)">${escapeHtml([m.role, m.company].filter(Boolean).join(' · ') || 'DIC Alumni')}</div>
           </div>
-          <span class="match-score-badge">${m.match_score}%</span>
-          <button class="btn btn-sm btn-primary" onclick="showMentorModal('${escapeHtml(m.name).replace(/'/g, '&#39;')}', ${m.id}, ${m.match_score})">Request</button>
-        </div>`).join('');
+          <span class="match-score-badge">${escapeHtml(m.match_score)}%</span>
+          <button class="btn btn-sm btn-primary" onclick="requestMentorSuggestion(${Number(m.id)})">Request</button>
+        </div>`;
+      }).join('');
     }
   }
 }
@@ -133,6 +162,7 @@ async function renderEvents(filter = 'upcoming') {
     const registered = e.registered_live ?? e.registered_count ?? 0;
     const pct = e.capacity ? Math.min(100, Math.round((registered / e.capacity) * 100)) : 0;
     const full = registered >= e.capacity;
+    eventCardIndex.set(String(e.id), e);
     return `
     <div class="event-card">
       <div class="event-card-banner" style="background: linear-gradient(135deg, rgba(108,99,255,0.15), rgba(0,212,170,0.1))">
@@ -146,15 +176,15 @@ async function renderEvents(filter = 'upcoming') {
         <div class="event-meta">📍 ${escapeHtml(e.venue)}</div>
         <div class="event-capacity-track"><div class="event-capacity-fill" style="width:${pct}%"></div></div>
         <div class="event-capacity-meta">
-          <span>${registered.toLocaleString()} / ${Number(e.capacity).toLocaleString()} registered</span>
+          <span>${escapeHtml(registered.toLocaleString())} / ${Number(e.capacity).toLocaleString()} registered</span>
           <span>${escapeHtml(e.price || 'Free')}</span>
         </div>
         <div class="event-card-actions">
           ${e.is_registered
-            ? `<button class="btn btn-outline btn-sm" onclick="viewMyTicket(${e.id})">🎫 View Ticket</button>
-               <button class="btn btn-ghost btn-sm" onclick="cancelTicket(${e.id}, '${escapeHtml(e.title).replace(/'/g, '&#39;')}')">Cancel</button>`
-            : `<button class="btn btn-primary btn-sm" onclick="registerForEvent(${e.id}, '${escapeHtml(e.title).replace(/'/g, '&#39;')}', ${full})">${full ? '⏳ Join Waitlist' : '🎫 Get Ticket'}</button>`}
-          ${canManage ? `<button class="btn btn-ghost btn-sm" onclick="showAttendeesModal(${e.id})">👥 Attendees</button>` : ''}
+            ? `<button class="btn btn-outline btn-sm" onclick="viewMyTicket(${Number(e.id)})">🎫 View Ticket</button>
+               <button class="btn btn-ghost btn-sm" onclick="cancelTicketById(${Number(e.id)})">Cancel</button>`
+            : `<button class="btn btn-primary btn-sm" onclick="registerForEventById(${Number(e.id)}, ${full})">${full ? '⏳ Join Waitlist' : '🎫 Get Ticket'}</button>`}
+          ${canManage ? `<button class="btn btn-ghost btn-sm" onclick="showAttendeesModal(${Number(e.id)})">👥 Attendees</button>` : ''}
         </div>
       </div>
     </div>`;

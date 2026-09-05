@@ -22,7 +22,7 @@ async function loadImportHistory() {
 let currentImportState = {
   step: 1,
   filename: '',
-  strategy: 'temp12345',
+  strategy: 'no-password',
   dupResolution: 'update',   // retain data by enriching existing profiles
   totalRows: 0,
   headers: [],        // raw CSV header cells
@@ -125,11 +125,11 @@ function renderBulkImportPanel() {
               <tr>
                 <td><strong>${escapeHtml(h.batch_code)}</strong></td>
                 <td>📄 ${escapeHtml(h.filename)}</td>
-                <td>${h.total_records}</td>
-                <td><span class="card-badge teal">${h.success_count}</span></td>
-                <td>${h.failed_count > 0 ? `<span class="card-badge amber">${h.failed_count}</span>` : '0'}</td>
-                <td>${h.duplicate_count}</td>
-                <td>${formatDate(h.created_at)} (${escapeHtml(h.admin_name)})</td>
+                <td>${escapeHtml(h.total_records)}</td>
+                <td><span class="card-badge teal">${escapeHtml(h.success_count)}</span></td>
+                <td>${h.failed_count > 0 ? `<span class="card-badge amber">${escapeHtml(h.failed_count)}</span>` : '0'}</td>
+                <td>${escapeHtml(h.duplicate_count)}</td>
+                <td>${escapeHtml(formatDate(h.created_at))} (${escapeHtml(h.admin_name)})</td>
                 <td>${escapeHtml(h.processing_time)}</td>
               </tr>
             `).join('')}
@@ -156,10 +156,11 @@ function renderWizardStepContent() {
         <div class="input-group">
           <label class="input-label">Initial Password Policy</label>
           <select class="form-select" id="password-strategy-select" onchange="currentImportState.strategy = this.value">
-            <option value="temp12345">Shared temporary password (12345678)</option>
+            <option value="no-password">No password set &mdash; provisioned separately</option>
           </select>
           <div style="font-size:12px;color:var(--text-muted);margin-top:6px">
-            Stored as a scrypt hash. Every imported account is flagged to change it on first login.
+            Imported accounts are created without a usable password and stay unverified
+            until one is provisioned for them. No shared credential is issued.
           </div>
         </div>
         <div class="input-group">
@@ -231,7 +232,7 @@ function renderWizardStepContent() {
     return `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <div style="font-weight:700;font-size:14px;color:var(--text-primary)">
-          📄 Parsed File: <strong>"${currentImportState.filename}"</strong> (${currentImportState.totalRows} Total Records)
+          📄 Parsed File: <strong>"${escapeHtml(currentImportState.filename)}"</strong> (${escapeHtml(currentImportState.totalRows)} Total Records)
         </div>
         <button class="btn btn-outline btn-sm" onclick="resetImportWizard()">← Upload Different File</button>
       </div>
@@ -274,38 +275,38 @@ function renderWizardStepContent() {
           <tbody>
             ${currentImportState.validRecords.map(r => `
               <tr>
-                <td>#${r.row}</td>
-                <td><strong>${r.name}</strong></td>
-                <td>${r.studentId}</td>
-                <td>${r.email}</td>
-                <td>${r.year}</td>
-                <td>${r.dept}</td>
+                <td>#${escapeHtml(r.row)}</td>
+                <td><strong>${escapeHtml(r.name)}</strong></td>
+                <td>${escapeHtml(r.studentId)}</td>
+                <td>${escapeHtml(r.email)}</td>
+                <td>${escapeHtml(r.year)}</td>
+                <td>${escapeHtml(r.dept)}</td>
                 <td><span class="card-badge teal">Valid</span></td>
                 <td style="color:var(--teal);font-size:11px">✓ Ready for Account Creation</td>
               </tr>
             `).join('')}
             ${currentImportState.duplicateRecords.map(r => `
               <tr>
-                <td>#${r.row}</td>
-                <td><strong>${r.name}</strong></td>
-                <td>${r.studentId}</td>
-                <td>${r.email}</td>
-                <td>${r.year}</td>
-                <td>${r.dept}</td>
+                <td>#${escapeHtml(r.row)}</td>
+                <td><strong>${escapeHtml(r.name)}</strong></td>
+                <td>${escapeHtml(r.studentId)}</td>
+                <td>${escapeHtml(r.email)}</td>
+                <td>${escapeHtml(r.year)}</td>
+                <td>${escapeHtml(r.dept)}</td>
                 <td><span class="card-badge amber">Duplicate</span></td>
-                <td style="color:var(--amber);font-size:11px">⚠ Matches existing alumni ID ${r.studentId}</td>
+                <td style="color:var(--amber);font-size:11px">⚠ Matches existing alumni ID ${escapeHtml(r.studentId)}</td>
               </tr>
             `).join('')}
             ${currentImportState.invalidRecords.map(r => `
               <tr>
-                <td>#${r.row}</td>
-                <td><strong>${r.name || 'N/A'}</strong></td>
-                <td>${r.studentId || 'Missing'}</td>
-                <td>${r.email || 'Missing'}</td>
-                <td>${r.year || 'N/A'}</td>
-                <td>${r.dept || 'N/A'}</td>
+                <td>#${escapeHtml(r.row)}</td>
+                <td><strong>${escapeHtml(r.name || 'N/A')}</strong></td>
+                <td>${escapeHtml(r.studentId || 'Missing')}</td>
+                <td>${escapeHtml(r.email || 'Missing')}</td>
+                <td>${escapeHtml(r.year || 'N/A')}</td>
+                <td>${escapeHtml(r.dept || 'N/A')}</td>
                 <td><span class="card-badge red">Invalid</span></td>
-                <td style="color:var(--red);font-size:11px">❌ ${r.errorMsg}</td>
+                <td style="color:var(--red);font-size:11px">❌ ${escapeHtml(r.errorMsg)}</td>
               </tr>
             `).join('')}
           </tbody>
@@ -352,10 +353,23 @@ function resetImportWizard() {
   renderBulkImportPanel();
 }
 
+// Excel, LibreOffice and Sheets evaluate a cell that opens with = + - @ TAB or
+// CR as a formula, so text pasted into an uploaded CSV can execute on whichever
+// machine opens this error report. Prefix those with a literal apostrophe, then
+// quote per RFC 4180: wrap in double quotes and double any embedded quote (the
+// original built cells with no quote-doubling at all, so a `"` in a name also
+// broke the column structure).
+function csvCell(value) {
+  const text = String(value ?? '');
+  const safe = /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+  return `"${safe.replace(/"/g, '""')}"`;
+}
+
 function downloadImportErrorReportCSV() {
   const headers = ['RowNumber', 'Name', 'StudentID', 'Email', 'ErrorType', 'SuggestedFix'];
   const rows = currentImportState.invalidRecords.map(r => [
-    r.row, `"${r.name || ''}"`, `"${r.studentId || ''}"`, `"${r.email || ''}"`, `"${r.errorMsg}"`, '"Provide required valid Student ID, Email, and Full Name"'
+    csvCell(r.row), csvCell(r.name || ''), csvCell(r.studentId || ''), csvCell(r.email || ''),
+    csvCell(r.errorMsg), csvCell('Provide required valid Student ID, Email, and Full Name')
   ]);
 
   const csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => e.join(",")).join("\n");

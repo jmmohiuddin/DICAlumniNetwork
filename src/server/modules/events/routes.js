@@ -13,7 +13,26 @@ const db = require('../../db/pool');
 const { ok } = require('../../shared/http');
 const { writeAudit } = require('../../shared/audit');
 const { ref } = require('../../shared/reference');
-const { ENCRYPTION_KEY } = require('../../shared/crypto');
+const { ENCRYPTION_KEY, encryptionReady } = require('../../shared/crypto');
+
+/* ─── TICKET SIGNING KEY ───
+ * Ticket QR payloads are signed with ENCRYPTION_KEY (64 hex chars, same
+ * convention as shared/crypto.js and shared/audit.js). There is deliberately no
+ * fallback key: it used to fall back to the literal 'dic-ticket', which lives in
+ * this file, so every signature was forgeable by anyone who had read the source.
+ * Without the key, issuing refuses rather than minting forgeable tickets. */
+if (!encryptionReady) {
+  console.error('✖  ENCRYPTION_KEY missing or malformed — event ticket issuing is DISABLED. ' +
+                'Tickets are refused rather than signed with a constant key, because a signature ' +
+                'anyone can recompute is no signature at all. ' +
+                'Generate one with: node -e "console.log(require(\'crypto\').randomBytes(32).toString(\'hex\'))"');
+}
+
+/** The truncated HMAC carried in a ticket QR. Only call when encryptionReady. */
+function ticketSignature(ticketCode, eventId, userId) {
+  return crypto.createHmac('sha256', Buffer.from(ENCRYPTION_KEY, 'hex'))
+               .update(`${ticketCode}:${eventId}:${userId}`).digest('hex').slice(0, 16);
+}
 
 module.exports = function mountEvents(app, { requireAuth, requireRole, ADMIN_ROLES, MODERATOR_ROLES }) {
 
@@ -80,6 +99,11 @@ module.exports = function mountEvents(app, { requireAuth, requireRole, ADMIN_ROL
     const eventId = parseInt(req.params.id);
     const { paymentGateway, clientMutationId } = req.body || {};
 
+    // No signing key, no ticket. An unsigned (or constant-signed) ticket is forgeable.
+    if (!encryptionReady) {
+      return res.status(503).json({ error: 'Ticketing is unavailable: the server signing key is not configured' });
+    }
+
     // Offline replays carry a client mutation id; a duplicate is a no-op.
     if (clientMutationId) {
       const seen = await db.query('SELECT 1 FROM sync_mutations WHERE client_mutation_id = $1', [clientMutationId]);
@@ -114,8 +138,7 @@ module.exports = function mountEvents(app, { requireAuth, requireRole, ADMIN_ROL
       // Signed payload so a scanned QR can be validated rather than trusted.
       const qrPayload = JSON.stringify({
         t: ticketCode, e: eventId, u: req.user.uid,
-        s: crypto.createHmac('sha256', ENCRYPTION_KEY || 'dic-ticket')
-                 .update(`${ticketCode}:${eventId}:${req.user.uid}`).digest('hex').slice(0, 16)
+        s: ticketSignature(ticketCode, eventId, req.user.uid)
       });
 
       const priceValue = parseFloat(String(event.price).replace(/[^\d.]/g, '')) || 0;

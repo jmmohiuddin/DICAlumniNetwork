@@ -30,7 +30,6 @@ const {
   ADMIN_ROLES,
   MODERATOR_ROLES,
   SESSION_TTL_MS,
-  DEFAULT_IMPORT_PASSWORD,
 } = require('./src/server/config/constants');
 const {
   hashPassword,
@@ -117,8 +116,8 @@ app.post('/api/auth/login', async (req, res) => {
     const user = publicUser(row);
     const token = signToken({ uid: user.id, role: user.role, exp: Date.now() + SESSION_TTL_MS });
 
-    // Bulk-imported accounts share an initial password; the client prompts for
-    // a change when this is set.
+    // Set on accounts that have no password of their own yet (bulk imports);
+    // the client prompts for a change when this is set.
     res.json({ token, user, mustChangePassword: row.must_change_password === true });
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -516,7 +515,7 @@ app.post('/api/chapters/:id/join', requireAuth, async (req, res) => {
   }
 });
 
-app.get('/api/chapters/:id/members', async (req, res) => {
+app.get('/api/chapters/:id/members', requireAuth, async (req, res) => {
   const chapterId = parseInt(req.params.id);
   try {
     const result = await db.query(`
@@ -528,11 +527,8 @@ app.get('/api/chapters/:id/members', async (req, res) => {
       WHERE cm.chapter_id = $1
     `, [chapterId]);
 
-    if (result.rows.length === 0) {
-      // Return default members
-      const defaults = await db.query('SELECT u.id, u.full_name as name, u.initials, ap.job_title as role, ap.current_company as company, ap.batch, ap.department as dept FROM users u LEFT JOIN alumni_profiles ap ON u.id = ap.user_id LIMIT 4');
-      return res.json(defaults.rows);
-    }
+    // A chapter with no memberships returns an empty list. It used to fall back
+    // to four arbitrary users, which leaked people unrelated to the chapter.
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -830,7 +826,6 @@ app.post('/api/bulk-import', requireRole(...ADMIN_ROLES), async (req, res) => {
                              "photoUrl","facebook"];
     const seenEmail = new Set(), seenMobile = new Set();
     const strategy = (req.body.dupResolution || "skip").toLowerCase();
-    const passwordHash = hashPassword(DEFAULT_IMPORT_PASSWORD);
 
     for (const r of records) {
       const rowNo = r.row || 0;
@@ -912,15 +907,19 @@ app.post('/api/bulk-import', requireRole(...ADMIN_ROLES), async (req, res) => {
         continue;
       }
 
-      // New account. The shared initial password is hashed with scrypt before
-      // insertion and flagged so the user is asked to change it on first login.
+      // New account. No shared credential is issued: each row gets its own
+      // random secret, hashed with scrypt and then discarded, so the row has no
+      // password anyone (including this process) can present. The account stays
+      // unverified and flagged must_change_password until a password is
+      // properly provisioned for it.
+      const passwordHash = hashPassword(crypto.randomBytes(32).toString('hex'));
       const initials = name.split(/\s+/).filter(Boolean).slice(0, 2)
         .map(w => w[0]).join("").toUpperCase().slice(0, 2) || "AL";
 
       const userRes = await client.query(
         `INSERT INTO users (email, password_hash, full_name, initials, role, role_label,
                             department, is_verified, must_change_password, created_via)
-         VALUES ($1,$2,$3,$4,'alumni','Alumni Member',$5,TRUE,TRUE,'bulk_import')
+         VALUES ($1,$2,$3,$4,'alumni','Alumni Member',$5,FALSE,TRUE,'bulk_import')
          ON CONFLICT (email) DO NOTHING RETURNING id`,
         [email, passwordHash, name, initials, normalizeHscGroup(r.hscGroup) || "General"]
       );
@@ -982,7 +981,7 @@ app.get('/api/import-history', requireRole(...ADMIN_ROLES), async (req, res) => 
 });
 
 // ─── 10. EVENT MANAGEMENT PLANNER WORKSPACE ENDPOINTS ───
-app.get('/api/events/planner/:id', async (req, res) => {
+app.get('/api/events/planner/:id', requireAuth, async (req, res) => {
   const eventId = parseInt(req.params.id) || 1;
   try {
     const proposal = await db.query('SELECT * FROM event_proposals WHERE id = $1 LIMIT 1', [eventId]);

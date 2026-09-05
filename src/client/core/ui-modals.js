@@ -73,7 +73,7 @@ function showMentorModal(mentorName = '', mentorId = null, matchScore = 0) {
       <label class="input-label">Your message</label>
       <textarea id="mentor-message" class="form-input" rows="5" placeholder="Introduce yourself, your background and what specific guidance would help most…"></textarea>
     </div>
-    <button class="btn btn-primary btn-full" onclick="submitMentorRequest(${mentorId}, ${matchScore})">🤝 Send Request</button>
+    <button class="btn btn-primary btn-full" onclick="submitMentorRequest(${Number(mentorId)}, ${Number(matchScore)})">🤝 Send Request</button>
     <div style="font-size:11px;color:var(--text-muted);margin-top:10px;text-align:center">Unanswered requests expire automatically after 5 days.</div>
   `);
 }
@@ -117,7 +117,14 @@ function showDonateModal(campaignId, campaignName) {
     <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);margin:14px 0;cursor:pointer">
       <input type="checkbox" id="donate-anonymous" /> Donate anonymously
     </label>
-    <button class="btn btn-primary btn-full" onclick="processDonation(${campaignId}, '${escapeHtml(campaignName).replace(/'/g, '&#39;')}')">Continue to Payment →</button>
+    <!-- Only the numeric id crosses into the handler. The campaign name used to
+         be interpolated here as a JS string literal, escaped with
+         escapeHtml(...).replace(/'/g,'&#39;') — which does not work: the HTML
+         parser decodes the attribute before the JS parser sees it, so &#39;
+         becomes a real apostrophe and an admin-chosen campaign name could close
+         the string and run script in any donor's session. processDonation never
+         read the name, so it is simply not passed. -->
+    <button class="btn btn-primary btn-full" onclick="processDonation(${Number(campaignId)})">Continue to Payment →</button>
   `);
 }
 

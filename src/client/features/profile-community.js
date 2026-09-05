@@ -16,6 +16,17 @@ let MOCK_CUSTOM_FIELDS = [
   { id: 'cf_3', label: 'Startup Pitch Deck / Video Link', section: 'networking', type: 'url', required: false }
 ];
 
+// Custom field rows currently on screen. The delete button carries the row's
+// numeric position and resolves id + label from here at click time: both are
+// server-supplied strings, and interpolating either into an onclick="" string
+// puts it inside a JS string literal that HTML-entity escaping cannot protect.
+let customFieldRows = [];
+
+function deleteCustomFieldAt(i) {
+  const f = customFieldRows[i];
+  if (f) deleteCustomField(f.id, f.label);
+}
+
 // ─── CUSTOM FIELDS ───
 async function renderCustomFieldManager() {
   const el = document.getElementById('custom-field-manager');
@@ -53,14 +64,14 @@ async function renderCustomFieldManager() {
       <button type="submit" class="btn btn-primary btn-full">➕ Add Custom Field</button>
     </form>
     <div style="margin-top:16px;display:flex;flex-direction:column;gap:8px">
-      ${fields.length ? fields.map(f => `
+      ${fields.length ? (customFieldRows = fields).map((f, i) => `
         <div class="custom-field-row">
           <div class="vault-icon">🧩</div>
           <div style="flex:1;min-width:0">
             <div style="font-weight:700;font-size:13px">${escapeHtml(f.label)}${f.is_required ? ' <span style="color:var(--red)">*</span>' : ''}</div>
             <div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(f.section)} · ${escapeHtml(f.field_type)} · <span style="font-family:monospace;font-size:11px">${escapeHtml(f.id)}</span></div>
           </div>
-          <button class="btn btn-sm btn-ghost" onclick="deleteCustomField('${escapeHtml(f.id)}', '${escapeHtml(f.label).replace(/'/g, '&#39;')}')">🗑</button>
+          <button class="btn btn-sm btn-ghost" onclick="deleteCustomFieldAt(${Number(i)})">🗑</button>
         </div>`).join('')
       : renderEmptyState('🧩', 'No custom fields yet', 'Add schema fields without a code change.')}
     </div>`;
@@ -414,7 +425,7 @@ async function renderActivePoll() {
   el.innerHTML = `
     <div class="poll-header">
       <div class="poll-title">🗳 Institutional Alumni Poll</div>
-      <div class="poll-meta">🟢 Live · ${poll.total} vote${poll.total === 1 ? '' : 's'}</div>
+      <div class="poll-meta">🟢 Live · ${escapeHtml(poll.total)} vote${poll.total === 1 ? '' : 's'}</div>
     </div>
     <div class="poll-question-text">${escapeHtml(poll.question)}</div>
     <div class="poll-options">
@@ -422,7 +433,7 @@ async function renderActivePoll() {
         const pct = poll.total ? Math.round((poll.counts[idx] / poll.total) * 100) : 0;
         const mine = poll.myVote === idx;
         return `
-        <button class="poll-option-btn${mine ? ' voted' : ''}" onclick="votePoll(${poll.id}, ${idx})">
+        <button class="poll-option-btn${mine ? ' voted' : ''}" onclick="votePoll(${Number(poll.id)}, ${Number(idx)})">
           <div class="poll-option-bar" style="width:${pct}%"></div>
           <span class="poll-option-text">${mine ? '✓ ' : ''}${escapeHtml(o)}</span>
           <span class="poll-option-pct">${pct}%</span>
@@ -574,14 +585,14 @@ async function renderModerationPanel() {
             <tbody>
               ${pendingChapters.map(c => `
                 <tr>
-                  <td style="font-size:20px">${c.icon}</td>
-                  <td><strong>${c.name}</strong></td>
-                  <td><span class="card-badge teal">${c.type}</span></td>
-                  <td style="font-size:12px;color:var(--text-secondary)">${c.description || 'No description provided'}</td>
+                  <td style="font-size:20px">${escapeHtml(c.icon)}</td>
+                  <td><strong>${escapeHtml(c.name)}</strong></td>
+                  <td><span class="card-badge teal">${escapeHtml(c.type)}</span></td>
+                  <td style="font-size:12px;color:var(--text-secondary)">${escapeHtml(c.description || 'No description provided')}</td>
                   <td>
                     <div style="display:flex;gap:6px">
-                      <button class="btn btn-sm btn-primary" onclick="handleModerateChapter(${c.id}, 'approve')">Approve ✓</button>
-                      <button class="btn btn-sm btn-danger" onclick="handleModerateChapter(${c.id}, 'reject')">Reject ✕</button>
+                      <button class="btn btn-sm btn-primary" onclick="handleModerateChapter(${Number(c.id)}, 'approve')">Approve ✓</button>
+                      <button class="btn btn-sm btn-danger" onclick="handleModerateChapter(${Number(c.id)}, 'reject')">Reject ✕</button>
                     </div>
                   </td>
                 </tr>
@@ -608,15 +619,15 @@ async function renderModerationPanel() {
             <tbody>
               ${pendingStories.map(s => `
                 <tr>
-                  <td style="font-size:20px">${s.emoji || '🌟'}</td>
-                  <td><strong>${s.title}</strong></td>
-                  <td><span class="card-badge indigo">${s.category}</span></td>
-                  <td>${s.author_name}</td>
-                  <td style="font-size:12px;color:var(--text-secondary)">${s.excerpt}</td>
+                  <td style="font-size:20px">${escapeHtml(s.emoji || '🌟')}</td>
+                  <td><strong>${escapeHtml(s.title)}</strong></td>
+                  <td><span class="card-badge indigo">${escapeHtml(s.category)}</span></td>
+                  <td>${escapeHtml(s.author_name)}</td>
+                  <td style="font-size:12px;color:var(--text-secondary)">${escapeHtml(s.excerpt)}</td>
                   <td>
                     <div style="display:flex;gap:6px">
-                      <button class="btn btn-sm btn-primary" onclick="handleModerateStory(${s.id}, 'approve')">Approve ✓</button>
-                      <button class="btn btn-sm btn-danger" onclick="handleModerateStory(${s.id}, 'reject')">Reject ✕</button>
+                      <button class="btn btn-sm btn-primary" onclick="handleModerateStory(${Number(s.id)}, 'approve')">Approve ✓</button>
+                      <button class="btn btn-sm btn-danger" onclick="handleModerateStory(${Number(s.id)}, 'reject')">Reject ✕</button>
                     </div>
                   </td>
                 </tr>

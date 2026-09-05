@@ -54,6 +54,23 @@ function startCampaignTicker() {
   }, 3500);
 }
 
+// Campaign records currently on screen, keyed by id. The footer buttons carry
+// the numeric id only and resolve the name here at click time — a name
+// interpolated into an onclick="" string sits inside a JS string literal, where
+// HTML-entity escaping is no defence (the browser decodes &#39; back to ' before
+// the JS is parsed, closing the literal).
+const campaignCardIndex = new Map();
+
+function showDonateModalById(id) {
+  const c = campaignCardIndex.get(String(id));
+  if (c) showDonateModal(c.id, c.name);
+}
+
+function deleteCampaignPromptById(id) {
+  const c = campaignCardIndex.get(String(id));
+  if (c) deleteCampaignPrompt(c.id, c.name);
+}
+
 // Enhanced renderCampaigns with live IDs and ticker
 // ─── DONATIONS (REQ-05) ───
 // Two-phase: a PENDING ledger row is written, the gateway step is authorised,
@@ -81,7 +98,7 @@ async function renderCampaignsEnhanced() {
     const goal = Number(c.goal_amount) || 1;
     const pct = Math.min(100, Math.round((raised / goal) * 100));
     const gateways = Array.isArray(c.gateways) ? c.gateways : [];
-    const safeName = escapeHtml(c.name).replace(/'/g, '&#39;');
+    campaignCardIndex.set(String(c.id), c);
     return `
     <div class="campaign-card">
       <div class="campaign-card-header">
@@ -98,7 +115,7 @@ async function renderCampaignsEnhanced() {
         </div>
         <div style="display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--text-muted)">
           <span>👥 ${Number(c.donors_count || 0).toLocaleString()} donors</span>
-          <span>📅 ${c.days_left} days left</span>
+          <span>📅 ${escapeHtml(c.days_left)} days left</span>
         </div>
       </div>
       <div class="campaign-footer">
@@ -106,8 +123,8 @@ async function renderCampaignsEnhanced() {
           ${gateways.map(g => `<span class="gateway-pill ${escapeHtml(g)}">${escapeHtml(g.charAt(0).toUpperCase() + g.slice(1))}</span>`).join('')}
         </div>
         <div style="display:flex;gap:6px">
-          ${canManage ? `<button class="btn btn-ghost btn-sm" onclick="deleteCampaignPrompt(${c.id}, '${safeName}')">🗑</button>` : ''}
-          <button class="donate-btn" onclick="showDonateModal(${c.id}, '${safeName}')">Donate →</button>
+          ${canManage ? `<button class="btn btn-ghost btn-sm" onclick="deleteCampaignPromptById(${Number(c.id)})">🗑</button>` : ''}
+          <button class="donate-btn" onclick="showDonateModalById(${Number(c.id)})">Donate →</button>
         </div>
       </div>
     </div>`;
@@ -136,6 +153,30 @@ function showReferralModal(jobId, jobTitle, postedBy) {
 
 
 
+// Same treatment for the job cards: every action button carries the numeric job
+// id and the title / poster name are resolved from the record at click time.
+const jobCardIndex = new Map();
+
+function applyJobById(id) {
+  const j = jobCardIndex.get(String(id));
+  if (j) applyJob(j.id, j.title);
+}
+
+function showJobApplicantsById(id) {
+  const j = jobCardIndex.get(String(id));
+  if (j) showJobApplicants(j.id, j.title);
+}
+
+function deleteJobPromptById(id) {
+  const j = jobCardIndex.get(String(id));
+  if (j) deleteJobPrompt(j.id, j.title);
+}
+
+function showReferralModalById(id) {
+  const j = jobCardIndex.get(String(id));
+  if (j) showReferralModal(j.id, j.title, j.posted_by_name || '');
+}
+
 // Updated renderJobs with Referral button
 // ─── JOBS (REQ-07) — served from PostgreSQL ───
 async function renderJobsEnhanced(filter = '') {
@@ -162,7 +203,7 @@ async function renderJobsEnhanced(filter = '') {
   container.innerHTML = jobs.map(j => {
     const tags = Array.isArray(j.tags) ? j.tags : [];
     const mine = j.posted_by_id === meId;
-    const safeTitle = escapeHtml(j.title).replace(/'/g, '&#39;');
+    jobCardIndex.set(String(j.id), j);
     return `
     <div class="job-card">
       <div class="job-company-logo">${escapeHtml(j.emoji || '💼')}</div>
@@ -173,7 +214,7 @@ async function renderJobsEnhanced(filter = '') {
           <span class="job-meta-item">📍 ${escapeHtml(j.location || '—')}</span>
           <span class="job-meta-item">👤 ${escapeHtml(j.posted_by_name || 'DIC Alumni')}</span>
           <span class="job-meta-item">🕒 ${escapeHtml(formatRelativeTime(j.created_at))}</span>
-          <span class="job-meta-item">📥 ${j.applicants} applicant${j.applicants === 1 ? '' : 's'}</span>
+          <span class="job-meta-item">📥 ${escapeHtml(j.applicants)} applicant${j.applicants === 1 ? '' : 's'}</span>
         </div>
         <div class="job-tags">${tags.map(t => `<span class="job-tag">${escapeHtml(t)}</span>`).join('')}</div>
       </div>
@@ -182,10 +223,10 @@ async function renderJobsEnhanced(filter = '') {
         <span class="job-type-badge ${escapeHtml(j.type)}">${escapeHtml((j.type || '').charAt(0).toUpperCase() + (j.type || '').slice(1))}</span>
         <div style="display:flex;gap:6px;flex-wrap:wrap">
           ${mine || isAdmin
-            ? `<button class="apply-btn" onclick="showJobApplicants(${j.id}, '${safeTitle}')">👥 Applicants (${j.applicants})</button>
-               <button class="referral-btn" onclick="deleteJobPrompt(${j.id}, '${safeTitle}')">🗑 Delete</button>`
-            : `<button class="apply-btn" ${j.has_applied ? 'disabled' : ''} onclick="applyJob(${j.id}, '${safeTitle}')">${j.has_applied ? '✓ Applied' : 'Apply →'}</button>
-               <button class="referral-btn" onclick="showReferralModal(${j.id}, '${safeTitle}', '${escapeHtml(j.posted_by_name || '').replace(/'/g, '&#39;')}')">🤝 Referral</button>`}
+            ? `<button class="apply-btn" onclick="showJobApplicantsById(${Number(j.id)})">👥 Applicants (${escapeHtml(j.applicants)})</button>
+               <button class="referral-btn" onclick="deleteJobPromptById(${Number(j.id)})">🗑 Delete</button>`
+            : `<button class="apply-btn" ${j.has_applied ? 'disabled' : ''} onclick="applyJobById(${Number(j.id)})">${j.has_applied ? '✓ Applied' : 'Apply →'}</button>
+               <button class="referral-btn" onclick="showReferralModalById(${Number(j.id)})">🤝 Referral</button>`}
         </div>
       </div>
     </div>`;
@@ -490,8 +531,8 @@ async function renderBroadcastHistory() {
         </div>
       </div>
       <div style="text-align:right;flex-shrink:0">
-        <div class="card-badge teal">${b.delivered_count}/${b.recipients_count} delivered</div>
-        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${(b.channels || []).join(' · ')}</div>
+        <div class="card-badge teal">${escapeHtml(b.delivered_count)}/${escapeHtml(b.recipients_count)} delivered</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px">${escapeHtml((b.channels || []).join(' · '))}</div>
       </div>
     </div>`).join('');
 }

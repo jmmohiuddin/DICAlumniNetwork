@@ -1,17 +1,15 @@
 /*
  * auth.js — extracted verbatim from the original app.js, lines 134-364.
  *
- * Authentication and demo login: login submit/error/busy handlers, role
- * login/switching, session bootstrap, sidebar nav rendering, the multi-step
- * login flow, logout, and theme toggle. (Sign-up and change-password live
+ * Authentication: login submit/error/busy handlers, session bootstrap,
+ * sidebar nav rendering, the multi-step login flow, logout, and theme
+ * toggle. (Sign-up and change-password live
  * separately in core/auth-signup.js — see app.js:6139-6253.)
  */
 
-// ─── AUTHENTICATION & DEMO LOGIN HANDLERS ───────────────────
+// ─── AUTHENTICATION HANDLERS ────────────────────────────────
 // Every path below authenticates against PostgreSQL via /api/auth/login and
 // stores a signed session token. The client no longer invents a user object.
-
-const DEMO_PASSWORD = '12345678';
 
 function showLoginError(message) {
   const el = document.getElementById('login-error');
@@ -47,40 +45,6 @@ async function handleLoginSubmit(e) {
   if (result.mustChangePassword) setTimeout(() => showChangePasswordModal(true), 700);
 }
 
-// Demo shortcuts still go through the real endpoint with real credentials.
-async function loginAsRole(roleKey) {
-  const account = MOCK_USERS[roleKey];
-  if (!account) return;
-
-  showLoginError('');
-  const result = await API.login(account.email, DEMO_PASSWORD);
-
-  if (!result || result.error) {
-    showLoginError(result?.error || `Demo login for ${roleKey} failed.`);
-    return;
-  }
-  enterAuthenticatedApp(result.user);
-}
-
-// Switching role re-authenticates as that account so the session token, and
-// therefore every server-side permission check, actually changes.
-async function switchCurrentRole(roleKey) {
-  const account = MOCK_USERS[roleKey];
-  if (!account) return;
-
-  const result = await API.login(account.email, DEMO_PASSWORD);
-  if (!result || result.error) {
-    showToast('⚠ Could not switch role — please sign in again.');
-    return;
-  }
-
-  state.currentUser = result.user;
-  updateUserUI();
-  renderSidebarNav(result.user.role);
-  showToast(`🔄 Signed in as: ${result.user.roleLabel}`);
-  showPage('dashboard');
-}
-
 function enterAuthenticatedApp(user) {
   state.currentUser = user;
   document.getElementById('login-screen').classList.add('hidden');
@@ -112,15 +76,11 @@ function updateUserUI() {
   const sidebarAvatar = document.getElementById('sidebar-user-avatar');
   const sidebarName = document.getElementById('sidebar-user-name');
   const sidebarRole = document.getElementById('sidebar-user-role');
-  const topbarSelect = document.getElementById('topbar-role-select');
-  const drawerSelect = document.getElementById('drawer-role-select');
 
   if (topbarAvatar) topbarAvatar.textContent = u.initials;
   if (sidebarAvatar) sidebarAvatar.textContent = u.initials;
   if (sidebarName) sidebarName.textContent = u.name;
   if (sidebarRole) sidebarRole.textContent = u.roleLabel;
-  if (topbarSelect) topbarSelect.value = u.role;
-  if (drawerSelect) drawerSelect.value = u.role;
 }
 
 // ─── DYNAMIC SIDEBAR NAV PER ROLE ───────────────────────────

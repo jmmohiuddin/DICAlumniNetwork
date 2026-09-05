@@ -11,23 +11,32 @@
 function renderVerificationQueue() {
   const container = document.getElementById('verification-queue');
   if (!container) return;
-  container.innerHTML = MOCK_VERIFICATION_QUEUE.map(item => `
+  // MOCK_VERIFICATION_QUEUE is static client-side data today, so nothing here
+  // is attacker-controlled yet. It is escaped anyway, and the approve button
+  // carries an index rather than the name: this queue exists to review
+  // self-registered accounts, and the day it is wired to the server that name
+  // becomes attacker-chosen. A name inside onclick="approveAlumni('...')" lands
+  // in a JS string literal, where an apostrophe breaks out and escaping the
+  // HTML does not save you.
+  container.innerHTML = MOCK_VERIFICATION_QUEUE.map((item, i) => `
     <div class="queue-item">
-      <div class="queue-avatar">${item.initials}</div>
+      <div class="queue-avatar">${escapeHtml(item.initials)}</div>
       <div class="queue-info">
-        <div class="queue-name">${item.name}</div>
-        <div class="queue-sub">${item.details}</div>
+        <div class="queue-name">${escapeHtml(item.name)}</div>
+        <div class="queue-sub">${escapeHtml(item.details)}</div>
       </div>
       <div class="queue-actions">
-        <button class="approve-btn" onclick="approveAlumni('${item.name}')">✓ Approve</button>
+        <button class="approve-btn" onclick="approveAlumni(${Number(i)})">✓ Approve</button>
         <button class="review-btn">Review</button>
       </div>
     </div>
   `).join('');
 }
 
-function approveAlumni(name) {
-  showToast(`✅ ${name} approved successfully`);
+function approveAlumni(index) {
+  const item = MOCK_VERIFICATION_QUEUE[index];
+  if (!item) return;
+  showToast(`✅ ${item.name} approved successfully`);
 }
 
 // Directory is served from PostgreSQL. Search, filters, sorting and paging are
@@ -145,26 +154,50 @@ function connectAlumni(name, btn) {
   showToast('🤝 Connection request sent to ' + name + '!');
 }
 
+// Records behind the alumni cards / profile modal currently on screen, keyed by
+// id. Inline on*= handlers pass the numeric id and look the record up here at
+// click time: a name interpolated into an onclick="" string lands inside a JS
+// string literal, and HTML-entity escaping does not stop it closing that
+// literal — the browser decodes &#39; back to ' before the JS is parsed.
+const alumniRecordIndex = new Map();
+
+function alumniRecord(id) {
+  return alumniRecordIndex.get(String(id)) || null;
+}
+
+function connectAlumniById(id, btn) {
+  const rec = alumniRecord(id);
+  if (!rec) return;
+  // Called from the profile modal there is no button to flip, so fall back to
+  // the grid card's own button — the onclick text no longer carries the name.
+  connectAlumni(rec.name, btn || document.querySelector(`.connect-btn[data-alumni-id="${Number(id)}"]`));
+}
+
+function requestMentorshipById(id) {
+  const rec = alumniRecord(id);
+  if (rec) showMentorModal(rec.name, rec.id);
+}
+
 // Single card renderer shared by the directory grid and the dashboard
 // recommendations — these were two near-identical copies that had already
 // drifted apart (one omitted the verified ring, the other the click target).
 function renderAlumniCard(a) {
   const isConn = state.connectedAlumni && state.connectedAlumni[a.name];
   const color = a.color || '#00A859';
-  const nameAttr = escapeHtml(a.name).replace(/'/g, '&#39;');
   const subtitle = [a.role, a.company].filter(Boolean).join(' · ') || 'Profile incomplete';
+  alumniRecordIndex.set(String(a.id), a);
 
   return `
-    <div class="alumni-card" onclick="viewAlumniProfile(${a.id})">
+    <div class="alumni-card" onclick="viewAlumniProfile(${Number(a.id)})">
       <div class="alumni-card-top">
-        <div class="alumni-avatar ${a.verified ? 'verified-ring' : ''}" style="background: linear-gradient(135deg, ${color}40, ${color}20);">
-          <span style="color:${color}">${escapeHtml(a.initials)}</span>
+        <div class="alumni-avatar ${a.verified ? 'verified-ring' : ''}" style="background: linear-gradient(135deg, ${escapeHtml(color)}40, ${escapeHtml(color)}20);">
+          <span style="color:${escapeHtml(color)}">${escapeHtml(a.initials)}</span>
           ${a.verified ? '<div class="verified-badge-icon">✓</div>' : ''}
         </div>
         <div class="alumni-card-info">
           <div class="alumni-card-name">${escapeHtml(a.name)}</div>
           <div class="alumni-card-role">${escapeHtml(subtitle)}</div>
-          <div class="alumni-card-location">📍 ${escapeHtml(a.location || 'Location not set')}${a.batch ? ` · Batch ${a.batch}` : ''}</div>
+          <div class="alumni-card-location">📍 ${escapeHtml(a.location || 'Location not set')}${a.batch ? ` · Batch ${escapeHtml(a.batch)}` : ''}</div>
         </div>
       </div>
       <div class="alumni-tags">
@@ -172,10 +205,10 @@ function renderAlumniCard(a) {
         ${a.mentor ? '<span class="alumni-tag mentor-tag">🤝 Mentor</span>' : ''}
       </div>
       <div class="alumni-card-actions">
-        <button class="connect-btn ${isConn ? 'connected' : ''}"
-                onclick="event.stopPropagation(); connectAlumni('${nameAttr}', this)"
+        <button class="connect-btn ${isConn ? 'connected' : ''}" data-alumni-id="${Number(a.id)}"
+                onclick="event.stopPropagation(); connectAlumniById(${Number(a.id)}, this)"
                 ${isConn ? 'disabled' : ''}>${isConn ? '✓ Connected' : '+ Connect'}</button>
-        ${a.mentor ? `<button class="mentor-req-btn" onclick="event.stopPropagation(); showMentorModal('${nameAttr}', ${a.id})">🤝 Request Mentorship</button>` : ''}
+        ${a.mentor ? `<button class="mentor-req-btn" onclick="event.stopPropagation(); requestMentorshipById(${Number(a.id)})">🤝 Request Mentorship</button>` : ''}
       </div>
     </div>`;
 }
@@ -209,17 +242,20 @@ async function viewAlumniProfile(id) {
 
   const matchScore = 96; // AI Mentorship Vector Match Score (REQ-04)
 
+  // The modal's buttons carry only the numeric id; the name is resolved here.
+  alumniRecordIndex.set(String(profile.id), profile);
+
   showModal(`
     <div class="onboarding-header">
       <div style="display:flex;align-items:center;gap:12px">
         <div class="alumni-avatar verified-ring" style="width:52px;height:52px;font-size:18px;background:var(--teal)">
-          <span>${profile.initials || profile.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}</span>
+          <span>${escapeHtml(profile.initials || profile.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase())}</span>
           <div class="verified-badge-icon">✓</div>
         </div>
         <div style="flex:1">
-          <div class="onboarding-title" style="font-size:18px">${profile.name}</div>
-          <div class="onboarding-sub">${[profile.jobTitle, profile.company].filter(Boolean).join(" · ") || "Profile incomplete"}</div>
-          <div style="font-size:11px;color:var(--teal);margin-top:2px">🎓 ${val(profile.degree)}${profile.batch ? ` (Batch ${profile.batch})` : ""} · ${val(profile.department)}</div>
+          <div class="onboarding-title" style="font-size:18px">${escapeHtml(profile.name)}</div>
+          <div class="onboarding-sub">${escapeHtml([profile.jobTitle, profile.company].filter(Boolean).join(" · ") || "Profile incomplete")}</div>
+          <div style="font-size:11px;color:var(--teal);margin-top:2px">🎓 ${val(profile.degree)}${profile.batch ? ` (Batch ${escapeHtml(profile.batch)})` : ""} · ${val(profile.department)}</div>
         </div>
         <button class="modal-close" onclick="closeModal()">✕</button>
       </div>
@@ -273,13 +309,13 @@ async function viewAlumniProfile(id) {
       <!-- PRD UTILITIES (DIGITAL PASS & DSAR EXPORT) -->
       <div style="display:flex;gap:8px">
         <button class="btn btn-outline btn-sm" style="flex:1" onclick="showToast('🎟 Generated DIC Wallet Pass (Apple/Google PKPass)')">🎟 Download Digital Pass</button>
-        <button class="btn btn-outline btn-sm" style="flex:1" onclick="exportProfileDSAR('${profile.name}')">📥 Export Data (DSAR JSON)</button>
+        <button class="btn btn-outline btn-sm" style="flex:1" onclick="exportProfileDSAR()">📥 Export Data (DSAR JSON)</button>
       </div>
 
       <!-- ACTION BUTTONS -->
       <div class="field-grid-2" style="margin-top:10px">
-        <button class="btn btn-primary btn-full" onclick="closeModal(); connectAlumni('${profile.name}')">+ Connect</button>
-        <button class="btn btn-outline btn-full" onclick="closeModal(); showMentorModal('${escapeHtml(profile.name).replace(/'/g, '&#39;')}', ${profile.id})">🤝 Request Mentorship</button>
+        <button class="btn btn-primary btn-full" onclick="closeModal(); connectAlumniById(${Number(profile.id)})">+ Connect</button>
+        <button class="btn btn-outline btn-full" onclick="closeModal(); requestMentorshipById(${Number(profile.id)})">🤝 Request Mentorship</button>
       </div>
     </div>
   `);
