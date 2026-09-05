@@ -40,7 +40,7 @@ async function showEditProfileV2() {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">✏️ Edit My Profile</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <form onsubmit="handleSaveProfileV2(event)">
       <div class="modal-section-title">Identity</div>

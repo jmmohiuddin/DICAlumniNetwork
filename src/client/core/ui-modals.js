@@ -24,12 +24,71 @@ function initQRCode() {
 }
 
 // ─── MODALS ──────────────────────────────────────────────────
+/* One dialog element, reused by all 34 modal call sites across 9 modules, so
+ * everything below lands everywhere without touching a single caller.
+ *
+ * What it used to do: set innerHTML, remove .hidden, set body overflow hidden.
+ * That last part is a visual scroll lock only. It does not stop Tab and it does
+ * not stop a screen reader's virtual cursor, so the page behind stayed fully
+ * reachable — 17 focusable controls sat behind the donation modal — the dialog
+ * carried no role, focus never entered it, and Escape did nothing. A keyboard
+ * user could open Change Password and immediately tab out into the page under
+ * it without ever reaching the fields.
+ *
+ * `inert` does the heavy lifting: it removes a subtree from the tab order AND
+ * from the accessibility tree in one attribute, which is both the focus trap
+ * and the AT-hiding. It is supported across every browser this product
+ * targets. The backdrop stays clickable because it is outside the inert
+ * subtrees.
+ */
+let modalReturnFocus = null;
+
+/** Regions that must go inert while a dialog is open. */
+function modalBackgroundRegions() {
+  return ['pages', 'sidebar', 'sidebar-overlay']
+    .map(id => document.getElementById(id))
+    // The skip link lives at body root, outside every one of those, so it
+    // stayed focusable behind an open dialog — a one-element leak in the trap.
+    .concat([document.querySelector('.topbar'),
+             document.querySelector('.bottom-nav'),
+             document.querySelector('.skip-link')])
+    .filter(Boolean);
+}
+
 function showModal(html) {
   const body = document.getElementById('modal-body');
   const overlay = document.getElementById('modal-overlay');
+  const content = document.getElementById('modal-content');
   if (body) body.innerHTML = html;
   if (overlay) overlay.classList.remove('hidden');
   document.body.style.overflow = 'hidden';
+
+  // Remember who opened this so focus can go back there on close. Returning
+  // focus to where it came from is what keeps a keyboard user from being
+  // dumped at the top of the document after every dialog.
+  modalReturnFocus = document.activeElement;
+
+  if (content) {
+    content.setAttribute('role', 'dialog');
+    content.setAttribute('aria-modal', 'true');
+
+    // Name the dialog from its own title, whatever the caller called it.
+    const title = content.querySelector('.modal-title');
+    if (title) {
+      if (!title.id) title.id = 'modal-title-' + Date.now().toString(36);
+      content.setAttribute('aria-labelledby', title.id);
+    } else {
+      content.removeAttribute('aria-labelledby');
+    }
+  }
+
+  modalBackgroundRegions().forEach(el => el.setAttribute('inert', ''));
+
+  // Focus the close button rather than the first field: it is a predictable
+  // landing spot, and it means the first thing announced is how to get out.
+  const target = content && (content.querySelector('.modal-close') ||
+                             content.querySelector('button, [href], input, select, textarea'));
+  if (target) setTimeout(() => target.focus(), 0);
 }
 
 function openModal(html) {
@@ -41,7 +100,26 @@ function closeModal(e) {
   const overlay = document.getElementById('modal-overlay');
   if (overlay) overlay.classList.add('hidden');
   document.body.style.overflow = '';
+
+  modalBackgroundRegions().forEach(el => el.removeAttribute('inert'));
+
+  // Back where it came from. The guard covers an opener that has since been
+  // re-rendered out of the document.
+  if (modalReturnFocus && document.contains(modalReturnFocus)) {
+    try { modalReturnFocus.focus(); } catch { /* not focusable any more */ }
+  }
+  modalReturnFocus = null;
 }
+
+/** Escape closes whatever dialog is open — the convention every dialog has. */
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  const overlay = document.getElementById('modal-overlay');
+  if (overlay && !overlay.classList.contains('hidden')) {
+    e.preventDefault();
+    closeModal();
+  }
+});
 
 // ─── MENTOR REQUEST MODAL ───
 function showMentorModal(mentorName = '', mentorId = null, matchScore = 0) {
@@ -52,7 +130,7 @@ function showMentorModal(mentorName = '', mentorId = null, matchScore = 0) {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">🤝 Request a Mentor</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <div class="socratic-prompt">
       <div class="socratic-prompt-icon">🤖</div>
@@ -88,7 +166,7 @@ function showDonateModal(campaignId, campaignName) {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">💚 Donate</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <div style="margin-bottom:14px;padding:12px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
       <div style="font-size:12px;color:var(--text-muted)">Contributing to</div>
@@ -98,7 +176,7 @@ function showDonateModal(campaignId, campaignName) {
       <div class="modal-section-title">Select Amount (৳)</div>
       <div class="amount-grid">
         ${[500, 1000, 2500, 5000, 10000, 25000].map(a =>
-          `<button class="amount-btn" onclick="selectAmount(this, ${a})">৳${a.toLocaleString()}</button>`).join('')}
+          `<button type="button" class="amount-btn" aria-pressed="false" onclick="selectAmount(this, ${a})">৳${a.toLocaleString()}</button>`).join('')}
       </div>
       <div class="input-group mt-16">
         <label class="input-label">Or enter a custom amount</label>
@@ -113,9 +191,9 @@ function showDonateModal(campaignId, campaignName) {
            gateways is what made the old flow misleading. -->
       <div class="gateway-grid">
         ${[['bkash','📱','bKash'],['nagad','📲','Nagad'],['rocket','🚀','Rocket'],['card','💳','Card']].map(([id, icon, label]) =>
-          `<div class="gateway-option" role="button" tabindex="0" onclick="selectGateway(this, '${id}')">
-             <div style="font-size:22px">${icon}</div><div style="font-size:12px;font-weight:700">${label}</div>
-           </div>`).join('')}
+          `<button type="button" class="gateway-option" aria-pressed="false" onclick="selectGateway(this, '${id}')">
+             <span aria-hidden="true" style="font-size:22px;display:block">${icon}</span><span style="font-size:12px;font-weight:700">${label}</span>
+           </button>`).join('')}
       </div>
     </div>
     <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text-secondary);margin:14px 0;cursor:pointer">
@@ -133,15 +211,26 @@ function showDonateModal(campaignId, campaignName) {
 }
 
 function selectAmount(btn, amount) {
-  document.querySelectorAll('.amount-option').forEach(b => b.classList.remove('selected'));
+  // Was '.amount-option' — a class this modal does not render — so the previous
+  // choice was never cleared and two amounts could appear selected together.
+  document.querySelectorAll('.amount-btn').forEach(b => {
+    b.classList.remove('selected');
+    b.setAttribute('aria-pressed', 'false');
+  });
   btn.classList.add('selected');
+  btn.setAttribute('aria-pressed', 'true');
   state.selectedAmount = amount;
-  document.getElementById('custom-amount').value = '';
+  const custom = document.getElementById('custom-amount');
+  if (custom) custom.value = '';
 }
 
 function selectGateway(el, gateway) {
-  document.querySelectorAll('.gateway-option').forEach(g => g.classList.remove('selected'));
+  document.querySelectorAll('.gateway-option').forEach(g => {
+    g.classList.remove('selected');
+    g.setAttribute('aria-pressed', 'false');
+  });
   el.classList.add('selected');
+  el.setAttribute('aria-pressed', 'true');
   state.selectedGateway = gateway;
 }
 
@@ -158,7 +247,7 @@ function showCreateEventModal() {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">➕ Create Event</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <form onsubmit="handleCreateEventSubmit(event)">
       <div class="input-group"><label class="input-label">Event Title</label>
@@ -194,7 +283,7 @@ function showPostJobModal() {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">➕ Post a Job</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <div style="background:var(--primary-glow);border:1px solid rgba(108,99,255,0.2);border-radius:var(--radius-sm);padding:10px 14px;margin-bottom:16px;font-size:12px;color:var(--primary-light)">
       🔒 Alumni-only posting — visible to verified DIC alumni.
@@ -226,7 +315,7 @@ function showCreateChapterModal() {
   openModal(`
     <div class="modal-header">
       <div class="modal-title">➕ Create Chapter</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <form onsubmit="handleCreateChapterSubmit(event)">
       <div class="input-group"><label class="input-label">Chapter Name</label><input type="text" id="chap-create-name" class="form-input" placeholder="e.g., Sylhet Regional Chapter" required /></div>
@@ -274,7 +363,7 @@ function showCreateNewsModal() {
   openModal(`
     <div class="modal-header">
       <div class="modal-title">✐ Write a Story</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <form onsubmit="handleCreateStorySubmit(event)">
       <div class="input-group"><label class="input-label">Headline / Title</label><input type="text" id="story-create-title" class="form-input" placeholder="e.g., DIC AI Lab Launch 2026" required /></div>
@@ -317,7 +406,7 @@ function showTenantSwitcher() {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">⇅ Switch Institution</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">You have cross-institutional access to the following alumni networks:</p>
     ${MOCK_TENANTS.map(t => `

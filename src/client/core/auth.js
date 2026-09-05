@@ -115,15 +115,28 @@ function renderSidebarNav(role) {
     { id: 'apidev', icon: '⟁', label: 'Developer API', roles: ['super_admin'] }
   ];
 
+  /* These render as <button>, not <a>.
+   *
+   * They were `<a onclick=...>` with no href. An anchor without href is not a
+   * link: it takes no focus and carries no role, so all 14 sidebar items and
+   * all 5 bottom-nav items were invisible to both the keyboard and the screen
+   * reader. A full Tab walk of the app reached 41 stops without landing on a
+   * single navigation control — which on TalkBack, the dominant AT on the
+   * entry-level Android phones this product targets, meant the app was one
+   * screen deep and could not be navigated at all.
+   *
+   * <button> is right rather than adding href="#": these change a view, they
+   * do not navigate to a URL. aria-current="page" carries the selection, which
+   * was previously conveyed by colour alone. */
   const allowed = navItems.filter(item => item.roles.includes(role));
 
   container.innerHTML = allowed.map(item => `
     ${item.isDivider ? '<div class="nav-divider"></div>' : ''}
-    <a class="nav-item ${item.id === state.currentPage ? 'active' : ''}" onclick="showPage('${item.id}')" id="nav-${item.id}">
-      <span class="nav-icon">${item.icon}</span>
+    <button type="button" class="nav-item ${item.id === state.currentPage ? 'active' : ''}" onclick="showPage('${item.id}')" id="nav-${item.id}"${item.id === state.currentPage ? ' aria-current="page"' : ''}>
+      <span class="nav-icon" aria-hidden="true">${item.icon}</span>
       <span class="nav-label">${item.label}</span>
       ${item.badge ? `<span class="nav-badge ${item.badgeNew ? 'new' : ''}" ${item.badgeTeal ? 'style="background:var(--teal);color:var(--bg-deep)"' : ''}>${item.badge}</span>` : ''}${item.badgeKey ? `<span class="nav-badge ${item.badgeNew ? 'new' : ''}" data-badge-key="${item.badgeKey}" hidden></span>` : ''}
-    </a>
+    </button>
   `).join('');
 }
 

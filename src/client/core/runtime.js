@@ -38,24 +38,66 @@ function handleGlobalSearch(value) {
 }
 
 // ─── TOAST NOTIFICATION ──────────────────────────────────────
+/* Toasts are this app's only feedback channel — pledge recorded, job applied,
+ * mentorship requested, event check-in, and every "could not reach the server".
+ *
+ * Two things were wrong with them.
+ *
+ * 1. Nothing was announced. There was no aria-live anywhere in the codebase, so
+ *    a screen-reader user completed a donation and got no indication at all
+ *    that anything had happened. The container carries role="status" and
+ *    aria-live="polite" now; it is created once and reused, because a live
+ *    region has to exist in the DOM *before* text is put into it or the
+ *    insertion is not announced.
+ * 2. It was still dark. The colours were written inline in JS — near-black
+ *    panel, white ink, backdrop blur — so the stylesheet's light-theme
+ *    conversion could not reach them, and the toast was the last dark surface
+ *    in the app.
+ *
+ * The dwell time went from 3s to 5s: 3s is not long enough to hear a sentence
+ * read aloud, and now that these are announced that matters. A close button
+ * makes it dismissible, which is what WCAG 2.2.1 asks for.
+ */
 function showToast(message) {
-  let toast = document.getElementById('toast-container');
-  if (!toast) {
-    toast = document.createElement('div');
-    toast.id = 'toast-container';
-    toast.style.cssText = 'position:fixed;bottom:90px;right:20px;z-index:2000;display:flex;flex-direction:column;gap:8px;pointer-events:none;';
-    document.body.appendChild(toast);
+  let host = document.getElementById('toast-container');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'toast-container';
+    host.className = 'toast-container';
+    // The live region is the container, not the message: assistive tech has to
+    // be watching an element that already exists to notice a child appearing.
+    host.setAttribute('role', 'status');
+    host.setAttribute('aria-live', 'polite');
+    host.setAttribute('aria-atomic', 'false');
+    document.body.appendChild(host);
   }
 
   const t = document.createElement('div');
-  t.style.cssText = 'background:rgba(17,27,46,0.97);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:12px 18px;font-size:13px;font-weight:600;color:#F1F5FF;backdrop-filter:blur(20px);box-shadow:0 8px 30px rgba(0,0,0,0.4);animation:slideInRight 0.3s ease;max-width:320px;pointer-events:auto;';
-  t.textContent = message;
-  toast.appendChild(t);
+  t.className = 'toast';
 
-  setTimeout(() => {
-    t.style.animation = 'slideOutRight 0.3s ease forwards';
+  const text = document.createElement('span');
+  text.className = 'toast-text';
+  text.textContent = message;
+  t.appendChild(text);
+
+  const close = document.createElement('button');
+  close.type = 'button';
+  close.className = 'toast-close';
+  close.setAttribute('aria-label', 'Dismiss notification');
+  close.textContent = '\u2715';
+  close.onclick = () => dismiss();
+  t.appendChild(close);
+
+  host.appendChild(t);
+
+  let done = false;
+  function dismiss() {
+    if (done) return;
+    done = true;
+    t.classList.add('is-leaving');
     setTimeout(() => t.remove(), 300);
-  }, 3000);
+  }
+  setTimeout(dismiss, 5000);
 }
 
 // Add toast keyframes

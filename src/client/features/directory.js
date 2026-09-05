@@ -253,12 +253,18 @@ function renderAlumniCard(a) {
   return `
     <div class="alumni-card" onclick="viewAlumniProfile(${Number(a.id)})">
       <div class="alumni-card-top">
+        <!-- The monogram used the SAME hex for the ink and for a 25% wash of
+             itself as the fill, which can never reach 4.5:1 — measured 2.35:1.
+             The brand colour stays as the tint; the initials take the normal
+             text colour, which is 14:1 or better on every one of those washes.
+             styles.css already models this split (--diu-green "fill only" vs
+             --diu-green-text "legible on white"); this site predated it. -->
         <div class="alumni-avatar ${a.verified ? 'verified-ring' : ''}" style="background: linear-gradient(135deg, ${escapeHtml(color)}40, ${escapeHtml(color)}20);">
-          <span style="color:${escapeHtml(color)}">${escapeHtml(a.initials)}</span>
-          ${a.verified ? '<div class="verified-badge-icon">✓</div>' : ''}
+          <span style="color:var(--text-primary)">${escapeHtml(a.initials)}</span>
+          ${a.verified ? '<div class="verified-badge-icon" aria-hidden="true">✓</div>' : ''}
         </div>
         <div class="alumni-card-info">
-          <div class="alumni-card-name">${escapeHtml(a.name)}</div>
+          <div class="alumni-card-name"><button type="button" class="alumni-card-open" onclick="event.stopPropagation();viewAlumniProfile(${Number(a.id)})">${escapeHtml(a.name)}</button></div>
           <div class="alumni-card-role">${escapeHtml(subtitle)}</div>
           <div class="alumni-card-location">📍 ${escapeHtml(a.location || 'Location not set')}${a.batch ? ` · Batch ${escapeHtml(a.batch)}` : ''}</div>
         </div>
@@ -291,7 +297,7 @@ async function viewAlumniProfile(id) {
     showModal(`
       <div class="modal-header">
         <div class="modal-title">Profile unavailable</div>
-        <button class="modal-close" onclick="closeModal()">✕</button>
+        <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
       </div>
       ${renderErrorState('Could not load this alumni profile.', `closeModal(); viewAlumniProfile(${parseInt(id)})`)}
     `);
@@ -320,7 +326,7 @@ async function viewAlumniProfile(id) {
           <div class="onboarding-sub">${escapeHtml([profile.jobTitle, profile.company].filter(Boolean).join(" · ") || "Profile incomplete")}</div>
           <div style="font-size:11px;color:var(--teal);margin-top:2px">🎓 ${val(profile.degree)}${profile.batch ? ` (Batch ${escapeHtml(profile.batch)})` : ""} · ${val(profile.department)}</div>
         </div>
-        <button class="modal-close" onclick="closeModal()">✕</button>
+        <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
       </div>
     </div>
 

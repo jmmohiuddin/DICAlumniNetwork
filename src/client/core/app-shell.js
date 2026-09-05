@@ -473,13 +473,34 @@ function showPage(page) {
     target.classList.add('active');
   }
 
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  /* aria-current moves with .active. Selection used to be colour-only, which
+   * tells a screen-reader user nothing about where they are. */
+  document.querySelectorAll('.nav-item').forEach(n => {
+    n.classList.remove('active');
+    n.removeAttribute('aria-current');
+  });
   const navItem = document.getElementById('nav-' + page);
-  if (navItem) navItem.classList.add('active');
+  if (navItem) { navItem.classList.add('active'); navItem.setAttribute('aria-current', 'page'); }
 
-  document.querySelectorAll('.bottom-nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.bottom-nav-item').forEach(n => {
+    n.classList.remove('active');
+    n.removeAttribute('aria-current');
+  });
   const bnavItem = document.getElementById('bnav-' + page);
-  if (bnavItem) bnavItem.classList.add('active');
+  if (bnavItem) { bnavItem.classList.add('active'); bnavItem.setAttribute('aria-current', 'page'); }
+
+  /* Move focus to the new page and retitle the document.
+   *
+   * showPage() used to leave focus on <body>, so the next Tab restarted from
+   * the top of the document and a screen reader got no signal that the view
+   * had changed at all. Every page carries exactly one <h1>, so focusing the
+   * container lands the reader on the page title. */
+  if (target) {
+    target.setAttribute('tabindex', '-1');
+    target.focus({ preventScroll: true });
+    const heading = target.querySelector('.page-title');
+    if (heading) document.title = heading.textContent.trim() + ' — DIC Alumni & Career Network';
+  }
 
   // Navigating from the drawer has to dismiss it. Otherwise the new page
   // renders behind a drawer that is still covering it, which reads as a
@@ -511,7 +532,7 @@ function showPage(page) {
     if (typeof renderPastPolls === 'function') renderPastPolls();
     renderSpotlightAlumni();
   }
-  if (page === 'map') renderMapClusters();
+  if (page === 'map') { renderMapClusters(); renderMapStats(); }
   if (page === 'profile') {
     if (typeof render10SectionProfile === 'function') render10SectionProfile();
     renderCareerTimeline();
@@ -562,7 +583,59 @@ function setSidebarOpen(open) {
     overlay.setAttribute('aria-hidden', open ? 'false' : 'true');
   }
   document.body.classList.toggle('nav-open', open);
+
+  /* Below 900px the drawer is off-canvas. Closed, it was only moved out of
+   * sight with a transform — it stayed visible:visible and focusable, so the
+   * FIRST FOUR Tab stops on every page went to controls sitting at x=-306,
+   * and a keyboard user pressed Tab four times while nothing appeared to
+   * happen. `inert` takes it out of the tab order and the accessibility tree
+   * while it is closed, and takes the page out while it is open.
+   *
+   * Above 900px the sidebar is a permanent column and must never be inert —
+   * hence the media query rather than an unconditional toggle. A rotated
+   * tablet crossing the breakpoint is handled by the resize listener below. */
+  const isDrawer = window.matchMedia('(max-width: 900px)').matches;
+  sidebar.toggleAttribute('inert', isDrawer && !open);
+
+  const background = ['pages'].map(id => document.getElementById(id))
+    .concat([document.querySelector('.topbar'), document.querySelector('.bottom-nav')])
+    .filter(Boolean);
+  background.forEach(el => el.toggleAttribute('inert', isDrawer && open));
+
+  if (isDrawer) {
+    sidebar.setAttribute('role', 'dialog');
+    sidebar.setAttribute('aria-modal', open ? 'true' : 'false');
+    sidebar.setAttribute('aria-label', 'Main navigation');
+  } else {
+    ['role', 'aria-modal', 'aria-label'].forEach(a => sidebar.removeAttribute(a));
+  }
+
+  // Focus into the drawer on open, back to the hamburger on close.
+  if (open) {
+    const first = sidebar.querySelector('.sidebar-close');
+    if (first) setTimeout(() => first.focus(), 0);
+  } else {
+    const hamburger = document.querySelector('.hamburger');
+    if (hamburger && isDrawer && document.body.dataset.navWasOpen === '1') hamburger.focus();
+  }
+  document.body.dataset.navWasOpen = open ? '1' : '0';
 }
+
+/* Crossing the 900px breakpoint has to clear inert, or a tablet rotated to
+ * landscape gets a permanent sidebar that no keyboard can reach. */
+window.addEventListener('resize', () => {
+  const sidebar = document.getElementById('sidebar');
+  if (!sidebar) return;
+  if (!window.matchMedia('(max-width: 900px)').matches) {
+    sidebar.removeAttribute('inert');
+    ['role', 'aria-modal', 'aria-label'].forEach(a => sidebar.removeAttribute(a));
+    ['pages'].map(id => document.getElementById(id))
+      .concat([document.querySelector('.topbar'), document.querySelector('.bottom-nav')])
+      .filter(Boolean).forEach(el => el.removeAttribute('inert'));
+  } else if (!document.body.classList.contains('nav-open')) {
+    sidebar.setAttribute('inert', '');
+  }
+});
 
 function toggleSidebar() {
   const sidebar = document.getElementById('sidebar');
@@ -619,3 +692,28 @@ function animateCounter(id, from, to, duration, formatter) {
   requestAnimationFrame(update);
 }
 
+
+
+/* Alumni map figures, from GET /api/stats/geo.
+ *
+ * Also states how many profiles carry no country at all. A map is only as good
+ * as its coverage, and saying so is more useful than a confident-looking
+ * headline over three data points. */
+async function renderMapStats() {
+  const g = await API.getGeoStats();
+  if (apiFailed(g)) return;
+
+  const put = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  put('map-stat-countries', g.countries);
+  put('map-stat-mapped', Number(g.mapped).toLocaleString());
+  put('map-stat-bd', Number(g.inBangladesh).toLocaleString());
+  put('map-stat-intl', Number(g.international).toLocaleString());
+  put('map-stat-chapters', g.activeChapters);
+
+  const note = document.getElementById('map-coverage-note');
+  if (note) {
+    note.textContent = g.unmapped > 0
+      ? `${g.unmapped.toLocaleString()} more alumni have no location on their profile and are not on this map.`
+      : 'Every alumni profile carries a location.';
+  }
+}

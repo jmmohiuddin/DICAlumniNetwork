@@ -541,6 +541,7 @@ Object.assign(API, {
 
   getPlatformStats: ()              => apiRequest('GET',    '/api/stats/platform'),
   getSystemStats:   ()              => apiRequest('GET',    '/api/stats/system'),
+  getGeoStats:      ()              => apiRequest('GET',    '/api/stats/geo'),
   getCapabilities:  ()              => apiRequest('GET',    '/api/stats/capabilities'),
 
   // ─── EVENT PLANNER ───

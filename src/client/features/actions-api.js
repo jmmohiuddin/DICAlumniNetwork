@@ -51,7 +51,7 @@ async function viewMyTicket(eventId) {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">🎫 Your Ticket</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <div style="text-align:center;padding:8px 0">
       <div id="ticket-qr" style="display:flex;justify-content:center;margin-bottom:14px"></div>
@@ -118,7 +118,7 @@ async function showAttendeesModal(eventId) {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">👥 Attendees</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
       <span class="card-badge teal">${confirmed.length} confirmed</span>
@@ -167,7 +167,7 @@ async function processDonation(campaignId) {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">Confirm your pledge</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <div class="payment-step">
       <div style="font-size:15px;font-weight:700;margin-bottom:6px">Pledging ৳${Number(amount).toLocaleString()}</div>
@@ -218,7 +218,7 @@ async function confirmPledge(donationId, standing = true) {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">Pledge recorded</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <div class="payment-step">
       <div class="payment-success">🤝</div>
@@ -320,7 +320,7 @@ async function applyJob(jobId, title) {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">📄 Apply — ${escapeHtml(title)}</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <form onsubmit="submitJobApplication(event, ${jobId})">
       <div class="input-group">
@@ -355,7 +355,7 @@ async function showJobApplicants(jobId, title) {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">👥 Applicants — ${escapeHtml(title)}</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;max-height:56vh;overflow-y:auto">
       ${rows.length ? rows.map(a => `
@@ -450,7 +450,7 @@ async function showDeleteAccount() {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">⚠ Delete Account</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     ${hasPending ? `
       <div class="state-panel" style="border-color:rgba(255,140,66,0.4);background:rgba(255,140,66,0.08)">
@@ -495,7 +495,7 @@ async function decryptVaultField(vaultId, ownerName) {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">🔓 Decrypt Identity Field</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px">
       Decrypting ${escapeHtml(ownerName)}'s identity data is a privileged action. Your name, the reason
@@ -591,7 +591,7 @@ function showSettlePledgeModal(donationId) {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">Confirm a pledge was received</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <div class="pledge-notice">
       You are recording that this money actually reached the college. This

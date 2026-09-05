@@ -108,6 +108,41 @@ module.exports = function mountAudit(app, { requireAuth, requireRole, ADMIN_ROLE
     });
   }));
 
+  /* Geographic distribution for the Alumni Map page.
+   *
+   * The five tiles under the map read "47 Countries", "12,847 Mapped Alumni",
+   * "8,241 In Bangladesh", "4,606 International" and "23 Active Chapters" —
+   * five literals whose only relationship to each other was that 8,241 + 4,606
+   * happens to equal 12,847. The real figures are much smaller, and a map
+   * showing three countries under a caption claiming 47 is worse than one that
+   * admits its own coverage.
+   *
+   * `mapped` counts profiles that actually carry a country, not all profiles:
+   * the gap between the two is the honest answer to "how good is this map",
+   * so it is returned rather than hidden. */
+  app.get('/api/stats/geo', requireAuth, (req, res) => ok(res, async () => {
+    const rows = await db.query(`
+      SELECT
+        COUNT(*) FILTER (WHERE country IS NOT NULL AND country <> '')::int              AS mapped,
+        COUNT(DISTINCT country) FILTER (WHERE country IS NOT NULL AND country <> '')::int AS countries,
+        COUNT(*) FILTER (WHERE LOWER(country) IN ('bangladesh', 'bd'))::int              AS in_bangladesh,
+        COUNT(*)::int                                                                    AS total_profiles
+      FROM alumni_profiles
+    `);
+    const chapters = await db.query("SELECT COUNT(*)::int AS n FROM chapters WHERE status = 'approved'");
+    const r = rows.rows[0];
+
+    res.json({
+      countries: r.countries,
+      mapped: r.mapped,
+      inBangladesh: r.in_bangladesh,
+      international: r.mapped - r.in_bangladesh,
+      activeChapters: chapters.rows[0].n,
+      // How many profiles have no country at all — the map's blind spot.
+      unmapped: r.total_profiles - r.mapped,
+    });
+  }));
+
   /* Real runtime health for the Super Admin panel.
    *
    * Every value here is measured, not asserted: uptime and memory come from the

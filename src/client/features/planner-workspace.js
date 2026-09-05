@@ -443,7 +443,7 @@ function showCreateProposalModal() {
   showModal(`
     <div class="modal-header">
       <h2 class="modal-title">➕ Create Event Proposal</h2>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <form onsubmit="handleCreateProposalSubmit(event)">
       <div class="input-group">
@@ -487,7 +487,7 @@ function showAddBudgetModal() {
   showModal(`
     <div class="modal-header">
       <h2 class="modal-title">💰 Add Expense Item</h2>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <form onsubmit="handleAddBudgetSubmit(event)">
       <div class="input-group">
@@ -534,7 +534,7 @@ function showAddSponsorModal() {
   showModal(`
     <div class="modal-header">
       <h2 class="modal-title">🤝 Add Sponsor CRM Record</h2>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <form onsubmit="handleAddSponsorSubmit(event)">
       <div class="input-group">
@@ -597,7 +597,7 @@ function showAddTaskModal() {
   showModal(`
     <div class="modal-header">
       <h2 class="modal-title">📋 Create Kanban Task</h2>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <form onsubmit="handleAddTaskSubmit(event)">
       <div class="input-group">
@@ -731,7 +731,7 @@ async function showChapterMembersModal(id) {
       <div class="onboarding-header">
         <div class="onboarding-title">👥 Chapter Enrolled Members</div>
         <div class="onboarding-sub">${escapeHtml(c ? c.name : 'DIC Alumni Chapter')}</div>
-        <button class="modal-close" onclick="closeModal()">✕</button>
+        <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
       </div>
       ${renderEmptyState('👤', 'No members yet', 'Be the first to join this chapter.')}
     `);
@@ -827,7 +827,7 @@ async function renderSpotlightAlumni() {
 
   el.innerHTML = spotlights.map(a => `
     <div class="spotlight-card">
-      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,${escapeHtml(a.color)}40,${escapeHtml(a.color)}20);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:${escapeHtml(a.color)};flex-shrink:0">${escapeHtml(a.initials)}</div>
+      <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,${escapeHtml(a.color)}40,${escapeHtml(a.color)}20);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--text-primary);flex-shrink:0">${escapeHtml(a.initials)}</div>
       <div class="spotlight-info">
         <div class="spotlight-name">${escapeHtml(a.name)}</div>
         <div class="spotlight-sub">${escapeHtml(a.company || "—")} · Batch ${escapeHtml(a.batch || "—")}</div>

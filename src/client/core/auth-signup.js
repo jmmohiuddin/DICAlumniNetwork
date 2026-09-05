@@ -79,7 +79,7 @@ function showChangePasswordModal(forced = false) {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">🔑 ${forced ? 'Set a New Password' : 'Change Password'}</div>
-      ${forced ? '' : '<button class="modal-close" onclick="closeModal()">✕</button>'}
+      ${forced ? '' : '<button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>'}
     </div>
     ${forced ? `<p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">
       Your account was created by a bulk import and still uses the shared initial password.

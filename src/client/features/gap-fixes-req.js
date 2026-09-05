@@ -134,7 +134,7 @@ function showReferralModal(jobId, jobTitle, postedBy) {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">🤝 Request a Referral</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <div style="margin-bottom:14px;padding:12px;background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm)">
       <div style="font-size:12px;color:var(--text-muted)">Referral for</div>
@@ -324,7 +324,7 @@ async function showCareerEntryModal(entryId = null) {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">${entryId ? 'Edit role' : 'Add a role'}</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <div class="input-group">
       <label class="input-label" for="career-title">Job title</label>

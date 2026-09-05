@@ -5416,3 +5416,168 @@ button:disabled,
 }
 .checkbox-row:has(input:disabled) { color: var(--text-muted); cursor: not-allowed; }
 .checkbox-row:has(input:disabled) input { cursor: not-allowed; }
+
+/* ─── TOASTS ───
+   These were styled inline in runtime.js with dark-theme colours — a near-black
+   panel with white ink and a backdrop blur — which is why they survived the
+   light conversion untouched and were the last dark surface in the app. The
+   styling lives here now so it stays in the same system as everything else.
+
+   The container sits above the bottom nav on mobile (that bar is fixed at the
+   thumb zone and would otherwise cover the message) and respects the safe-area
+   inset on notched phones. */
+.toast-container {
+  position: fixed;
+  right: 20px;
+  bottom: 90px;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  max-width: min(360px, calc(100vw - 40px));
+}
+
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-strong);
+  border-left: 3px solid var(--daffodil-primary);
+  border-radius: var(--radius-sm);
+  padding: 12px 12px 12px 14px;
+  box-shadow: var(--shadow-modal);
+  pointer-events: auto;
+  animation: toastIn 0.24s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.toast.is-leaving { animation: toastOut 0.28s ease forwards; }
+
+.toast-text {
+  flex: 1;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--text-primary);       /* 16:1 on the card surface */
+  word-break: break-word;
+}
+
+.toast-close {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin: -4px -4px 0 0;
+  background: none;
+  border: 0;
+  border-radius: var(--radius-sm);
+  color: var(--text-muted);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.toast-close:hover { background: var(--bg-inset); color: var(--text-primary); }
+.toast-close:focus-visible { outline: 2px solid var(--primary-light); outline-offset: 1px; }
+
+@keyframes toastIn  { from { opacity: 0; transform: translateY(6px) scale(0.98); } to { opacity: 1; transform: none; } }
+@keyframes toastOut { to { opacity: 0; transform: translateY(4px); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .toast, .toast.is-leaving { animation: none; }
+}
+
+@media (max-width: 900px) {
+  .toast-container {
+    right: 12px;
+    left: 12px;
+    max-width: none;
+    /* Clear the fixed bottom nav plus the home indicator. */
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ─── SEARCH FOCUS RING ───
+   .ai-search-input sets `outline: none` and the global focus rule appears
+   earlier at equal specificity, so it lost — the directory search box was the
+   only control in the app with no visible focus indicator. Ringing the whole
+   bar frames the icon, the input and the voice button as one control. */
+.ai-search-bar:focus-within {
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 3px var(--primary-tint);
+}
+
+/* ─── NAV ITEMS ARE BUTTONS NOW ───
+   They were <a> without href, which is not a link and takes no focus. As
+   <button> they inherit the UA's button chrome, so it has to be reset back to
+   the row they were. The :focus-visible rules further up this file finally do
+   something — they were dead code while these elements could not be focused. */
+.nav-item,
+.bottom-nav-item {
+  background: none;
+  border: 0;
+  font: inherit;
+  text-align: left;
+  width: 100%;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.bottom-nav-item { text-align: center; }
+
+/* Focusing a page container to announce navigation must not draw a ring around
+   the whole page — the heading inside it is what the user is being sent to. */
+.page:focus { outline: none; }
+
+/* Skip link. With the drawer controls, the hamburger, search and nine filter
+   chips ahead of content, reaching the page body by keyboard was a long walk
+   on every single navigation. */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -60px;
+  z-index: 3000;
+  padding: 10px 16px;
+  background: var(--daffodil-primary);
+  color: #FFFFFF;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+.skip-link:focus { top: 8px; }
+
+/* ─── ALUMNI CARD: KEYBOARD ENTRY POINT ───
+   The card body opens the profile on click, but a <div onclick> takes no focus,
+   so a keyboard user could reach the Connect and Request Mentorship buttons
+   inside a card while having no way to open the profile those buttons belong
+   to. The name is now a real button. It is not the whole card on purpose: a
+   300x200 button announces its entire contents as one accessible name. */
+.alumni-card-open {
+  all: unset;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+}
+.alumni-card-open:focus-visible {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+/* ─── FOOTER LEGIBILITY ───
+   .footer-bottom carried a blanket `opacity: 0.85`, which turned white text
+   into an effective #DCE9F5 on the blue footer — 4.48:1 at 12px — and
+   .built-by-label compounded its own 0.9 on top for 3.58:1. Nothing in the CSS
+   read as a colour decision, which is exactly why it survived review. Setting
+   the colour explicitly instead of dimming the whole subtree. */
+.footer-bottom { opacity: 1; }
+.footer-legal, .footer-legal div { color: rgba(255, 255, 255, 0.94); }
+.built-by-label { opacity: 1; color: rgba(255, 255, 255, 0.94); }
+
+/* --text-muted is 4.8:1 on pure white and under 4.5:1 on every tinted surface
+   in the file. The login brand tag sits on --bg-deep, where it measured
+   4.43:1. */
+.brand-tag { color: #5A6779; }

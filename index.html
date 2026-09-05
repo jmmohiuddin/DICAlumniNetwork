@@ -37,12 +37,15 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <!-- First tab stop in the document. -->
+  <a class="skip-link" href="#pages">Skip to main content</a>
+
   <!-- LOGIN SCREEN -->
   <div id="login-screen" class="login-screen">
     <div class="login-bg-grid"></div>
     <div class="login-orb login-orb-1"></div>
     <div class="login-orb login-orb-2"></div>
-    <div class="login-container">
+    <main class="login-container">
       <div class="login-brand">
         <img src="assets/daffodil-logo.svg"
              alt="Daffodil International College" class="login-brand-logo" />
@@ -61,12 +64,14 @@
           <p class="login-subtitle">Daffodil International College Alumni &amp; Staff Login</p>
           <form onsubmit="handleLoginSubmit(event)">
             <div class="input-group">
-              <label class="input-label">DIC Email Address</label>
+              <label class="input-label">DIC Email Address
               <input type="email" id="login-email" class="form-input" inputmode="email" autocomplete="email" placeholder="alumni@dic.edu.bd" required />
+            </label>
             </div>
             <div class="input-group">
-              <label class="input-label">Password</label>
+              <label class="input-label">Password
               <input type="password" id="login-password" class="form-input" autocomplete="current-password" placeholder="••••••••" required />
+            </label>
             </div>
             <div class="login-error hidden" id="login-error" role="alert"></div>
             <button type="submit" class="btn btn-primary btn-full" id="login-submit-btn">Sign In to DIC →</button>
@@ -80,35 +85,40 @@
             <p class="login-subtitle">For DIC alumni who have not been registered yet</p>
             <form onsubmit="handleSignupSubmit(event)">
               <div class="input-group">
-                <label class="input-label">Full Name</label>
+                <label class="input-label">Full Name
                 <input type="text" id="signup-name" class="form-input" autocomplete="name" placeholder="e.g. Md Ismail Choudhury" required />
+              </label>
               </div>
               <div class="input-group">
-                <label class="input-label">Email Address</label>
+                <label class="input-label">Email Address
                 <input type="email" id="signup-email" class="form-input" inputmode="email" autocomplete="email" placeholder="you@example.com" required />
+              </label>
               </div>
               <div class="field-grid-2">
                 <div class="input-group">
-                  <label class="input-label">HSC Passing Year</label>
+                  <label class="input-label">HSC Passing Year
                   <input type="number" id="signup-hsc-year" class="form-input" inputmode="numeric" min="1960" max="2100" placeholder="e.g. 2015" />
+                </label>
                 </div>
                 <div class="input-group">
-                  <label class="input-label">HSC Group</label>
+                  <label class="input-label">HSC Group
                   <select id="signup-hsc-group" class="form-select">
                     <option value="">Select…</option>
                     <option>Science</option>
                     <option>Business Studies</option>
                     <option>Humanities</option>
                   </select>
+                </label>
                 </div>
               </div>
               <div class="field-grid-2">
                 <div class="input-group">
-                  <label class="input-label">Mobile Number</label>
+                  <label class="input-label">Mobile Number
                   <input type="tel" id="signup-mobile" class="form-input" inputmode="tel" autocomplete="tel" placeholder="01XXXXXXXXX" />
+                </label>
                 </div>
                 <div class="input-group">
-                  <label class="input-label">Blood Group</label>
+                  <label class="input-label">Blood Group
                   <select id="signup-blood-group" class="form-select">
                     <option value="">Select…</option>
                     <option>A+</option><option>A-</option>
@@ -117,15 +127,18 @@
                     <option>O+</option><option>O-</option>
                     <option>Unknown</option>
                   </select>
+                </label>
                 </div>
               </div>
               <div class="input-group">
-                <label class="input-label">Password</label>
+                <label class="input-label">Password
                 <input type="password" id="signup-password" class="form-input" autocomplete="new-password" minlength="8" placeholder="At least 8 characters" required />
+              </label>
               </div>
               <div class="input-group">
-                <label class="input-label">Confirm Password</label>
+                <label class="input-label">Confirm Password
                 <input type="password" id="signup-password2" class="form-input" autocomplete="new-password" minlength="8" placeholder="Re-enter your password" required />
+              </label>
               </div>
               <label style="display:flex;align-items:flex-start;gap:10px;font-size:13px;color:var(--text-secondary);margin-bottom:14px;cursor:pointer">
                 <input type="checkbox" id="signup-consent" required />
@@ -150,7 +163,7 @@
         <div class="stat-pill">AES-256 Encrypted Vault</div>
         <div class="stat-pill">PDPA 2026 Compliant</div>
       </div>
-    </div>
+    </main>
   </div>
 
   <!-- MAIN APP -->
@@ -166,7 +179,7 @@
         <span class="tenant-dot" style="background:var(--diu-green)"></span>
         <span id="active-tenant" style="font-weight:700">Daffodil Int. College</span>
       </div>
-      <nav class="sidebar-nav" id="sidebar-nav-container">
+      <nav class="sidebar-nav" id="sidebar-nav-container" aria-label="Main">
         <!-- Dynamically rendered per role -->
       </nav>
 
@@ -187,7 +200,7 @@
           <div class="user-name" id="sidebar-user-name">System Administrator</div>
           <div class="user-role" id="sidebar-user-role">Super Admin</div>
         </div>
-        <button class="logout-btn" onclick="logout()" title="Sign Out">⏻</button>
+        <button class="logout-btn" onclick="logout()" aria-label="Sign out"><span aria-hidden="true">⏻</span></button>
       </div>
     </aside>
 
@@ -198,7 +211,7 @@
     <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()" aria-hidden="true"></div>
 
     <!-- TOPBAR (DAFFODIL BRAND #0B3897) -->
-    <div class="topbar">
+    <header class="topbar">
       <button class="hamburger" onclick="toggleSidebar()" aria-label="Open navigation menu" aria-controls="sidebar">☰</button>
       <div class="topbar-brand-logo">
         <img src="assets/daffodil-logo.svg"
@@ -213,11 +226,11 @@
           <span class="status-dot"></span>
           <span class="status-text">PostgreSQL 16 · Live</span>
         </div>
-        <button class="topbar-btn alert-btn" onclick="showBroadcastModal()" title="Send a broadcast">📢<span class="alert-btn-label"> Broadcast</span></button>
-        <button class="topbar-btn notif-btn" onclick="showNotifications()" aria-label="Notifications">🔔 <span class="notif-count" id="notif-count" hidden>0</span></button>
-        <div class="topbar-avatar" id="topbar-user-avatar" onclick="showPage('profile')">SA</div>
+        <button class="topbar-btn alert-btn" onclick="showBroadcastModal()" aria-label="Send a broadcast"><span aria-hidden="true">📢</span><span class="alert-btn-label"> Broadcast</span></button>
+        <button class="topbar-btn notif-btn" onclick="showNotifications()" aria-label="Notifications"><span aria-hidden="true">🔔</span> <span class="notif-count" id="notif-count" hidden>0</span></button>
+        <button type="button" class="topbar-avatar" id="topbar-user-avatar" onclick="showPage('profile')" aria-label="Open my profile">SA</button>
       </div>
-    </div>
+    </header>
 
     <!-- PAGES CONTAINER -->
     <main class="pages-container" id="pages">
@@ -242,33 +255,29 @@
           <div class="kpi-card indigo">
             <div class="kpi-icon">👥</div>
             <div class="kpi-body">
-              <div class="kpi-value" data-target="12847" id="kpi-alumni">0</div>
+              <div class="kpi-value" id="kpi-alumni">—</div>
               <div class="kpi-label">Total Verified Alumni</div>
-              <div class="kpi-trend up">↑ 8.4% this month</div>
             </div>
           </div>
           <div class="kpi-card teal">
             <div class="kpi-icon">৳</div>
             <div class="kpi-body">
-              <div class="kpi-value" id="kpi-funds">৳0</div>
-              <div class="kpi-label">FY Funds Collected</div>
-              <div class="kpi-trend up">↑ 35.2% YoY</div>
+              <div class="kpi-value" id="kpi-funds">—</div>
+              <div class="kpi-label">Funds Collected (settled)</div>
             </div>
           </div>
           <div class="kpi-card purple">
             <div class="kpi-icon">🤝</div>
             <div class="kpi-body">
-              <div class="kpi-value" data-target="1203" id="kpi-mentors">0</div>
+              <div class="kpi-value" id="kpi-mentors">—</div>
               <div class="kpi-label">Active Mentorships</div>
-              <div class="kpi-trend up">83% completion rate</div>
             </div>
           </div>
           <div class="kpi-card amber">
             <div class="kpi-icon">🎫</div>
             <div class="kpi-body">
-              <div class="kpi-value" data-target="47" id="kpi-events">0</div>
+              <div class="kpi-value" id="kpi-events">—</div>
               <div class="kpi-label">Upcoming Events</div>
-              <div class="kpi-trend">72% capacity avg</div>
             </div>
           </div>
         </div>
@@ -370,7 +379,7 @@
         <div class="page-header">
           <div>
             <h1 class="page-title">Alumni Directory</h1>
-            <p class="page-subtitle">Semantic AI search across 12,847 verified profiles</p>
+            <p class="page-subtitle">Search by name, company, role, batch, department or city</p>
           </div>
         </div>
         <!-- Search Bar -->
@@ -400,9 +409,9 @@
           <button class="chip" onclick="toggleChip(this,'usa')">🇺🇸 USA</button>
         </div>
         <div class="directory-stats-bar">
-          <span id="dir-count">Showing 24 of 12,847 profiles</span>
+          <span id="dir-count">Loading profiles…</span>
           <div class="sort-options">
-            <select class="form-select sm" onchange="sortDirectory(this.value)">
+            <select class="form-select sm" aria-label="Sort alumni directory" onchange="sortDirectory(this.value)">
               <option value="relevance">Most Relevant</option>
               <option value="recent">Recently Active</option>
               <option value="batch">Batch Year</option>
@@ -816,28 +825,31 @@
             <div class="legend-item"><span class="legend-dot small"></span> &lt;100</div>
           </div>
         </div>
+        <!-- Was 47 / 12,847 / 8,241 / 4,606 / 23 — five literals. Filled by
+             renderMapStats() from GET /api/stats/geo. -->
         <div class="map-stats glass-card mt-16">
           <div class="map-stat-item">
-            <div class="map-stat-val">47</div>
+            <div class="map-stat-val" id="map-stat-countries">—</div>
             <div class="map-stat-lab">Countries</div>
           </div>
           <div class="map-stat-item">
-            <div class="map-stat-val">12,847</div>
+            <div class="map-stat-val" id="map-stat-mapped">—</div>
             <div class="map-stat-lab">Mapped Alumni</div>
           </div>
           <div class="map-stat-item">
-            <div class="map-stat-val">8,241</div>
+            <div class="map-stat-val" id="map-stat-bd">—</div>
             <div class="map-stat-lab">In Bangladesh</div>
           </div>
           <div class="map-stat-item">
-            <div class="map-stat-val">4,606</div>
+            <div class="map-stat-val" id="map-stat-intl">—</div>
             <div class="map-stat-lab">International</div>
           </div>
           <div class="map-stat-item">
-            <div class="map-stat-val">23</div>
+            <div class="map-stat-val" id="map-stat-chapters">—</div>
             <div class="map-stat-lab">Active Chapters</div>
           </div>
         </div>
+        <p class="card-hint" id="map-coverage-note"></p>
       </div>
 
       <!-- ============ PROFILE PAGE ============ -->
@@ -1159,22 +1171,22 @@
 
     <!-- BOTTOM NAV (Mobile) -->
 
-    <nav class="bottom-nav">
-      <a class="bottom-nav-item active" onclick="showPage('dashboard')" id="bnav-dashboard">
-        <span class="bnav-icon">⊞</span><span class="bnav-label">Home</span>
-      </a>
-      <a class="bottom-nav-item" onclick="showPage('directory')" id="bnav-directory">
-        <span class="bnav-icon">◉</span><span class="bnav-label">Directory</span>
-      </a>
-      <a class="bottom-nav-item" onclick="showPage('mentorship')" id="bnav-mentorship">
-        <span class="bnav-icon">🤖</span><span class="bnav-label">ConnectAI</span>
-      </a>
-      <a class="bottom-nav-item" onclick="showPage('events')" id="bnav-events">
-        <span class="bnav-icon">◈</span><span class="bnav-label">Events</span>
-      </a>
-      <a class="bottom-nav-item" onclick="showPage('profile')" id="bnav-profile">
-        <span class="bnav-icon">◎</span><span class="bnav-label">Profile</span>
-      </a>
+    <nav class="bottom-nav" aria-label="Quick access">
+      <button type="button" class="bottom-nav-item active" onclick="showPage('dashboard')" id="bnav-dashboard" aria-current="page">
+        <span class="bnav-icon" aria-hidden="true">⊞</span><span class="bnav-label">Home</span>
+      </button>
+      <button type="button" class="bottom-nav-item" onclick="showPage('directory')" id="bnav-directory">
+        <span class="bnav-icon" aria-hidden="true">◉</span><span class="bnav-label">Directory</span>
+      </button>
+      <button type="button" class="bottom-nav-item" onclick="showPage('mentorship')" id="bnav-mentorship">
+        <span class="bnav-icon" aria-hidden="true">🤖</span><span class="bnav-label">ConnectAI</span>
+      </button>
+      <button type="button" class="bottom-nav-item" onclick="showPage('events')" id="bnav-events">
+        <span class="bnav-icon" aria-hidden="true">◈</span><span class="bnav-label">Events</span>
+      </button>
+      <button type="button" class="bottom-nav-item" onclick="showPage('profile')" id="bnav-profile">
+        <span class="bnav-icon" aria-hidden="true">◎</span><span class="bnav-label">Profile</span>
+      </button>
     </nav>
   </div>
 

@@ -72,7 +72,7 @@ function showCreateCampaign() {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">➕ Create Campaign</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <form onsubmit="handleCreateCampaignSubmit(event)">
       <div class="input-group"><label class="input-label">Campaign Name</label>
@@ -123,7 +123,7 @@ function showBroadcastModal() {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">📢 Send Broadcast</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <div class="input-group"><label class="input-label">Title</label>
       <input type="text" id="broadcast-title" class="form-input" placeholder="e.g. Reunion registration now open" required /></div>
@@ -151,7 +151,7 @@ function showStoreIdentityModal() {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">🔐 Encrypt an Identity Field</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <p style="font-size:13px;color:var(--text-secondary);margin-bottom:14px">
       The value is encrypted with AES-256-GCM in the application layer before it reaches PostgreSQL.
@@ -176,7 +176,7 @@ async function showVaultAccessLogs() {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">📜 Vault Access Log</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;max-height:56vh;overflow-y:auto">
       ${rows.length ? rows.map(l => `

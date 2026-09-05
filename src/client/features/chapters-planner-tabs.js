@@ -289,7 +289,7 @@ function showPlannerItemModal(kind) {
   showModal(`
     <div class="modal-header">
       <div class="modal-title">➕ Add ${escapeHtml(spec.label)}</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
+      <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <form onsubmit="submitPlannerItem(event, '${kind}')">
       ${spec.fields.map(([key, label, type, required, options]) => {
