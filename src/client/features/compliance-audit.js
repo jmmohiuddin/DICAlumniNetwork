@@ -55,6 +55,14 @@ async function renderComplianceGrid() {
 }
 
 function renderTenantList() {
+  // Real headcount, not the literal that used to sit in the data.
+  API.getPlatformStats().then(st => {
+    if (apiFailed(st)) return;
+    document.querySelectorAll('[data-institution-alumni]').forEach(n => {
+      n.textContent = Number(st.verifiedAlumni).toLocaleString();
+    });
+  });
+
   const el = document.getElementById('tenant-list');
   if (!el) return;
   el.innerHTML = MOCK_TENANTS.map(t => `
@@ -64,7 +72,7 @@ function renderTenantList() {
         <div style="font-size:12px;color:var(--text-secondary);margin-top:2px">${t.subdomain}</div>
       </div>
       <div style="text-align:center;padding:0 16px">
-        <div style="font-size:18px;font-weight:800;color:var(--teal)">${t.alumni.toLocaleString()}</div>
+        <div style="font-size:18px;font-weight:800;color:var(--teal)" data-institution-alumni>—</div>
         <div style="font-size:11px;color:var(--text-muted)">Alumni</div>
       </div>
       <div style="text-align:center;padding:0 16px">

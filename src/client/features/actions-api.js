@@ -151,94 +151,96 @@ async function processDonation(campaignId) {
   const amount = state.selectedAmount || (custom && parseFloat(custom.value));
 
   if (!amount || amount <= 0) { showToast('⚠ Please select or enter a donation amount'); return; }
-  if (!state.selectedGateway) { showToast('⚠ Please select a payment gateway'); return; }
+  if (!state.selectedGateway) { showToast('⚠ Please choose how you will send the payment'); return; }
 
-  // Phase 1: write the PENDING ledger row before contacting the gateway.
   const created = await API.createDonation({
     campaignId, amount, gateway: state.selectedGateway,
     isAnonymous: document.getElementById('donate-anonymous')?.checked || false
   });
 
-  if (apiFailed(created)) { showToast(`⚠ ${created?.error || 'Could not start the donation.'}`); return; }
+  if (apiFailed(created)) { showToast(`⚠ ${created?.error || 'Could not record the pledge.'}`); return; }
 
-  const gwNames = { bkash: 'bKash', nagad: 'Nagad', rocket: 'Rocket', card: 'Visa/Mastercard' };
+  const gwNames = { bkash: 'bKash', nagad: 'Nagad', rocket: 'Rocket', card: 'Card / Bank' };
   const gwName = gwNames[state.selectedGateway] || state.selectedGateway;
   const donation = created.donation;
 
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">🔐 Authorize Payment</div>
+      <div class="modal-title">Confirm your pledge</div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="payment-step">
-      <div style="font-size:44px;margin-bottom:10px">${state.selectedGateway === 'bkash' ? '📱' : state.selectedGateway === 'nagad' ? '📲' : state.selectedGateway === 'rocket' ? '🚀' : '💳'}</div>
-      <div style="font-size:17px;font-weight:800;margin-bottom:6px">Authorising via ${escapeHtml(gwName)}</div>
-      <div style="color:var(--text-secondary);margin-bottom:6px">Amount: <strong style="color:var(--teal)">৳${Number(amount).toLocaleString()}</strong></div>
+      <div style="font-size:15px;font-weight:700;margin-bottom:6px">Pledging ৳${Number(amount).toLocaleString()}</div>
+      <div style="color:var(--text-secondary);margin-bottom:6px">You intend to pay by <strong>${escapeHtml(gwName)}</strong></div>
       <div style="font-family:monospace;font-size:11px;color:var(--text-muted);margin-bottom:18px">Ref ${escapeHtml(donation.transaction_reference)}</div>
-      <div style="background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm);padding:16px;margin-bottom:18px">
-        <div style="font-size:13px;color:var(--text-secondary);margin-bottom:10px">Enter your ${escapeHtml(gwName)} PIN</div>
-        <div class="otp-inputs" style="justify-content:center">
-          ${[0,1,2,3].map(() => '<input type="password" class="otp-box" maxlength="1" inputmode="numeric" />').join('')}
-        </div>
+
+      <div class="pledge-notice">
+        <strong>This does not take a payment.</strong>
+        The alumni office will contact you with the account details, and your
+        pledge is marked received only once the college has confirmed the money
+        arrived. Nothing is charged here and no card or wallet details are asked for.
       </div>
-      <button class="btn btn-primary btn-full" onclick="settleDonation(${donation.id}, true)">✓ Confirm Payment</button>
-      <button class="btn btn-ghost btn-full mt-8" onclick="settleDonation(${donation.id}, false)">Simulate a failed payment</button>
-      <div style="font-size:11px;color:var(--text-muted);margin-top:10px">A PENDING ledger entry has already been recorded. The campaign total updates only on confirmation.</div>
+
+      <button class="btn btn-primary btn-full mt-8" onclick="confirmPledge(${donation.id})">Confirm pledge</button>
+      <button class="btn btn-ghost btn-full mt-8" onclick="confirmPledge(${donation.id}, false)">Cancel this pledge</button>
     </div>
   `);
 }
 
-async function settleDonation(donationId, success) {
+/* Confirm or withdraw a pledge.
+ *
+ * This replaced settleDonation(donationId, success), which posted the outcome
+ * the browser chose: clicking "Confirm Payment" after typing four digits into a
+ * fake PIN box marked the donation SUCCESS, so any signed-in user could record
+ * themselves a settled gift of any amount with no money moving. The server no
+ * longer accepts that — a pledge reaches SUCCESS only through
+ * POST /api/donations/:id/settle, which requires a finance-capable staff role
+ * and a real-world transaction reference — and this UI no longer pretends
+ * otherwise.
+ */
+async function confirmPledge(donationId, standing = true) {
   const res = await API.confirmDonation(donationId, {
-    success, failureReason: success ? null : 'Simulated gateway decline'
+    success: standing,
+    failureReason: standing ? null : 'Withdrawn by donor'
   });
 
-  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not settle the transaction.'}`); return; }
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not update the pledge.'}`); return; }
 
   const d = res.donation;
 
   if (d.status === 'FAILED') {
-    showModal(`
-      <div class="modal-header">
-        <div class="modal-title">❌ Payment Failed</div>
-        <button class="modal-close" onclick="closeModal()">✕</button>
-      </div>
-      <div class="payment-step">
-        <div style="font-size:44px;margin-bottom:10px">⚠️</div>
-        <div style="font-size:16px;font-weight:800;margin-bottom:6px">The transaction was declined</div>
-        <div style="color:var(--text-secondary);margin-bottom:8px">${escapeHtml(d.failure_reason || 'The gateway rejected the payment.')}</div>
-        <div style="font-family:monospace;font-size:11px;color:var(--text-muted);margin-bottom:18px">Ref ${escapeHtml(d.transaction_reference)}</div>
-        <button class="btn btn-primary btn-full" onclick="closeModal(); showPage('donations')">Try again</button>
-      </div>
-    `);
+    closeModal();
+    showToast('Pledge cancelled.');
     renderCampaignsEnhanced();
     return;
   }
 
-  const date = new Date(d.completed_at || Date.now()).toLocaleString('en-GB', { timeZone: 'Asia/Dhaka' });
-
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">🎉 Payment Successful</div>
+      <div class="modal-title">Pledge recorded</div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
     <div class="payment-step">
-      <div class="payment-success">✅</div>
-      <div class="payment-success-title">Thank you for your donation!</div>
-      <div class="payment-success-sub">Your contribution has been recorded in the ledger.</div>
+      <div class="payment-success">🤝</div>
+      <div class="payment-success-title">Thank you — your pledge is recorded</div>
+      <div class="payment-success-sub">
+        It is awaiting confirmation by the alumni office. The campaign total
+        will include it once the payment has been received and verified.
+      </div>
       <div class="receipt-preview">
-        <div style="font-size:13px;font-weight:700;margin-bottom:10px;text-align:center">OFFICIAL TAX RECEIPT</div>
-        <div style="font-size:11px;text-align:center;color:var(--text-muted);margin-bottom:12px">Daffodil International College Alumni Association</div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px;text-align:center">PLEDGE ACKNOWLEDGEMENT</div>
+        <div style="font-size:11px;text-align:center;color:var(--text-muted);margin-bottom:12px">
+          Daffodil International College Alumni Association<br />
+          Not a tax receipt — a receipt is issued after the payment is confirmed.
+        </div>
         <div class="receipt-row"><span>Donor</span><span>${escapeHtml(d.is_anonymous ? 'Anonymous' : d.donor_name)}</span></div>
-        <div class="receipt-row"><span>Receipt No.</span><span style="font-family:monospace;font-size:11px">${escapeHtml(d.receipt_code)}</span></div>
-        <div class="receipt-row"><span>Transaction</span><span style="font-family:monospace;font-size:11px">${escapeHtml(d.transaction_reference)}</span></div>
-        <div class="receipt-row"><span>Gateway</span><span>${escapeHtml(d.payment_gateway)}</span></div>
-        <div class="receipt-row"><span>Date</span><span style="font-size:11px">${escapeHtml(date)}</span></div>
+        <div class="receipt-row"><span>Reference</span><span style="font-family:monospace;font-size:11px">${escapeHtml(d.transaction_reference)}</span></div>
+        <div class="receipt-row"><span>Intended method</span><span>${escapeHtml(d.payment_gateway)}</span></div>
         <div class="receipt-row"><span>Amount</span><span>৳${Number(d.amount).toLocaleString()}</span></div>
+        <div class="receipt-row"><span>Status</span><span>Awaiting confirmation</span></div>
       </div>
       <div style="margin-top:16px;display:flex;gap:8px;justify-content:center;flex-wrap:wrap">
-        <button class="btn btn-outline" onclick="downloadReceipt(${d.id})">📄 Download Receipt</button>
-        <button class="btn btn-outline" onclick="closeModal()">✓ Done</button>
+        <button class="btn btn-outline" onclick="closeModal()">Done</button>
       </div>
     </div>
   `);
@@ -545,3 +547,219 @@ async function recordConsent(consentType, granted = true) {
   showToast(granted ? '✓ Consent recorded.' : '✓ Consent withdrawn.');
 }
 
+
+// ─── STAFF: PLEDGE SETTLEMENT ────────────────────────────────
+/* The other half of the pledge model.
+ *
+ * Donations now stay PENDING until a finance-capable staff member states the
+ * money arrived and cites the real-world transaction it arrived under. Without
+ * this screen that state would be unreachable from the product, so every gift
+ * would sit pending forever and campaign totals would never move — which is
+ * why it ships alongside the donor-side change rather than after it.
+ */
+async function renderPendingPledges() {
+  const host = document.getElementById('pending-pledges');
+  if (!host) return;
+
+  const rows = await API.getPendingDonations();
+  if (apiFailed(rows)) {
+    host.innerHTML = '<div class="queue-empty">Could not load pending pledges.</div>';
+    return;
+  }
+  if (!rows.length) {
+    host.innerHTML = '<div class="queue-empty">No pledges are awaiting confirmation.</div>';
+    return;
+  }
+
+  host.innerHTML = rows.map(d => {
+    const age = Math.floor((Date.now() - new Date(d.created_at).getTime()) / 86400000);
+    return `
+    <div class="queue-item">
+      <div class="queue-info">
+        <div class="queue-name">৳${Number(d.amount).toLocaleString()} — ${escapeHtml(d.donor_name || 'Unknown donor')}</div>
+        <div class="queue-sub">${escapeHtml([d.campaign_name, 'via ' + d.payment_gateway, d.transaction_reference,
+          age === 0 ? 'today' : age + ' day' + (age === 1 ? '' : 's') + ' ago'].filter(Boolean).join(' · '))}</div>
+      </div>
+      <div class="queue-actions">
+        <button class="approve-btn" onclick="showSettlePledgeModal(${Number(d.id)})">Mark received</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function showSettlePledgeModal(donationId) {
+  showModal(`
+    <div class="modal-header">
+      <div class="modal-title">Confirm a pledge was received</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="pledge-notice">
+      You are recording that this money actually reached the college. This
+      credits the campaign total and issues the donor's receipt, and it is
+      written to the audit log against your account.
+    </div>
+    <div class="input-group mt-16">
+      <label class="input-label" for="settle-reference">Transaction reference</label>
+      <input type="text" id="settle-reference" class="form-input" maxlength="120"
+             placeholder="bKash TrxID, bank slip no., or receipt book no." />
+    </div>
+    <div class="input-group">
+      <label class="input-label" for="settle-method">How it was received</label>
+      <select id="settle-method" class="form-select">
+        <option value="bkash">bKash</option>
+        <option value="nagad">Nagad</option>
+        <option value="rocket">Rocket</option>
+        <option value="bank">Bank transfer</option>
+        <option value="cash">Cash / in person</option>
+        <option value="cheque">Cheque</option>
+      </select>
+    </div>
+    <div class="input-group">
+      <label class="input-label" for="settle-note">Note (optional)</label>
+      <input type="text" id="settle-note" class="form-input" maxlength="500" placeholder="Anything worth recording" />
+    </div>
+    <button class="btn btn-primary btn-full" onclick="submitPledgeSettlement(${Number(donationId)}, 'received')">Confirm received</button>
+    <button class="btn btn-ghost btn-full mt-8" onclick="submitPledgeSettlement(${Number(donationId)}, 'failed')">Close as uncollectable</button>
+  `);
+}
+
+async function submitPledgeSettlement(donationId, outcome) {
+  const reference = (document.getElementById('settle-reference')?.value || '').trim();
+  const method = document.getElementById('settle-method')?.value || null;
+  const note = (document.getElementById('settle-note')?.value || '').trim() || null;
+
+  // The server enforces this too; checking here just saves a round trip and
+  // gives the message next to the field it belongs to.
+  if (outcome === 'received' && reference.length < 4) {
+    showToast('⚠ A transaction reference is required to mark a pledge received');
+    return;
+  }
+
+  const res = await API.settleDonationApi(donationId, { reference, method, note, outcome });
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not settle that pledge.'}`); return; }
+
+  closeModal();
+  showToast(outcome === 'received' ? '✅ Pledge confirmed and receipt issued' : 'Pledge closed as uncollectable');
+  renderPendingPledges();
+  renderCampaignsEnhanced();
+  renderDonorLeaderboard();
+}
+
+/* Donations page headline figures, from live ledger data.
+ *
+ * Also decides whether the staff settlement queue is visible. That check is a
+ * convenience only — GET /api/donations/pending and POST /api/donations/:id/
+ * settle are both gated server-side by role, so hiding the panel is not what
+ * protects it.
+ */
+async function renderGivingStats() {
+  const s = await API.getPlatformStats();
+  if (apiFailed(s)) return;
+
+  const taka = n => n >= 100000
+    ? '৳' + (n / 100000).toFixed(1) + 'L'
+    : '৳' + Math.round(n).toLocaleString();
+  const put = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+
+  put('giving-raised', taka(s.fundsRaised));
+  put('giving-donors', Number(s.totalDonors).toLocaleString());
+  put('giving-average', s.totalDonors ? taka(s.averageGift) : '—');
+  put('giving-pledged', taka(s.pledgedAwaitingConfirmation));
+
+  const isStaff = ['super_admin', 'univ_admin'].includes(state.currentUser?.role);
+  const card = document.getElementById('pending-pledges-card');
+  if (card) card.classList.toggle('hidden', !isStaff);
+  if (!isStaff) return;
+
+  const count = document.getElementById('pending-pledges-count');
+  if (count) {
+    count.textContent = s.pledgeCount === 1 ? '1 pledge' : `${s.pledgeCount} pledges`;
+    count.hidden = s.pledgeCount === 0;
+  }
+  renderPendingPledges();
+}
+
+// ─── RESUME UPLOAD (REQ-07) ──────────────────────────────────
+/* The drop zone in the Job Board sidebar has always called
+ * triggerResumeUpload(), and the function has never existed — it is the one
+ * entry in tools/known-issues.json, a dead click since the page was written.
+ * There was also nowhere to put a file: no upload endpoint and no storage.
+ *
+ * Both halves exist now. Files go to POST /api/resumes as a raw body, stored
+ * as bytea (the deployment target has an ephemeral filesystem and no
+ * object-storage SDK is permitted), and the server decides the type from the
+ * file's magic bytes rather than its extension or declared Content-Type.
+ *
+ * The file is stored, not read: no resume parsing happens anywhere, because
+ * no parser can be added within this project's four-dependency budget.
+ */
+const RESUME_MAX_BYTES = 1024 * 1024;
+
+function triggerResumeUpload() {
+  const input = document.getElementById('resume-input');
+  if (input) input.click();
+}
+
+async function uploadResumeFile(file) {
+  if (!file) return;
+
+  // Checked here as well as on the server so the user finds out before
+  // spending upload bandwidth on a connection this product assumes is poor.
+  if (file.size > RESUME_MAX_BYTES) {
+    showToast(`⚠ That file is ${Math.round(file.size / 1024)} KB. The limit is 1 MB.`);
+    return;
+  }
+  if (file.size === 0) { showToast('⚠ That file is empty.'); return; }
+
+  showToast('Uploading your resume…');
+  const res = await API.uploadResume(file);
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not upload that file.'}`); return; }
+
+  showToast('✅ Resume uploaded');
+  const input = document.getElementById('resume-input');
+  if (input) input.value = '';   // so re-picking the same file fires onchange
+  renderResumeList();
+}
+
+async function renderResumeList() {
+  const host = document.getElementById('resume-list');
+  if (!host) return;
+
+  const rows = await API.getMyResumes();
+  if (apiFailed(rows)) { host.innerHTML = ''; return; }
+  if (!rows.length) {
+    host.innerHTML = '<div class="card-hint">No resume uploaded yet.</div>';
+    return;
+  }
+
+  host.innerHTML = rows.map(r => `
+    <div class="resume-file-row">
+      <div class="resume-file-info">
+        <div class="resume-file-name">${escapeHtml(r.filename)}</div>
+        <div class="resume-file-meta">${Math.round(r.byte_size / 1024)} KB · ${escapeHtml(new Date(r.created_at).toLocaleDateString('en-GB'))}</div>
+      </div>
+      <button class="btn btn-sm btn-ghost" onclick="deleteResumeFile(${Number(r.id)})">Remove</button>
+    </div>`).join('');
+}
+
+async function deleteResumeFile(id) {
+  if (!confirm('Remove this resume?')) return;
+  const res = await API.deleteResume(id);
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not remove that file.'}`); return; }
+  showToast('Resume removed');
+  renderResumeList();
+}
+
+/* Enter/Space on the resume drop zone.
+ *
+ * A named function rather than an inline `if (...)`: the handler checker reads
+ * the first identifier in an on* attribute as the handler name, so an inline
+ * conditional registers a handler literally called "if" and fails the build.
+ * It also keeps the div operable from the keyboard, which a bare onclick is not.
+ */
+function resumeZoneKeydown(event) {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    triggerResumeUpload();
+  }
+}

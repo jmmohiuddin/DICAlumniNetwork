@@ -229,11 +229,26 @@ app.get('/api/auth/me', requireAuth, async (req, res) => {
 // Directory listing. INNER JOIN on alumni_profiles so admin accounts without a
 // profile stop appearing as rows of nulls, and every filter/sort/page is
 // resolved in PostgreSQL rather than in the browser.
+//
+// REQ-03. Free-text search runs against the two derived columns db/schema_v9.sql
+// adds to alumni_profiles — search_vector (weighted tsvector, GIN) and
+// search_text (raw text, GIN trigram) — both kept current by triggers. It
+// replaces `LOWER(col) LIKE '%term%'` across seven columns, which no index could
+// serve, so every keystroke was a sequential scan of the joined tables.
+//
+// DEPLOY ORDER: this endpoint requires schema_v9 to have been applied. There is
+// deliberately no runtime fallback to the old scan — a silent second code path
+// that only runs when a migration is missing is how a half-migrated database
+// stays half-migrated without anyone noticing.
 const ALUMNI_SORTS = {
   name:    'u.full_name ASC',
   recent:  'ap.batch DESC, u.full_name ASC',
   batch:   'ap.batch ASC, u.full_name ASC',
   company: 'ap.current_company ASC NULLS LAST, u.full_name ASC'
+  // 'relevance' is absent on purpose: its ORDER BY depends on the search term,
+  // so it is built per-request below. Asking for it without a term falls
+  // through to the ALUMNI_SORTS.name default, which is the only sensible
+  // ordering when nothing has been ranked.
 };
 
 app.get('/api/alumni', requireAuth, async (req, res) => {
@@ -243,14 +258,50 @@ app.get('/api/alumni', requireAuth, async (req, res) => {
 
   const where = [];
   const params = [];
+  const term = (search || '').trim();
+  let relevanceOrder = null;
 
-  if (search && search.trim()) {
-    params.push(`%${search.trim().toLowerCase()}%`);
-    const p = `$${params.length}`;
-    where.push(`(LOWER(u.full_name) LIKE ${p} OR LOWER(ap.current_company) LIKE ${p}
-              OR LOWER(ap.skills) LIKE ${p} OR LOWER(ap.department) LIKE ${p}
-              OR LOWER(ap.job_title) LIKE ${p} OR LOWER(ap.city) LIKE ${p}
-              OR CAST(ap.batch AS TEXT) LIKE ${p})`);
+  if (term) {
+    // Three complementary matchers, OR'd, all served by the two GIN indexes:
+    //
+    //   @@ websearch_to_tsquery  whole-token match, and the only one that can
+    //       be *ranked* by field weight. websearch_to_tsquery rather than
+    //       to_tsquery because it never raises a syntax error on user input —
+    //       to_tsquery treats ':', '&' and '!' as operators and throws.
+    //   <%  word similarity — the typo tolerance. Note the argument order:
+    //       `needle <% haystack` compares the term against the best-matching
+    //       word extent of the profile text. The plain `%` operator compares
+    //       the two whole strings, so a three-character query against a
+    //       200-character profile scores near zero and never matches; using it
+    //       here would look correct and find nothing.
+    //   ILIKE '%term%'  substring — preserves exactly what the old LIKE scan
+    //       matched, so no search that worked before stops working. Now backed
+    //       by the trigram index instead of a full scan.
+    params.push(term);
+    const q = `$${params.length}`;
+    params.push(`%${term}%`);
+    const like = `$${params.length}`;
+
+    const matchers = [
+      `ap.search_vector @@ websearch_to_tsquery('simple', ${q})`,
+      `ap.search_text ILIKE ${like}`,
+    ];
+    // A purely numeric term is a batch year, and fuzzy matching on digits is
+    // noise, not tolerance: word_similarity('2015', …) scores 0.6 against both
+    // '2012' and '2018', which are different cohorts rather than typos of each
+    // other. Numbers get exact and substring matching only.
+    if (!/^\d+$/.test(term)) matchers.push(`${q} <% ap.search_text`);
+
+    where.push(`(${matchers.join('\n              OR ')})`);
+
+    // ts_rank_cd with normalisation 32 (rank / (rank + 1)) so long profiles are
+    // not rewarded for length alone. Trigram similarity is the tiebreaker, and
+    // also the sole ordering for rows that matched fuzzily rather than by
+    // token — those score 0 on ts_rank_cd and land below every exact match,
+    // which is the right place for them.
+    relevanceOrder = `ts_rank_cd(ap.search_vector, websearch_to_tsquery('simple', ${q}), 32) DESC,
+                      word_similarity(${q}, ap.search_text) DESC,
+                      u.full_name ASC`;
   }
   if (dept)   { params.push(`%${dept.toLowerCase()}%`); where.push(`LOWER(ap.department) LIKE $${params.length}`); }
   if (batch)  { params.push(parseInt(batch));           where.push(`ap.batch = $${params.length}`); }
@@ -258,7 +309,14 @@ app.get('/api/alumni', requireAuth, async (req, res) => {
   if (mentor === 'true') where.push('ap.can_mentor = TRUE');
 
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
-  const orderSql = ALUMNI_SORTS[sort] || ALUMNI_SORTS.name;
+
+  // Relevance ordering applies when the caller asks for it, and when a search
+  // term was supplied with no sort at all. An explicit sort=name|batch|recent|
+  // company is still honoured with a term present — the directory's sort
+  // control is a real feature and search must not silently override it.
+  const orderSql = (relevanceOrder && (sort === 'relevance' || !sort))
+    ? relevanceOrder
+    : (ALUMNI_SORTS[sort] || ALUMNI_SORTS.name);
 
   try {
     const countRes = await db.query(`
@@ -349,6 +407,17 @@ app.get('/api/alumni/:id', requireAuth, async (req, res) => {
 });
 
 // ─── PROFILE SELF-SERVICE ───
+/* `SELECT ap.*` now also picks up the two derived search columns schema_v9 adds
+ * to alumni_profiles. They are index material, not profile data — a tsvector
+ * rendered as a multi-kilobyte string, plus a copy of fields already in the
+ * response — so they are dropped from anything built with ap.*. The rest of the
+ * profile shape is untouched. */
+function stripSearchColumns(row) {
+  delete row.search_text;
+  delete row.search_vector;
+  return row;
+}
+
 // Returns the signed-in user's own profile with every field, unmasked.
 app.get('/api/profile/me', requireAuth, async (req, res) => {
   try {
@@ -360,7 +429,7 @@ app.get('/api/profile/me', requireAuth, async (req, res) => {
       WHERE u.id = $1
     `, [req.user.uid]);
     if (!r.rows.length) return res.status(404).json({ error: 'Profile not found' });
-    res.json(r.rows[0]);
+    res.json(stripSearchColumns(r.rows[0]));
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -422,7 +491,7 @@ app.put('/api/profile/me', requireAuth, async (req, res) => {
     if (req.body.name && req.body.name.trim()) {
       await db.query('UPDATE users SET full_name = $2 WHERE id = $1', [req.user.uid, req.body.name.trim()]);
     }
-    res.json({ success: true, profile: r.rows[0] });
+    res.json({ success: true, profile: stripSearchColumns(r.rows[0]) });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

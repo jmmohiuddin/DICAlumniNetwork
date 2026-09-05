@@ -19,6 +19,8 @@ const mountCustomFields = require('./custom-fields/routes');
 const mountMentorship = require('./mentorship/routes');
 const mountCommunity = require('./community/routes');
 const mountAudit = require('./audit/routes');
+const mountCareers = require('./careers/routes');
+const mountVerification = require('./verification/routes');
 
 module.exports = function mountV2(app, guards) {
   mountEvents(app, guards);
@@ -28,6 +30,14 @@ module.exports = function mountV2(app, guards) {
   mountMentorship(app, guards);
   mountCommunity(app, guards);
   mountAudit(app, guards);
+  // Career progression (REQ-08). Appended rather than inserted: /api/careers/*
+  // collides with nothing above it, and appending leaves every existing
+  // registration at the index `npm run routes` already records.
+  mountCareers(app, guards);
+  // Alumni verification queue. Also appended: /api/verification/* is a new
+  // prefix, so nothing above it changes matching order. This is what lets a
+  // reviewer approve the accounts that bulk import now creates unverified.
+  mountVerification(app, guards);
 
   return { writeAudit, encryptField, decryptField, encryptionReady, ref };
 };

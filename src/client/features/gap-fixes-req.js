@@ -25,40 +25,29 @@ filterDirectory = function(value) {
   _origFilterDir(value);
 };
 
-// ─── REQ-05: REAL-TIME CAMPAIGN TICKER ──────────────────────
-const MOCK_CAMPAIGNS_LIVE = {};
-MOCK_CAMPAIGNS.forEach(c => {
-  MOCK_CAMPAIGNS_LIVE[c.id] = { raised: c.raised, donors: c.donors };
-});
+/* ─── REQ-05: THE "REAL-TIME CAMPAIGN TICKER", REMOVED ───
+ *
+ * A setInterval used to run every few seconds, pick a campaign at random, add
+ * ৳500–৳5,000 to it, increment its donor count, write the new figure straight
+ * into the DOM and flash it teal. Nothing was donated; the numbers were
+ * invented on a timer to make a demo look busy, and they overwrote the real
+ * ledger figures the server had just returned.
+ *
+ * Campaign progress now comes from the donations ledger and changes when
+ * somebody actually gives. If live updates are wanted later, the honest
+ * version is a poll or a socket carrying real settlements.
+ */
+function startCampaignTicker() { /* removed — see above */ }
 
-function startCampaignTicker() {
-  setInterval(() => {
-    MOCK_CAMPAIGNS.forEach(c => {
-      const increments = [500, 1000, 2000, 5000];
-      const inc = increments[Math.floor(Math.random() * increments.length)];
-      if (Math.random() < 0.25 && c.raised < c.goal) {
-        c.raised = Math.min(c.raised + inc, c.goal);
-        c.donors += 1;
-        // Update live raised element
-        const el = document.getElementById(`campaign-raised-${c.id}`);
-        if (el) {
-          el.textContent = '৳' + (c.raised / 100000).toFixed(1) + 'L raised';
-          el.style.color = 'var(--teal)';
-          setTimeout(() => el.style.color = '', 500);
-        }
-        const pctEl = document.getElementById(`campaign-pct-${c.id}`);
-        const pct = Math.round((c.raised / c.goal) * 100);
-        if (pctEl) pctEl.style.width = pct + '%';
-      }
-    });
-  }, 3500);
+/** ৳ in lakh past 100,000, exact below it. "৳0.4L" is not how anyone reads it. */
+function formatTaka(n) {
+  const v = Number(n) || 0;
+  return v >= 100000 ? '৳' + (v / 100000).toFixed(1) + 'L' : '৳' + Math.round(v).toLocaleString();
 }
 
-// Campaign records currently on screen, keyed by id. The footer buttons carry
-// the numeric id only and resolve the name here at click time — a name
-// interpolated into an onclick="" string sits inside a JS string literal, where
-// HTML-entity escaping is no defence (the browser decodes &#39; back to ' before
-// the JS is parsed, closing the literal).
+/* Campaign rows are held by id so the card's buttons can pass a number instead
+ * of interpolating an admin-authored campaign name into an inline handler —
+ * the XSS sink that showDonateModal's own comment documents. */
 const campaignCardIndex = new Map();
 
 function showDonateModalById(id) {
@@ -71,10 +60,11 @@ function deleteCampaignPromptById(id) {
   if (c) deleteCampaignPrompt(c.id, c.name);
 }
 
-// Enhanced renderCampaigns with live IDs and ticker
 // ─── DONATIONS (REQ-05) ───
-// Two-phase: a PENDING ledger row is written, the gateway step is authorised,
-// then the transaction is confirmed and the campaign total moves.
+// A pledge is recorded here; it becomes a SUCCESS row only when staff confirm
+// the money arrived (POST /api/donations/:id/settle). Progress bars read the
+// ledger, not the denormalised counters on the campaign row.
+
 async function renderCampaignsEnhanced() {
   const container = document.getElementById('campaigns-grid');
   if (!container) return;
@@ -94,7 +84,15 @@ async function renderCampaignsEnhanced() {
   const canManage = state.currentUser && ['super_admin', 'univ_admin'].includes(state.currentUser.role);
 
   container.innerHTML = campaigns.map(c => {
-    const raised = Number(c.raised_amount) || 0;
+    /* raised_live / donors_live are computed by the server from the donations
+     * ledger (SUM and COUNT DISTINCT over status='SUCCESS'). The card used to
+     * read c.raised_amount and c.donors_count, denormalised counters seeded
+     * with figures that were never backed by a transaction — ৳18.4 lakh against
+     * a ledger holding ৳35,500 — so the page showed a campaign 75% funded while
+     * the same screen's own headline said ৳35,500 had actually been received.
+     * Same reasoning the chapters list already follows for member counts: trust
+     * the rows, not the counter beside them. */
+    const raised = Number(c.raised_live) || 0;
     const goal = Number(c.goal_amount) || 1;
     const pct = Math.min(100, Math.round((raised / goal) * 100));
     const gateways = Array.isArray(c.gateways) ? c.gateways : [];
@@ -110,11 +108,11 @@ async function renderCampaignsEnhanced() {
         <div class="campaign-live-indicator"><div class="live-dot"></div> Live</div>
         <div class="progress-track"><div class="progress-fill" style="width:${pct}%"></div></div>
         <div class="progress-meta">
-          <span class="progress-raised">৳${(raised / 100000).toFixed(1)}L raised</span>
-          <span class="progress-goal">of ৳${(goal / 100000).toFixed(1)}L goal · ${pct}%</span>
+          <span class="progress-raised">${formatTaka(raised)} raised</span>
+          <span class="progress-goal">of ${formatTaka(goal)} goal · ${pct}%</span>
         </div>
         <div style="display:flex;gap:12px;margin-top:8px;font-size:12px;color:var(--text-muted)">
-          <span>👥 ${Number(c.donors_count || 0).toLocaleString()} donors</span>
+          <span>👥 ${Number(c.donors_live) === 1 ? '1 donor' : Number(c.donors_live || 0).toLocaleString() + ' donors'}</span>
           <span>📅 ${escapeHtml(c.days_left)} days left</span>
         </div>
       </div>
@@ -233,159 +231,187 @@ async function renderJobsEnhanced(filter = '') {
   }).join('');
 }
 
-// ─── REQ-08: CAREER PROGRESSION TRACKER ─────────────────────
-const MOCK_CAREER_REGISTRY = [
-  { id: 1, name: 'Fatima Khanam', initials: 'FK', color: '#6C63FF', batch: 2019, current: 'Senior SWE @ bKash Ltd', prev: 'Full-Stack Dev @ TechBD (2019–2022)', updateType: 'ai', lastUpdated: '2026-07-30' },
-  { id: 2, name: 'Arif Hossain', initials: 'AH', color: '#00D4AA', batch: 2018, current: 'Data Scientist @ Pathao', prev: 'Data Analyst @ LightCastle (2018–2020)', updateType: 'self', lastUpdated: '2026-07-28' },
-  { id: 3, name: 'Tasnim Akter', initials: 'TA', color: '#34D399', batch: 2015, current: 'SWE @ Google, London', prev: 'Backend Eng @ ThoughtWorks UK (2016–2020)', updateType: 'ai', lastUpdated: '2026-07-29' },
-  { id: 4, name: 'Liana Choudhury', initials: 'LC', color: '#C084FC', batch: 2018, current: 'AI Ethics Lead @ DeepMind', prev: 'Research Scientist @ Oxford AI Lab (2018–2023)', updateType: 'ai', lastUpdated: '2026-07-30' },
-  { id: 5, name: 'Omar Faruk', initials: 'OF', color: '#00D4AA', batch: 2013, current: 'CEO @ FinTech BD', prev: 'VP Engineering @ Dutch-Bangla Bank (2013–2019)', updateType: 'self', lastUpdated: '2026-07-25' },
-  { id: 6, name: 'Nusrat Jahan', initials: 'NJ', color: '#C084FC', batch: 2020, current: 'Investment Analyst @ BRAC Bank', prev: 'Finance Intern @ Citibank BD (2020)', updateType: 'pending', lastUpdated: '2026-07-20' },
-  { id: 7, name: 'Tanvir Ahmed', initials: 'TA2', color: '#FF8C42', batch: 2017, current: 'Product Manager @ Shohoz', prev: 'Business Analyst @ Berger Paints (2017–2019)', updateType: 'ai', lastUpdated: '2026-07-30' },
-  { id: 8, name: 'Mehnaz Sultana', initials: 'MS', color: '#6C63FF', batch: 2016, current: 'Cloud Architect @ Amazon AWS', prev: 'DevOps Engineer @ Wipro (2016–2020)', updateType: 'self', lastUpdated: '2026-07-15' },
-];
-
-const MOCK_SELF_REPORT_PROMPTS = [
-  { name: 'Khalid Mahmud', initials: 'KM', question: 'Is "Backend Engineer @ Chaldal" still your current role?' },
-  { name: 'Priya Das', initials: 'PD', question: 'Have you changed your role at SSL Wireless recently?' },
-  { name: 'Babu Rahman', initials: 'BR', question: 'We detected a LinkedIn update — new role at Robi Axiata?' },
-  { name: 'Sabbir Islam', initials: 'SI', question: 'Your profile hasn\'t been updated in 6 months. Still at BTCL?' },
-];
-
-function renderCareerTracker() {
-  renderCareerRegistry();
-  renderSelfReportPrompts();
-  renderEnrichmentStats();
+// ─── REQ-08: CAREER PROGRESSION ─────────────────────────────
+/* Self-reported employment history, backed by /api/careers/*.
+ *
+ * What was here before was fiction end to end: MOCK_CAREER_REGISTRY listed
+ * five named alumni with invented job histories, half of them tagged
+ * updateType:'ai' as though a scraper had found them; MOCK_SELF_REPORT_PROMPTS
+ * invented a queue of people to chase; renderEnrichmentStats() reported how
+ * many profiles the enrichment run had updated. There was no enrichment run,
+ * no scraper, and no employment_history table for any of it to read.
+ *
+ * The PRD's own resolution for REQ-08 was "Opt-in self-reporting with AI
+ * enrichment", marked Approved. This is the self-reporting half, and it is the
+ * part that can exist honestly: the alumnus enters their own history, and
+ * saving a role marked "current" also updates the profile fields the directory
+ * indexes, so the search stays accurate as a side effect of someone keeping
+ * their own record straight.
+ */
+function renderCareerPage() {
+  renderCareerTimeline();
 }
 
-function renderCareerRegistry(filter = '') {
-  const el = document.getElementById('career-registry-list');
-  if (!el) return;
-  let data = MOCK_CAREER_REGISTRY;
-  if (filter) data = data.filter(c => c.updateType === filter || c.current.toLowerCase().includes(filter));
-  el.innerHTML = data.map(c => `
-    <div class="career-registry-item">
-      <div class="career-registry-avatar" style="background:linear-gradient(135deg,${c.color}40,${c.color}20);color:${c.color}">${c.initials}</div>
-      <div class="career-registry-info">
-        <div class="career-registry-name">${c.name} <span style="font-size:11px;color:var(--text-muted)">· Batch ${c.batch}</span></div>
-        <div class="career-registry-current">${c.current}</div>
-        <div class="career-registry-history">Previously: ${c.prev}</div>
+async function renderCareerTimeline() {
+  const host = document.getElementById('career-timeline-list');
+  if (!host) return;
+
+  const data = await API.getMyCareer();
+  if (apiFailed(data)) {
+    host.innerHTML = '<div class="queue-empty">Could not load your career history.</div>';
+    return;
+  }
+
+  const history = data.history || [];
+  const count = document.getElementById('career-count');
+  if (count) {
+    count.textContent = history.length === 1 ? '1 role' : `${history.length} roles`;
+    count.hidden = history.length === 0;
+  }
+
+  if (!history.length) {
+    host.innerHTML = `
+      <div class="queue-empty">
+        You haven't added any roles yet. Adding your current one is what makes
+        you findable in the alumni directory.
+      </div>`;
+    return;
+  }
+
+  host.innerHTML = history.map(e => `
+    <div class="career-entry${e.isCurrent ? ' is-current' : ''}">
+      <div class="career-entry-main">
+        <div class="career-entry-title">
+          ${escapeHtml(e.jobTitle)}${e.isCurrent ? ' <span class="card-badge teal">Current</span>' : ''}
+        </div>
+        <div class="career-entry-company">${escapeHtml(e.company)}</div>
+        <div class="career-entry-meta">${escapeHtml(formatCareerPeriod(e))}</div>
+        ${e.description ? `<div class="career-entry-desc">${escapeHtml(e.description)}</div>` : ''}
       </div>
-      <div class="career-registry-action" style="text-align:right;flex-shrink:0">
-        <div class="career-update-badge ${c.updateType}">${c.updateType === 'ai' ? '🤖 AI Updated' : c.updateType === 'self' ? '✎ Self-Reported' : '⏳ Pending'}</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:4px">${c.lastUpdated}</div>
-        <button class="btn btn-sm btn-outline" style="margin-top:6px;font-size:10px" onclick="showToast('✎ Edit form for ${c.name} loading…')">Edit</button>
+      <div class="career-entry-actions">
+        <button class="btn btn-sm btn-outline" onclick="showCareerEntryModal(${Number(e.id)})">Edit</button>
+        <button class="btn btn-sm btn-ghost" onclick="deleteCareerEntry(${Number(e.id)})">Delete</button>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
-function filterCareerRegistry(val) { renderCareerRegistry(val); }
-function filterCareerStatus(val) { renderCareerRegistry(val); }
-
-function renderSelfReportPrompts() {
-  const el = document.getElementById('self-report-prompts');
-  if (!el) return;
-  el.innerHTML = MOCK_SELF_REPORT_PROMPTS.map(p => `
-    <div class="self-report-prompt-item" onclick="showSelfReportModal('${p.name}')">
-      <div class="career-registry-avatar" style="width:36px;height:36px;background:rgba(255,140,66,0.2);color:var(--amber);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0">${p.initials}</div>
-      <div>
-        <div class="prompt-question">${p.question}</div>
-        <div class="prompt-name">${p.name}</div>
-      </div>
-      <span style="font-size:18px;color:var(--amber)">?</span>
-    </div>
-  `).join('');
+/* "Mar 2022 — Present · Dhaka". Dates come back as YYYY-MM-DD; only the month
+ * and year are shown, because that is the granularity anyone actually knows
+ * about a job they left years ago. */
+function formatCareerPeriod(entry) {
+  const monthYear = (d) => {
+    if (!d) return '';
+    const parsed = new Date(d);
+    return isNaN(parsed) ? String(d)
+      : parsed.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+  };
+  const span = [monthYear(entry.startDate), entry.isCurrent ? 'Present' : monthYear(entry.endDate)]
+    .filter(Boolean).join(' — ');
+  return [span, entry.location, entry.industry].filter(Boolean).join(' · ');
 }
 
-function renderEnrichmentStats() {
-  const el = document.getElementById('enrichment-stats');
-  if (!el) return;
-  const stats = [
-    { label: 'Total Alumni Tracked', val: '12,847', color: 'var(--teal)' },
-    { label: 'AI Auto-Updated (30d)', val: '847', color: 'var(--teal)' },
-    { label: 'Self-Reported (30d)', val: '312', color: 'var(--primary-light)' },
-    { label: 'Pending Verification', val: '194', color: 'var(--amber)' },
-    { label: 'Opted Out (Privacy)', val: '287', color: 'var(--text-muted)' },
-    { label: 'Last Enrichment Run', val: '03:00 UTC', color: 'var(--text-secondary)' },
-  ];
-  el.innerHTML = stats.map(s => `
-    <div class="enrichment-stat-item">
-      <span class="enrichment-stat-label">${s.label}</span>
-      <span class="enrichment-stat-val" style="color:${s.color}">${s.val}</span>
-    </div>
-  `).join('');
-}
+let careerEntryCache = [];
 
-function showSelfReportPrompt() {
+async function showCareerEntryModal(entryId = null) {
+  // Editing needs the current values; fetch rather than trust a stale cache.
+  if (entryId) {
+    const data = await API.getMyCareer();
+    careerEntryCache = apiFailed(data) ? [] : (data.history || []);
+  }
+  const e = entryId ? careerEntryCache.find(x => x.id === entryId) : null;
+  const v = (x) => escapeHtml(x == null ? '' : String(x));
+
   showModal(`
     <div class="modal-header">
-      <div class="modal-title">✎ Update My Career</div>
+      <div class="modal-title">${entryId ? 'Edit role' : 'Add a role'}</div>
       <button class="modal-close" onclick="closeModal()">✕</button>
     </div>
-    <div class="socratic-prompt">
-      <div class="socratic-prompt-icon">🤖</div>
-      <div class="socratic-prompt-text"><strong>ConnectAI:</strong> Let me help you update your career history. What changed?</div>
+    <div class="input-group">
+      <label class="input-label" for="career-title">Job title</label>
+      <input type="text" id="career-title" class="form-input" maxlength="255" value="${e ? v(e.jobTitle) : ''}" placeholder="e.g. Senior Software Engineer" />
     </div>
-    <div class="input-group"><label class="input-label">Current Employer</label><input type="text" class="form-input" value="TechBD Solutions" /></div>
-    <div class="input-group"><label class="input-label">Job Title</label><input type="text" class="form-input" value="Senior Full-Stack Engineer" /></div>
+    <div class="input-group">
+      <label class="input-label" for="career-company">Company</label>
+      <input type="text" id="career-company" class="form-input" maxlength="255" value="${e ? v(e.company) : ''}" placeholder="e.g. bKash Ltd" />
+    </div>
     <div class="field-grid-2">
-      <div class="input-group"><label class="input-label">Start Month</label><input type="month" class="form-input" value="2023-03" /></div>
-      <div class="input-group"><label class="input-label">End (leave blank = current)</label><input type="month" class="form-input" /></div>
-    </div>
-    <div class="input-group"><label class="input-label">Privacy Setting</label>
-      <select class="form-select">
-        <option>Visible to All DIC Alumni</option>
-        <option>Verified Alumni Only</option>
-        <option>My Chapter Only</option>
-        <option>Private (Hidden)</option>
-      </select>
-    </div>
-    <div style="background:rgba(248,113,113,0.08);border:1px solid rgba(248,113,113,0.15);border-radius:var(--radius-sm);padding:10px;font-size:12px;color:var(--text-secondary);margin-bottom:16px">
-      🔒 Opt-out: You can hide any field from AI enrichment. Your scraping opt-out preference is stored encrypted.
-    </div>
-    <button class="btn btn-primary btn-full" onclick="closeModal(); showToast('✅ Career updated! Profile visible to DIC alumni.')">Save Career Update</button>
-  `);
-}
-
-function showSelfReportModal(name) {
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title">✎ Confirm Career Info</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Confirming career info for <strong>${name}</strong>. Please review and update if needed.</p>
-    <div class="input-group"><label class="input-label">Current Employer</label><input type="text" class="form-input" placeholder="Company name" /></div>
-    <div class="input-group"><label class="input-label">Current Role</label><input type="text" class="form-input" placeholder="Job title" /></div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-primary" onclick="closeModal(); showToast('✅ Career info confirmed for ${name}')">✓ Confirm & Save</button>
-      <button class="btn btn-outline" onclick="closeModal(); showToast('⏭ Skipped — will prompt again in 30 days')">Skip for Now</button>
-    </div>
-  `);
-}
-
-function showCareerPrivacyModal() {
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title">🔒 Career Privacy Controls</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Control how your career data is collected and displayed. All preferences are PDPA 2026 compliant.</p>
-    ${[
-      { label: 'Allow AI scraping of public LinkedIn', enabled: true },
-      { label: 'Allow employer verification via SSO', enabled: true },
-      { label: 'Show current employer in directory', enabled: true },
-      { label: 'Show employment history', enabled: false },
-      { label: 'Receive self-reporting prompts', enabled: true },
-      { label: 'Include in employer analytics', enabled: false },
-    ].map(p => `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border-glass)">
-        <span style="font-size:13px">${p.label}</span>
-        <div class="toggle-switch ${p.enabled ? 'active' : ''}" onclick="this.classList.toggle('active')"><div class="toggle-thumb"></div></div>
+      <div class="input-group">
+        <label class="input-label" for="career-industry">Industry</label>
+        <input type="text" id="career-industry" class="form-input" maxlength="100" value="${e ? v(e.industry) : ''}" placeholder="e.g. Technology" />
       </div>
-    `).join('')}
-    <button class="btn btn-primary btn-full" style="margin-top:16px" onclick="closeModal(); showToast('✅ Privacy preferences saved')">Save Privacy Settings</button>
+      <div class="input-group">
+        <label class="input-label" for="career-location">Location</label>
+        <input type="text" id="career-location" class="form-input" maxlength="255" value="${e ? v(e.location) : ''}" placeholder="e.g. Dhaka" />
+      </div>
+    </div>
+    <div class="field-grid-2">
+      <div class="input-group">
+        <label class="input-label" for="career-start">Started</label>
+        <input type="month" id="career-start" class="form-input" value="${e ? v((e.startDate || '').slice(0, 7)) : ''}" />
+      </div>
+      <div class="input-group">
+        <label class="input-label" for="career-end">Ended</label>
+        <input type="month" id="career-end" class="form-input" value="${e ? v((e.endDate || '').slice(0, 7)) : ''}" />
+      </div>
+    </div>
+    <label class="checkbox-row">
+      <input type="checkbox" id="career-current" ${e && e.isCurrent ? 'checked' : ''} onchange="document.getElementById('career-end').disabled = this.checked" />
+      This is my current role
+    </label>
+    <div class="input-group">
+      <label class="input-label" for="career-description">What you do here (optional)</label>
+      <input type="text" id="career-description" class="form-input" maxlength="500" value="${e ? v(e.description) : ''}" />
+    </div>
+    <p class="card-hint">
+      Marking a role as current also updates the employer and job title shown on
+      your directory profile.
+    </p>
+    <button class="btn btn-primary btn-full" onclick="saveCareerEntry(${entryId ? Number(entryId) : 'null'})">
+      ${entryId ? 'Save changes' : 'Add role'}
+    </button>
   `);
+
+  const endInput = document.getElementById('career-end');
+  if (endInput && e && e.isCurrent) endInput.disabled = true;
+}
+
+async function saveCareerEntry(entryId) {
+  const val = id => (document.getElementById(id)?.value || '').trim();
+  const isCurrent = document.getElementById('career-current')?.checked || false;
+
+  const payload = {
+    jobTitle: val('career-title'),
+    company: val('career-company'),
+    industry: val('career-industry') || null,
+    location: val('career-location') || null,
+    startDate: val('career-start') || null,
+    endDate: isCurrent ? null : (val('career-end') || null),
+    isCurrent,
+    description: val('career-description') || null,
+  };
+
+  if (!payload.jobTitle || !payload.company) {
+    showToast('⚠ A job title and a company are both required');
+    return;
+  }
+
+  const res = entryId
+    ? await API.updateCareerEntry(entryId, payload)
+    : await API.createCareerEntry(payload);
+
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not save that role.'}`); return; }
+
+  closeModal();
+  showToast(entryId ? '✅ Role updated' : '✅ Role added');
+  renderCareerTimeline();
+}
+
+async function deleteCareerEntry(entryId) {
+  if (!confirm('Delete this role from your career history?')) return;
+  const res = await API.deleteCareerEntry(entryId);
+  if (apiFailed(res)) { showToast(`⚠ ${res?.error || 'Could not delete that role.'}`); return; }
+  showToast('Role deleted');
+  renderCareerTimeline();
 }
 
 // ─── REQ-09: UPDATED RBAC — 12 ROLES ────────────────────────
@@ -538,207 +564,36 @@ async function renderBroadcastHistory() {
 }
 
 // ─── REQ-18: DEVELOPER API & WEBHOOKS PAGE ───────────────────
-const MOCK_API_APPS = [
-  { icon: '🏫', name: 'DIC SIS Integration', clientId: 'cl_dic_sis_a4f2b9c3', scopes: ['alumni:read', 'events:read', 'verify:write'], lastUsed: '2026-07-30', status: 'active' },
-  { icon: '📊', name: 'ERP Connector — Finance', clientId: 'cl_erp_fin_b7d8e2a1', scopes: ['donations:read', 'ledger:read'], lastUsed: '2026-07-29', status: 'active' },
-  { icon: '🤖', name: 'AI Partner API', clientId: 'cl_ai_ptn_c9f4d7b5', scopes: ['directory:read', 'mentorship:read'], lastUsed: '2026-07-25', status: 'active' },
-];
-
-const MOCK_WEBHOOKS = [
-  { url: 'https://sis.dic.edu.bd/webhooks/alumni', events: ['alumni.verified', 'alumni.updated'], status: 'active', deliveries: 1847 },
-  { url: 'https://erp.dic.edu.bd/api/donations', events: ['donation.completed', 'donation.failed'], status: 'active', deliveries: 342 },
-  { url: 'https://analytics.dic.edu.bd/events', events: ['event.registered', 'event.checkin'], status: 'active', deliveries: 2103 },
-];
-
-const MOCK_API_LOG = [
-  { method: 'get', path: '/api/v1/alumni?batch=2020', status: '200', client: 'DIC SIS', time: '47ms', ts: '14:32' },
-  { method: 'post', path: '/api/v1/webhooks/events', status: '200', client: 'ERP', time: '89ms', ts: '14:31' },
-  { method: 'get', path: '/api/v1/donations/campaigns', status: '200', client: 'ERP', time: '52ms', ts: '14:30' },
-  { method: 'get', path: '/api/v1/alumni/847/profile', status: '403', client: 'AI Partner', time: '12ms', ts: '14:29' },
-  { method: 'post', path: '/api/v1/verify', status: '201', client: 'DIC SIS', time: '134ms', ts: '14:28' },
-  { method: 'del', path: '/api/v1/webhooks/wh_012', status: '204', client: 'ERP', time: '23ms', ts: '14:25' },
-];
-
-const MOCK_API_ENDPOINTS = [
-  { method: 'GET', path: '/api/v1/alumni', desc: 'List verified alumni (paginated)' },
-  { method: 'GET', path: '/api/v1/alumni/:id', desc: 'Get single alumni profile' },
-  { method: 'POST', path: '/api/v1/verify', desc: 'Verify alumni status' },
-  { method: 'GET', path: '/api/v1/donations', desc: 'List campaigns & transactions' },
-  { method: 'POST', path: '/api/v1/donations/initiate', desc: 'Initiate MFS payment' },
-  { method: 'GET', path: '/api/v1/events', desc: 'List events & registrations' },
-  { method: 'POST', path: '/api/v1/events/checkin', desc: 'QR check-in via API' },
-  { method: 'GET', path: '/api/v1/mentorship', desc: 'List mentorship pairs' },
-  { method: 'GET', path: '/api/v1/chapters', desc: 'List chapters & members' },
-  { method: 'POST', path: '/api/v1/webhooks', desc: 'Register webhook endpoint' },
-];
-
-const MOCK_SIS_INTEGRATIONS = [
-  { icon: '🏫', name: 'DIC Student Information System', type: 'SIS · REST API', status: 'connected' },
-  { icon: '📊', name: 'Oracle ERP — Finance Module', type: 'ERP · SOAP/REST Bridge', status: 'connected' },
-  { icon: '🎓', name: 'National University BD Registry', type: 'Gov Registry · Batch Sync', status: 'pending' },
-  { icon: '📋', name: 'BUET Alumni DB', type: 'Cross-Institution · Federated', status: 'connected' },
-];
-
-function renderAPIPage() {
-  renderAPIApps();
-  renderWebhooks();
-  renderAPILog();
-  renderAPIEndpoints();
-  renderSISIntegrations();
-}
-
-function renderAPIApps() {
-  const el = document.getElementById('api-apps-list');
-  if (!el) return;
-  el.innerHTML = MOCK_API_APPS.map(a => `
-    <div class="api-app-card">
-      <div class="api-app-icon">${a.icon}</div>
-      <div class="api-app-info">
-        <div class="api-app-name">${a.name}</div>
-        <div class="api-app-client">${a.clientId}</div>
-        <div class="api-app-scopes">${a.scopes.map(s => `<span class="scope-tag">${s}</span>`).join('')}</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:4px">Last used: ${a.lastUsed}</div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
-        <span class="card-badge teal">Active</span>
-        <button class="api-key-btn" onclick="showToast('🔑 API key revealed (expires in 30s)')">Show Key</button>
-        <button class="api-key-btn" onclick="showToast('🔄 API key rotated successfully')">Rotate</button>
-        <button class="api-key-btn" style="color:var(--red)" onclick="showToast('🗑 App revoked')">Revoke</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function renderWebhooks() {
-  const el = document.getElementById('webhook-list');
-  if (!el) return;
-  el.innerHTML = MOCK_WEBHOOKS.map(w => `
-    <div class="webhook-item">
-      <div style="flex:1">
-        <div class="webhook-url">${w.url}</div>
-        <div class="webhook-events">${w.events.map(e => `<span class="webhook-event-tag">${e}</span>`).join('')}</div>
-        <div style="font-size:10px;color:var(--text-muted);margin-top:4px">${w.deliveries.toLocaleString()} deliveries</div>
-      </div>
-      <span class="webhook-status ${w.status}">${w.status === 'active' ? '● Active' : '○ Inactive'}</span>
-      <button class="api-key-btn" onclick="showToast('🗑 Webhook deleted')">Delete</button>
-    </div>
-  `).join('');
-}
-
-function renderAPILog() {
-  const el = document.getElementById('api-request-log');
-  if (!el) return;
-  const statusOk = s => ['200','201','204'].includes(s);
-  el.innerHTML = MOCK_API_LOG.map(l => `
-    <div class="api-log-item">
-      <span class="api-method ${l.method}">${l.method.toUpperCase()}</span>
-      <span class="api-log-path">${l.path}</span>
-      <span class="api-log-status ${statusOk(l.status) ? 'ok' : 'err'}">${l.status}</span>
-      <span style="color:var(--text-muted);font-size:11px">${l.client}</span>
-      <span style="color:var(--teal);font-size:11px">${l.time}</span>
-      <span class="api-log-time">${l.ts}</span>
-    </div>
-  `).join('');
-}
-
-function renderAPIEndpoints() {
-  const el = document.getElementById('api-endpoint-list');
-  if (!el) return;
-  const colors = { GET: 'var(--green)', POST: 'var(--primary-light)', DEL: 'var(--red)' };
-  el.innerHTML = MOCK_API_ENDPOINTS.map(e => `
-    <div class="api-endpoint-item" onclick="showToast('📄 Opening docs for ${e.path}')">
-      <div class="api-endpoint-method" style="color:${colors[e.method] || 'var(--text-muted)'}">${e.method}</div>
-      <div class="api-endpoint-path">${e.path}</div>
-      <div class="api-endpoint-desc">${e.desc}</div>
-    </div>
-  `).join('');
-}
-
-function renderSISIntegrations() {
-  const el = document.getElementById('sis-integrations');
-  if (!el) return;
-  el.innerHTML = MOCK_SIS_INTEGRATIONS.map(s => `
-    <div class="sis-integration-item">
-      <div class="sis-integration-icon">${s.icon}</div>
-      <div class="sis-integration-info">
-        <div class="sis-integration-name">${s.name}</div>
-        <div class="sis-integration-type">${s.type}</div>
-      </div>
-      <div class="sis-status-dot ${s.status}" title="${s.status}"></div>
-    </div>
-  `).join('');
-}
-
-function showApiDocs() {
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title">📄 OpenAPI Documentation</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div style="background:var(--bg-glass);border:1px solid var(--border-glass);border-radius:var(--radius-sm);padding:16px;font-family:monospace;font-size:12px;color:var(--text-secondary);margin-bottom:16px">
-openapi: 3.0.3
-info:
-  title: AlumniConnect API
-  version: 1.0.0
-  contact: api@alumnai.io
-servers:
-  - url: https://dic.alumnai.io/api/v1
-security:
-  - OAuth2: [alumni:read]
-paths:
-  /alumni:
-    get:
-      summary: List verified alumni
-      parameters: [batch, domain, location]
-  /donations:
-    get:
-      summary: List campaigns
-  /verify:
-    post:
-      summary: Verify alumni status
-    </div>
-    <button class="btn btn-outline btn-full" onclick="showToast('📄 Full OpenAPI spec downloading as YAML…')">⬇ Download Full Spec</button>
-  `);
-}
-
-function showCreateApiApp() {
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title">+ New OAuth2 Application</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div class="input-group"><label class="input-label">Application Name</label><input type="text" class="form-input" placeholder="e.g., SIS Integration v2" /></div>
-    <div class="input-group"><label class="input-label">Callback URLs</label><input type="text" class="form-input" placeholder="https://sis.dic.edu.bd/callback" /></div>
-    <div class="modal-section">
-      <div class="modal-section-title">OAuth2 Scopes</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        ${['alumni:read','alumni:write','events:read','donations:read','verify:write','mentorship:read'].map(s => `<button class="chip">${s}</button>`).join('')}
-      </div>
-    </div>
-    <button class="btn btn-primary btn-full" onclick="closeModal(); showToast('✅ API application created! Client ID and Secret generated.')">Create Application</button>
-  `);
-}
-
-function showAddWebhookModal() {
-  showModal(`
-    <div class="modal-header">
-      <div class="modal-title">+ Add Webhook Endpoint</div>
-      <button class="modal-close" onclick="closeModal()">✕</button>
-    </div>
-    <div class="input-group"><label class="input-label">Endpoint URL</label><input type="url" class="form-input" placeholder="https://your-server.com/webhook" /></div>
-    <div class="input-group"><label class="input-label">Secret (HMAC-SHA256)</label><input type="text" class="form-input" value="whsec_${Math.random().toString(36).substr(2,24)}" /></div>
-    <div class="modal-section">
-      <div class="modal-section-title">Events to Subscribe</div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        ${['alumni.verified','alumni.updated','donation.completed','event.registered','event.checkin','mentorship.accepted'].map(e => `<button class="chip">${e}</button>`).join('')}
-      </div>
-    </div>
-    <button class="btn btn-primary btn-full" onclick="closeModal(); showToast('✅ Webhook registered! Sending test payload…')">Register Endpoint</button>
-  `);
-}
+/* Everything that used to live here was fabricated, and dangerously so.
+ *
+ * MOCK_API_APPS invented three OAuth2 applications with client IDs
+ * (cl_dic_sis_a4f2b9c3 and friends). MOCK_WEBHOOKS reported three endpoints
+ * with 1,847 / 342 / 2,103 successful deliveries. MOCK_API_LOG rendered a
+ * "Live Request Log" of API calls, complete with latencies and a 403, that had
+ * never been made. MOCK_SIS_INTEGRATIONS showed the college's own Student
+ * Information System, an Oracle ERP finance module and a federated BUET alumni
+ * database as "connected".
+ *
+ * The platform issues no API credentials and sends no webhooks — there is no
+ * versioned public API in this codebase at all. A super admin reading that page
+ * would reasonably have concluded the finance system was integrated. The page
+ * is now an explicit not-implemented state (see #page-apidev in index.html) and
+ * these render functions are kept only so the page router keeps resolving.
+ *
+ * If REQ-18 is ever built, replace these with real calls — do not restore the
+ * mock arrays. */
+function renderAPIPage() { /* static not-implemented markup; nothing to render */ }
 
 // ─── REQ-01: TENANT BRANDING EDITOR ─────────────────────────
 function renderTenantListEnhanced() {
+  // Real headcount, not the literal that used to sit in the data.
+  API.getPlatformStats().then(st => {
+    if (apiFailed(st)) return;
+    document.querySelectorAll('[data-institution-alumni]').forEach(n => {
+      n.textContent = Number(st.verifiedAlumni).toLocaleString();
+    });
+  });
+
   const el = document.getElementById('tenant-list');
   if (!el) return;
   el.innerHTML = MOCK_TENANTS.map(t => `
@@ -762,7 +617,7 @@ function renderTenantListEnhanced() {
         </div>
       </div>
       <div style="text-align:center;padding:0 16px">
-        <div style="font-size:18px;font-weight:800;color:var(--teal)">${t.alumni.toLocaleString()}</div>
+        <div style="font-size:18px;font-weight:800;color:var(--teal)" data-institution-alumni>—</div>
         <div style="font-size:11px;color:var(--text-muted)">Alumni</div>
       </div>
       <div style="text-align:center;padding:0 16px">

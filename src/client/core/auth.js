@@ -88,13 +88,21 @@ function renderSidebarNav(role) {
   const container = document.getElementById('sidebar-nav-container');
   if (!container) return;
 
+  /* Sidebar badges.
+   *
+   * "Mentorship Hub" carried a hardcoded 3 and "Job Board" a hardcoded 5, shown
+   * to every user on every page load regardless of whether they had a single
+   * pending request or the board held a single posting. Items now name the
+   * stats field they read via `badgeKey`, and refreshNavBadges() fills them in
+   * after /api/stats/platform answers; a count of zero renders no badge at all,
+   * because a badge is a call to action and zero is not one. */
   const navItems = [
     { id: 'dashboard', icon: '⊞', label: 'Dashboard', roles: ['alumni', 'moderator', 'dept_admin', 'univ_admin', 'super_admin'] },
     { id: 'directory', icon: '◉', label: 'Alumni Directory', roles: ['alumni', 'moderator', 'dept_admin', 'univ_admin', 'super_admin'] },
-    { id: 'mentorship', icon: '⟳', label: 'Mentorship Hub', badge: '3', roles: ['alumni', 'moderator', 'univ_admin', 'super_admin'] },
+    { id: 'mentorship', icon: '⟳', label: 'Mentorship Hub', badgeKey: 'myPendingMentorshipRequests', roles: ['alumni', 'moderator', 'univ_admin', 'super_admin'] },
     { id: 'donations', icon: '❤', label: 'Donations & Funds', roles: ['alumni', 'univ_admin', 'super_admin'] },
     { id: 'events', icon: '◈', label: 'Events & Tickets', roles: ['alumni', 'dept_admin', 'univ_admin', 'super_admin'] },
-    { id: 'jobs', icon: '✦', label: 'Job Board', badge: '5', badgeNew: true, roles: ['alumni', 'dept_admin', 'univ_admin', 'super_admin'] },
+    { id: 'jobs', icon: '✦', label: 'Job Board', badgeKey: 'openJobPostings', badgeNew: true, roles: ['alumni', 'dept_admin', 'univ_admin', 'super_admin'] },
     { id: 'analytics', icon: '▦', label: 'Executive Analytics', roles: ['dept_admin', 'univ_admin', 'super_admin'] },
     { id: 'career', icon: '📈', label: 'Career Progression', roles: ['alumni', 'super_admin'] },
     { id: 'chapters', icon: '⬡', label: 'DIC Chapters', roles: ['alumni', 'univ_admin', 'super_admin'] },
@@ -102,7 +110,9 @@ function renderSidebarNav(role) {
     { id: 'map', icon: '⊕', label: 'Alumni Map', roles: ['alumni', 'univ_admin', 'super_admin'] },
     { id: 'profile', icon: '◎', label: 'My DIC Profile', isDivider: true, roles: ['alumni', 'moderator', 'dept_admin', 'univ_admin', 'super_admin'] },
     { id: 'admin', icon: '⚙', label: 'DIC Admin Panel', roles: ['univ_admin', 'super_admin'] },
-    { id: 'apidev', icon: '⟁', label: 'Developer API', badge: 'ENT', badgeTeal: true, roles: ['super_admin'] }
+    // No badge: the "ENT" (Enterprise) chip advertised a tier that does not
+    // exist, on a page that is now an explicit not-implemented notice.
+    { id: 'apidev', icon: '⟁', label: 'Developer API', roles: ['super_admin'] }
   ];
 
   const allowed = navItems.filter(item => item.roles.includes(role));
@@ -112,7 +122,7 @@ function renderSidebarNav(role) {
     <a class="nav-item ${item.id === state.currentPage ? 'active' : ''}" onclick="showPage('${item.id}')" id="nav-${item.id}">
       <span class="nav-icon">${item.icon}</span>
       <span class="nav-label">${item.label}</span>
-      ${item.badge ? `<span class="nav-badge ${item.badgeNew ? 'new' : ''}" ${item.badgeTeal ? 'style="background:var(--teal);color:var(--bg-deep)"' : ''}>${item.badge}</span>` : ''}
+      ${item.badge ? `<span class="nav-badge ${item.badgeNew ? 'new' : ''}" ${item.badgeTeal ? 'style="background:var(--teal);color:var(--bg-deep)"' : ''}>${item.badge}</span>` : ''}${item.badgeKey ? `<span class="nav-badge ${item.badgeNew ? 'new' : ''}" data-badge-key="${item.badgeKey}" hidden></span>` : ''}
     </a>
   `).join('');
 }
@@ -165,36 +175,42 @@ function logout() {
   if (sisAnim) sisAnim.style.display = 'none';
 }
 
-function toggleAppTheme() {
-  const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
-  const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', newTheme);
-  localStorage.setItem('dic_theme', newTheme);
-  
-  applyThemeToggleLabels(newTheme);
-  showToast(newTheme === 'dark' ? '🌙 Dark Mode Activated' : '☀️ Light Mode Activated');
-}
-
-// Keeps the topbar (desktop) and drawer (mobile) theme buttons in sync.
-function applyThemeToggleLabels(theme) {
-  const title = theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode';
-  const icon = theme === 'dark' ? '🌙' : '☀️';
-
-  const topbarBtn = document.getElementById('theme-toggle-btn');
-  if (topbarBtn) {
-    topbarBtn.innerHTML = icon;
-    topbarBtn.setAttribute('title', title);
-  }
-  const drawerBtn = document.getElementById('drawer-theme-btn');
-  if (drawerBtn) {
-    drawerBtn.innerHTML = `${icon} Theme`;
-    drawerBtn.setAttribute('title', title);
-  }
-}
-
+/* The platform has one theme.
+ *
+ * There used to be a dark/light toggle here writing `data-theme` onto <html>
+ * and persisting the choice in localStorage. The stylesheet no longer defines
+ * a dark palette at all — there is not a single [data-theme] or
+ * prefers-color-scheme selector left in styles.css — so the toggle switched to
+ * a mode that renders nothing, and the persisted 'dark' preference would have
+ * applied a theme that no longer exists.
+ *
+ * initAppTheme() is kept as a no-op rather than deleted because runtime.js and
+ * app-shell.js both call it on boot; it also clears the stale stored
+ * preference so nothing is left pointing at the removed theme. */
 function initAppTheme() {
-  const savedTheme = localStorage.getItem('dic_theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', savedTheme);
-  applyThemeToggleLabels(savedTheme);
+  try { localStorage.removeItem('dic_theme'); } catch { /* private mode */ }
+  document.documentElement.removeAttribute('data-theme');
 }
 
+
+
+/* Fills the data-driven sidebar badges from live counts.
+ *
+ * A zero count leaves the badge hidden rather than rendering "0": the badge is
+ * there to pull someone's attention to something waiting for them, and a zero
+ * is the one value that should not.
+ */
+async function refreshNavBadges() {
+  const nodes = document.querySelectorAll('[data-badge-key]');
+  if (!nodes.length) return;
+
+  const stats = await API.getPlatformStats();
+  if (apiFailed(stats)) return;
+
+  nodes.forEach(el => {
+    const value = stats[el.getAttribute('data-badge-key')];
+    if (typeof value !== 'number' || value <= 0) { el.hidden = true; return; }
+    el.textContent = value > 99 ? '99+' : String(value);
+    el.hidden = false;
+  });
+}

@@ -859,18 +859,14 @@ function renderMapClusters() {
   `).join('');
 }
 
-function renderCareerTimeline() {
-  const el = document.getElementById('career-timeline');
-  if (!el) return;
-  el.innerHTML = MOCK_CAREER_TIMELINE.map(t => `
-    <div class="timeline-item">
-      <div class="timeline-dot"></div>
-      <div class="timeline-company">${t.company}</div>
-      <div class="timeline-role">${t.role}</div>
-      <div class="timeline-period">${t.period}</div>
-    </div>
-  `).join('');
-}
+/* renderCareerTimeline() used to live here, painting MOCK_CAREER_TIMELINE — two
+ * invented jobs, the same two for every user — into a #career-timeline element.
+ * The Career Progression page is now backed by employment_history and renders
+ * the signed-in user's own entries; that implementation lives in
+ * features/gap-fixes-req.js and targets #career-timeline-list. This copy was
+ * left pointing at an element that no longer exists, and having two functions
+ * of the same name in one global scope meant load order decided which one ran.
+ */
 
 function renderRBACTable() {
   const table = document.getElementById('rbac-table');

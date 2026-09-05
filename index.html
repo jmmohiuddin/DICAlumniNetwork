@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="description" content="AlumniConnect — The AI-Powered Alumni Networking & Management Platform for Bangladeshi Institutions" />
-  <title>AlumniConnect — AI-Powered Alumni Network</title>
+  <title>DIC Alumni &amp; Career Network — Daffodil International College</title>
   <!-- OpenGraph & WhatsApp In-App Browser Meta Tags -->
   <meta property="og:title" content="DIC Alumni Network — Daffodil International College" />
   <meta property="og:description" content="Official Alumni System for Daffodil International College (DIC)" />
@@ -30,9 +30,10 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer></script>
   <link rel="manifest" href="manifest.json" />
-  <meta name="theme-color" content="#6C63FF" />
+  <meta name="theme-color" content="#0B3897" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <link rel="icon" href="assets/daffodil-logo.svg" type="image/svg+xml" />
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -43,7 +44,7 @@
     <div class="login-orb login-orb-2"></div>
     <div class="login-container">
       <div class="login-brand">
-        <img src="assets/dic-logo.png" onerror="this.onerror=null;this.src='assets/daffodil-logo.svg'"
+        <img src="assets/daffodil-logo.svg"
              alt="Daffodil International College" class="login-brand-logo" />
         <span class="brand-tag">Alumni &amp; Career Network</span>
       </div>
@@ -137,10 +138,17 @@
           </div><!-- /auth-panel-signup -->
         </div>
       </div>
+      <!-- These three pills read "38,420 DIC Alumni", "৳45.2L Raised" and
+           "3,800 Mentorships". All three were invented — the database holds
+           nothing close to those figures. They are replaced with claims the
+           platform can actually stand behind: the vault encryption and the
+           consent/DSAR tooling are real and verifiable in the codebase.
+           Real membership and fundraising figures are deliberately NOT shown
+           here, because this panel renders before authentication. -->
       <div class="login-stats">
-        <div class="stat-pill">38,420 DIC Alumni</div>
-        <div class="stat-pill">৳45.2L Raised</div>
-        <div class="stat-pill">3,800 Mentorships</div>
+        <div class="stat-pill">Official DIC Alumni System</div>
+        <div class="stat-pill">AES-256 Encrypted Vault</div>
+        <div class="stat-pill">PDPA 2026 Compliant</div>
       </div>
     </div>
   </div>
@@ -150,9 +158,9 @@
     <!-- SIDEBAR -->
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
-        <img src="assets/dic-logo.png" onerror="this.onerror=null;this.src='assets/daffodil-logo.svg'"
+        <img src="assets/daffodil-logo.svg"
              alt="Daffodil International College" class="sidebar-brand-logo" />
-        <button class="sidebar-close" onclick="toggleSidebar()">✕</button>
+        <button class="sidebar-close" onclick="closeSidebar()" aria-label="Close navigation menu">✕</button>
       </div>
       <div class="tenant-pill">
         <span class="tenant-dot" style="background:var(--diu-green)"></span>
@@ -165,7 +173,6 @@
       <!-- MOBILE-ONLY CONTROL DECK (relocated from topbar so it fits a phone) -->
       <div class="sidebar-controls" id="sidebar-controls">
         <div class="sidebar-controls-row">
-          <button class="drawer-btn" onclick="toggleAppTheme()" id="drawer-theme-btn">🌙 Theme</button>
           <button class="drawer-btn" onclick="toggleSidebar(); showBroadcastModal();">📢 Broadcast</button>
         </div>
         <div class="offline-status online drawer" id="drawer-offline-status">
@@ -184,25 +191,30 @@
       </div>
     </aside>
 
+    <!-- Scrim behind the off-canvas drawer on mobile. Tapping it closes the
+         drawer, which is the gesture people already expect from every other
+         app; without it the only way out was to find the ✕ again. Hidden
+         entirely above 900px, where the sidebar is a permanent column. -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="closeSidebar()" aria-hidden="true"></div>
+
     <!-- TOPBAR (DAFFODIL BRAND #0B3897) -->
     <div class="topbar">
-      <button class="hamburger" onclick="toggleSidebar()">☰</button>
+      <button class="hamburger" onclick="toggleSidebar()" aria-label="Open navigation menu" aria-controls="sidebar">☰</button>
       <div class="topbar-brand-logo">
-        <img src="assets/dic-logo.png" onerror="this.onerror=null;this.src='assets/daffodil-logo.svg'"
+        <img src="assets/daffodil-logo.svg"
              alt="Daffodil International College" />
       </div>
       <div class="topbar-search">
         <span class="search-icon">🔍</span>
-        <input type="text" class="topbar-search-input" placeholder="Ask DIC AI — find alumni, jobs, or events…" id="global-search" oninput="handleGlobalSearch(this.value)" />
+        <input type="text" class="topbar-search-input" placeholder="Search alumni, jobs and events…" id="global-search" oninput="handleGlobalSearch(this.value)" />
       </div>
       <div class="topbar-actions">
         <div class="offline-status online" id="offline-status" title="PostgreSQL 16 Engine Connected · PDPA 2026 Compliant">
           <span class="status-dot"></span>
           <span class="status-text">PostgreSQL 16 · Live</span>
         </div>
-        <button class="theme-toggle-btn" id="theme-toggle-btn" onclick="toggleAppTheme()" title="Toggle Light / Dark Theme">🌙</button>
         <button class="topbar-btn alert-btn" onclick="showBroadcastModal()" title="Send a broadcast">📢<span class="alert-btn-label"> Broadcast</span></button>
-        <button class="topbar-btn notif-btn" onclick="showNotifications()">🔔 <span class="notif-count">7</span></button>
+        <button class="topbar-btn notif-btn" onclick="showNotifications()" aria-label="Notifications">🔔 <span class="notif-count" id="notif-count" hidden>0</span></button>
         <div class="topbar-avatar" id="topbar-user-avatar" onclick="showPage('profile')">SA</div>
       </div>
     </div>
@@ -500,30 +512,54 @@
         <div class="page-header">
           <div>
             <h1 class="page-title">Donation Campaigns</h1>
-            <p class="page-subtitle">bKash · Nagad · Rocket · International Card</p>
+            <p class="page-subtitle">Pledges are recorded here and confirmed by the alumni office once payment is received</p>
           </div>
           <button class="btn btn-primary" onclick="showCreateCampaign()">+ New Campaign</button>
         </div>
-        <!-- Campaign Stats -->
+        <!-- Campaign Stats — filled by renderGivingStats() from
+             /api/stats/platform. These were "৳24.7L", "1,847", "৳1,338" and
+             "98.2% Transaction Success": all literals, and the last one is not
+             replaced because settlement is now a manual staff step, so a
+             success ratio would measure reconciliation speed rather than
+             payment reliability. "Awaiting confirmation" replaces it, which is
+             the number a fundraiser actually needs to act on. -->
         <div class="kpi-grid four">
           <div class="mini-kpi glass-card">
-            <div class="mini-kpi-value teal">৳24.7L</div>
-            <div class="mini-kpi-label">Total Raised FY26</div>
+            <div class="mini-kpi-value teal" id="giving-raised">—</div>
+            <div class="mini-kpi-label">Received &amp; Confirmed</div>
           </div>
           <div class="mini-kpi glass-card">
-            <div class="mini-kpi-value indigo">1,847</div>
-            <div class="mini-kpi-label">Total Donors</div>
+            <div class="mini-kpi-value indigo" id="giving-donors">—</div>
+            <div class="mini-kpi-label">Confirmed Donors</div>
           </div>
           <div class="mini-kpi glass-card">
-            <div class="mini-kpi-value amber">৳1,338</div>
-            <div class="mini-kpi-label">Avg Donation</div>
+            <div class="mini-kpi-value amber" id="giving-average">—</div>
+            <div class="mini-kpi-label">Average Gift</div>
           </div>
           <div class="mini-kpi glass-card">
-            <div class="mini-kpi-value green">98.2%</div>
-            <div class="mini-kpi-label">Transaction Success</div>
+            <div class="mini-kpi-value green" id="giving-pledged">—</div>
+            <div class="mini-kpi-label">Awaiting Confirmation</div>
           </div>
         </div>
         <div class="campaigns-grid" id="campaigns-grid"></div>
+
+        <!-- Staff-only settlement queue. A pledge reaches SUCCESS only through
+             POST /api/donations/:id/settle, which needs a finance-capable role
+             and a real transaction reference; without this panel that state
+             would be unreachable from the product and every gift would sit
+             pending forever. Hidden for non-staff by renderGivingStats(). -->
+        <div class="glass-card mt-16 hidden" id="pending-pledges-card">
+          <div class="card-header">
+            <h3 class="card-title">Pledges awaiting confirmation</h3>
+            <span class="card-badge amber" id="pending-pledges-count" hidden></span>
+          </div>
+          <p class="card-hint">
+            Confirm a pledge once the money has actually reached the college.
+            This credits the campaign, issues the donor's receipt, and is
+            recorded in the audit log against your account.
+          </p>
+          <div id="pending-pledges"></div>
+        </div>
       </div>
 
       <!-- ============ EVENTS PAGE ============ -->
@@ -613,12 +649,20 @@
           <div class="jobs-sidebar">
             <div class="glass-card">
               <div class="card-header"><h3 class="card-title">Your Resume</h3></div>
-              <div class="resume-upload-zone" onclick="triggerResumeUpload()">
+              <!-- "AI will extract skills & match jobs" was a claim with
+                   nothing behind it: no parsing library exists in this
+                   codebase and none can be added within the four-dependency
+                   budget. The file is stored and can be attached to an
+                   application; it is not read. -->
+              <div class="resume-upload-zone" role="button" tabindex="0" onclick="triggerResumeUpload()"
+                   onkeydown="resumeZoneKeydown(event)">
                 <div class="upload-icon">📄</div>
-                <div class="upload-text">Upload Resume (PDF)</div>
-                <div class="upload-sub">AI will extract skills & match jobs</div>
+                <div class="upload-text">Upload your resume</div>
+                <div class="upload-sub">PDF, DOC or DOCX &middot; up to 1 MB</div>
               </div>
-              <input type="file" id="resume-input" style="display:none" />
+              <input type="file" id="resume-input" accept=".pdf,.doc,.docx,application/pdf" style="display:none"
+                     onchange="uploadResumeFile(this.files && this.files[0])" />
+              <div id="resume-list"></div>
             </div>
             <div class="glass-card mt-16">
               <div class="card-header"><h3 class="card-title">Internship Drives</h3></div>
@@ -981,103 +1025,96 @@
       </div>
 
       <!-- ============ CAREER TRACKER PAGE (REQ-08) ============ -->
+      <!-- ============ CAREER PROGRESSION (REQ-08) ============ -->
+      <!-- The old version of this page was built entirely on invented data. A
+           banner announced "AI Career Enrichment Active — Last run 2026-07-30
+           03:00 UTC · 847 profiles updated"; there is no enrichment job, no
+           scheduler, and nothing has ever updated a profile automatically. The
+           registry listed alumni from MOCK_CAREER_REGISTRY, the filters offered
+           an "AI Auto-Updated" status that does not exist, and a sidebar
+           claimed "12 Pending" self-reporting prompts.
+
+           REQ-08 asked for scraped career tracking, but the PRD's own
+           open-questions matrix settled it the other way and marked it
+           Approved: "Opt-in self-reporting with AI enrichment." This is the
+           opt-in self-reporting half, backed by the employment_history table
+           and /api/careers/* — real, and no more than it claims. -->
       <div class="page hidden" id="page-career">
         <div class="page-header">
           <div>
-            <h1 class="page-title">Career Progression Tracker</h1>
-            <p class="page-subtitle">AI-enriched employment histories · Opt-out privacy controls · Self-reporting prompts</p>
+            <h1 class="page-title">Career Progression</h1>
+            <p class="page-subtitle">Your employment history, kept up to date by you &mdash; and visible to other alumni per your profile privacy settings</p>
           </div>
           <div class="page-header-actions">
-            <button class="btn btn-outline" onclick="showSelfReportPrompt()">✎ Update My Career</button>
-            <button class="btn btn-primary" onclick="showCareerPrivacyModal()">🔒 Privacy Controls</button>
+            <button class="btn btn-primary" onclick="showCareerEntryModal()">+ Add a role</button>
           </div>
         </div>
-        <div class="career-tracker-banner glass-card">
-          <div class="ct-banner-icon">🤖</div>
-          <div class="ct-banner-body">
-            <div class="ct-banner-title">AI Career Enrichment Active</div>
-            <div class="ct-banner-sub">System auto-updates alumni employment data via opt-in SSO. Last run: <strong>2026-07-30 03:00 UTC</strong> · <strong>847 profiles updated</strong></div>
-          </div>
-          <span class="card-badge teal">Opt-in Active</span>
-        </div>
+
         <div class="career-tracker-layout">
           <div class="career-tracker-main">
             <div class="glass-card">
               <div class="card-header">
-                <h3 class="card-title">Alumni Employment Registry</h3>
-                <div class="page-header-actions" style="flex-shrink:0">
-                  <select class="form-select sm" onchange="filterCareerRegistry(this.value)">
-                    <option value="">All Domains</option>
-                    <option value="tech">Technology</option>
-                    <option value="finance">Finance</option>
-                    <option value="business">Business</option>
-                  </select>
-                  <select class="form-select sm" onchange="filterCareerStatus(this.value)">
-                    <option value="">All Statuses</option>
-                    <option value="auto">🤖 AI Auto-Updated</option>
-                    <option value="self">✎ Self-Reported</option>
-                    <option value="pending">⏳ Pending</option>
-                  </select>
-                </div>
+                <h3 class="card-title">My career timeline</h3>
+                <span class="card-badge muted" id="career-count" hidden></span>
               </div>
-              <div id="career-registry-list"></div>
+              <div id="career-timeline-list"></div>
             </div>
           </div>
           <div class="career-tracker-sidebar">
             <div class="glass-card">
-              <div class="card-header"><h3 class="card-title">Self-Reporting Prompts</h3><span class="card-badge amber">12 Pending</span></div>
-              <div id="self-report-prompts"></div>
-            </div>
-            <div class="glass-card mt-16">
-              <div class="card-header"><h3 class="card-title">Enrichment Stats</h3></div>
-              <div id="enrichment-stats"></div>
+              <div class="card-header"><h3 class="card-title">Why this matters</h3></div>
+              <p class="card-hint">
+                Your current employer and job title are what the alumni
+                directory searches on, and what mentorship suggestions are
+                matched against. Adding your current role is the single change
+                that makes you findable by alumni looking for someone in your
+                field.
+              </p>
+              <p class="card-hint">
+                Nothing here is collected automatically. The platform does not
+                scrape LinkedIn or any other site &mdash; every entry is one you
+                add yourself, and you can delete any of them at any time.
+              </p>
             </div>
           </div>
         </div>
       </div>
 
       <!-- ============ DEVELOPER API PAGE (REQ-18) ============ -->
+      <!-- This page used to render a fully fabricated integration console:
+           three OAuth2 applications with invented client IDs, three webhook
+           endpoints reporting 1,847 / 342 / 2,103 successful deliveries, a
+           "Live Request Log" of API calls that never happened, and four
+           SIS/ERP integrations — including the college's own Student
+           Information System and an Oracle ERP finance module — displayed as
+           "connected". None of it existed. The platform issues no API
+           credentials and sends no webhooks, so a super admin reading that
+           screen would have believed the college's finance system was wired
+           in when nothing was.
+
+           REQ-18 is out of scope for v1. Rather than delete the page and leave
+           a dead nav entry, it now says plainly what is and is not there. -->
       <div class="page hidden" id="page-apidev">
         <div class="page-header">
           <div>
             <h1 class="page-title">Developer API &amp; Webhooks</h1>
-            <p class="page-subtitle">OpenAPI-compliant · OAuth2 application access · SIS/ERP integration · Enterprise Tier</p>
-          </div>
-          <div class="page-header-actions">
-            <button class="btn btn-outline" onclick="showApiDocs()">📄 OpenAPI Docs</button>
-            <button class="btn btn-primary" onclick="showCreateApiApp()">+ New Application</button>
+            <p class="page-subtitle">External integration surface &middot; not available in this release</p>
           </div>
         </div>
-        <div class="api-enterprise-badge glass-card">
-          <span style="font-size:20px">⟁</span>
-          <div style="flex:1"><div style="font-weight:700">Enterprise Tier — External API Access</div><div style="font-size:12px;color:var(--text-secondary)">OAuth2 scoped credentials · Rate-limited 1,000 req/min · Webhook HMAC-SHA256 signed payloads</div></div>
-          <span class="card-badge teal">Active</span>
-        </div>
-        <div class="api-layout">
-          <div class="api-main">
-            <div class="glass-card">
-              <div class="card-header"><h3 class="card-title">OAuth2 Applications</h3><span class="badge-count">3</span></div>
-              <div id="api-apps-list"></div>
-            </div>
-            <div class="glass-card mt-16">
-              <div class="card-header"><h3 class="card-title">Webhook Endpoints</h3><button class="btn btn-sm btn-outline" onclick="showAddWebhookModal()">+ Add Endpoint</button></div>
-              <div id="webhook-list"></div>
-            </div>
-            <div class="glass-card mt-16">
-              <div class="card-header"><h3 class="card-title">Live Request Log</h3><span class="card-badge teal">Real-time</span></div>
-              <div id="api-request-log"></div>
-            </div>
-          </div>
-          <div class="api-sidebar">
-            <div class="glass-card">
-              <div class="card-header"><h3 class="card-title">Available Endpoints</h3></div>
-              <div id="api-endpoint-list"></div>
-            </div>
-            <div class="glass-card mt-16">
-              <div class="card-header"><h3 class="card-title">SIS/ERP Integrations</h3></div>
-              <div id="sis-integrations"></div>
-            </div>
-          </div>
+        <div class="glass-card empty-state-card">
+          <div class="empty-state-icon">&#9881;</div>
+          <h3 class="empty-state-title">Not implemented in this release</h3>
+          <p class="empty-state-body">
+            The platform does not currently issue API credentials, expose a versioned
+            public API, or send webhooks. An external developer API (REQ-18) would
+            require a credential-issuance and signing subsystem that does not exist
+            in this deployment, and it is not part of the current scope.
+          </p>
+          <p class="empty-state-body">
+            Integrations with the college SIS or a finance ERP are not connected.
+            If you need one, it is a scoped piece of work &mdash; not a setting to
+            switch on here.
+          </p>
         </div>
       </div>
 
@@ -1086,7 +1123,7 @@
       <div class="footer-container">
         <div class="footer-top">
           <div class="footer-brand">
-            <img src="assets/dic-logo.png" onerror="this.onerror=null;this.src='assets/daffodil-logo.svg'"
+            <img src="assets/daffodil-logo.svg"
              alt="Daffodil International College" class="footer-brand-logo" />
           </div>
           <div class="footer-links">
@@ -1160,6 +1197,10 @@
     <div id="notif-list"></div>
   </div>
 
+  <!-- Offline/PWA engine (REQ-10). Must load before api-client.js: it wraps
+       fetch() so queued mutations and cached reads work for every later
+       module. Self-initializes on DOMContentLoaded. -->
+  <script src="src/client/core/offline.js"></script>
   <script src="src/client/core/api-client.js"></script>
   <script src="src/client/core/state.js"></script>
   <script src="src/client/core/helpers.js"></script>

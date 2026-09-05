@@ -106,10 +106,14 @@ function showDonateModal(campaignId, campaignName) {
       </div>
     </div>
     <div class="modal-section">
-      <div class="modal-section-title">Payment Method</div>
+      <div class="modal-section-title">How will you send the payment?</div>
+      <!-- These are labels for how the donor intends to pay, not integrated
+           rails. No bKash/Nagad/Rocket SDK exists in this codebase and no
+           outbound call is made to any of them; presenting them as live
+           gateways is what made the old flow misleading. -->
       <div class="gateway-grid">
         ${[['bkash','📱','bKash'],['nagad','📲','Nagad'],['rocket','🚀','Rocket'],['card','💳','Card']].map(([id, icon, label]) =>
-          `<div class="gateway-option" onclick="selectGateway(this, '${id}')">
+          `<div class="gateway-option" role="button" tabindex="0" onclick="selectGateway(this, '${id}')">
              <div style="font-size:22px">${icon}</div><div style="font-size:12px;font-weight:700">${label}</div>
            </div>`).join('')}
       </div>
@@ -124,7 +128,7 @@ function showDonateModal(campaignId, campaignName) {
          becomes a real apostrophe and an admin-chosen campaign name could close
          the string and run script in any donor's session. processDonation never
          read the name, so it is simply not passed. -->
-    <button class="btn btn-primary btn-full" onclick="processDonation(${Number(campaignId)})">Continue to Payment →</button>
+    <button class="btn btn-primary btn-full" onclick="processDonation(${Number(campaignId)})">Continue →</button>
   `);
 }
 

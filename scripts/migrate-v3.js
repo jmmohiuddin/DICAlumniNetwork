@@ -4,7 +4,7 @@ const path = require('path');
 const db = require('../src/server/db/pool');
 
 (async () => {
-  await db.query(fs.readFileSync(path.join(__dirname, 'schema_v3.sql'), 'utf8'));
+  await db.query(fs.readFileSync(path.join(__dirname, '..', 'db', 'schema_v3.sql'), 'utf8'));
   console.log('⚡ schema_v3 applied.');
 
   const cols = await db.query(`

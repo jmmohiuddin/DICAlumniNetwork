@@ -28,3 +28,8 @@ legal/
 *.pdf
 *.docx
 .claude/
+
+# Screenshots captured during UI review. Useful while working, not artifacts
+# of the product — they land in the repo root from browser tooling.
+*.png
+!assets/*.png

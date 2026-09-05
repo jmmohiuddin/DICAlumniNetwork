@@ -467,6 +467,10 @@ Object.assign(API, {
   confirmDonation:  (id, d)         => apiRequest('POST',   `/api/donations/${id}/confirm`, d || { success: true }),
   getMyDonations:   ()              => apiRequest('GET',    '/api/donations/mine'),
   getDonorLeaderboard: ()           => apiRequest('GET',    '/api/donations/leaderboard'),
+  // Staff settlement. A pledge only becomes a SUCCESS row here, against a real
+  // transaction reference — the donor's own confirm can no longer do it.
+  getPendingDonations: ()           => apiRequest('GET',    '/api/donations/pending'),
+  settleDonationApi: (id, d)        => apiRequest('POST',   `/api/donations/${id}/settle`, d),
 
   // ─── CUSTOM FIELDS ───
   getCustomFields:  ()              => apiRequest('GET',    '/api/custom-fields'),
@@ -491,6 +495,53 @@ Object.assign(API, {
   getBroadcasts:    ()              => apiRequest('GET',    '/api/broadcasts'),
   sendBroadcastApi: (d)             => apiRequest('POST',   '/api/broadcasts', d),
   getAuditLogs:     ()              => apiRequest('GET',    '/api/audit-logs'),
+
+  // ─── PLATFORM STATS ───
+  // Live figures for the dashboards. These replaced hardcoded literals; if one
+  // of these calls fails the caller must show nothing rather than fall back to
+  // a placeholder number, or the fabricated-metrics problem comes straight back.
+  // ─── ALUMNI VERIFICATION ───
+  // The queue that turns a bulk-imported row into an account someone can use.
+  getVerificationQueue: ()          => apiRequest('GET',    '/api/verification/queue'),
+  approveVerification: (id)         => apiRequest('POST',   `/api/verification/${id}/approve`),
+  rejectVerification: (id, reason)  => apiRequest('POST',   `/api/verification/${id}/reject`, { reason }),
+
+  // ─── RESUMES (REQ-07) ───
+  // The file is sent as a RAW body, not multipart and not JSON: no multipart
+  // parser exists (four-dependency budget) so the server reads req.body as a
+  // Buffer and decides the type from the magic bytes. The filename travels in a
+  // header because there is no form to carry it.
+  async uploadResume(file) {
+    try {
+      const res = await fetchWithTimeout(`${API_BASE_URL}/api/resumes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': file.type || 'application/octet-stream',
+          'X-Filename': file.name.replace(/[^\w.\- ]+/g, '_').slice(0, 120)
+        },
+        body: file
+      }, 60000);   // a 1 MB upload on 2G needs far longer than the 10s default
+      const data = await res.json().catch(() => null);
+      if (!res.ok) return { error: (data && data.error) || `Upload failed (${res.status})` };
+      return data;
+    } catch (e) {
+      return { error: 'Cannot reach the server. Check your connection.', offline: true };
+    }
+  },
+  getMyResumes:     ()              => apiRequest('GET',    '/api/resumes/mine'),
+  deleteResume:     (id)            => apiRequest('DELETE', `/api/resumes/${id}`),
+
+  // ─── CAREER PROGRESSION (REQ-08) ───
+  // Self-reported employment history. Nothing populates these automatically.
+  getMyCareer:      ()              => apiRequest('GET',    '/api/careers/mine'),
+  getUserCareer:    (id)            => apiRequest('GET',    `/api/careers/user/${id}`),
+  createCareerEntry:(d)             => apiRequest('POST',   '/api/careers', d),
+  updateCareerEntry:(id, d)         => apiRequest('PUT',    `/api/careers/${id}`, d),
+  deleteCareerEntry:(id)            => apiRequest('DELETE', `/api/careers/${id}`),
+
+  getPlatformStats: ()              => apiRequest('GET',    '/api/stats/platform'),
+  getSystemStats:   ()              => apiRequest('GET',    '/api/stats/system'),
+  getCapabilities:  ()              => apiRequest('GET',    '/api/stats/capabilities'),
 
   // ─── EVENT PLANNER ───
   getPlannerWorkspace: (eventId = 1) => apiRequest('GET',   `/api/planner/workspace/${eventId}`),

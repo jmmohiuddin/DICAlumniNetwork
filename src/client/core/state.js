@@ -42,13 +42,22 @@ const MOCK_VERIFICATION_QUEUE = [
   { name: 'Sumaiya Zaman', initials: 'SZ', details: 'BBA Batch 2022 · Pending NID' }
 ];
 
-const MOCK_TENANTS = [
-  { name: 'Daffodil International College', subdomain: 'alumni.dic.edu.bd', alumni: 38420, status: 'active', plan: 'Enterprise Platform' }
+/* The one institution this deployment serves. Not a tenant registry — there is
+ * no multi-tenancy in this codebase (no tenant_id column exists on any of the
+ * 38 tables, and no RLS policy anywhere), so this is a description of the
+ * single install, not a list something could be added to.
+ *
+ * `alumni` was the literal 38420. It is null here and filled from
+ * /api/stats/platform at render time, because a made-up headcount on the
+ * institution's own record is the least defensible number on the platform. */
+const DIC_INSTITUTION = [
+  { name: 'Daffodil International College', subdomain: 'alumni.dic.edu.bd', alumni: null, status: 'active', plan: 'Single-institution deployment' }
 ];
-const MOCK_CAREER_TIMELINE = [
-  { company: 'Daffodil International College', role: 'DIC Alumni Board Director', period: '2024 – Present' },
-  { company: 'Brain Station 23', role: 'Senior Software Engineer', period: '2022 – Present' }
-];
+// Kept as an alias: three modules still read this name.
+const MOCK_TENANTS = DIC_INSTITUTION;
+// MOCK_CAREER_TIMELINE was two hardcoded jobs shown as every user's career
+// history. Real history now lives in the employment_history table, read via
+// /api/careers/mine.
 
 // ─── APP STATE ──────────────────────────────────────────────
 let state = {

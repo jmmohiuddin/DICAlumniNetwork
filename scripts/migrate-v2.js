@@ -8,7 +8,7 @@ const path = require('path');
 const db = require('../src/server/db/pool');
 
 async function run() {
-  const ddl = fs.readFileSync(path.join(__dirname, 'schema_v2.sql'), 'utf8');
+  const ddl = fs.readFileSync(path.join(__dirname, '..', 'db', 'schema_v2.sql'), 'utf8');
   await db.query(ddl);
   console.log('⚡ schema_v2 applied.');
 

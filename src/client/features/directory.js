@@ -8,35 +8,98 @@
  */
 
 // ─── RENDER FUNCTIONS ────────────────────────────────────────
-function renderVerificationQueue() {
+/* Alumni verification queue.
+ *
+ * This used to render MOCK_VERIFICATION_QUEUE — two hardcoded people, "Rafiq
+ * Hossain" and "Sumaiya Zaman" — and its Approve button called showToast() and
+ * nothing else. There was no verification endpoint on the server at all, so
+ * no account could ever actually be approved.
+ *
+ * It now reads GET /api/verification/queue. That matters more than it used to:
+ * bulk import no longer marks imported accounts verified, so this queue is the
+ * only route from an imported row to a usable account.
+ *
+ * The escaping note the previous author left here was exactly right, and the
+ * day it warned about is today — these names now come from self-registered
+ * accounts, so they are attacker-chosen. Every interpolated value is escaped,
+ * and the action buttons carry the numeric user id, never the name. A name
+ * interpolated into an inline handler's argument list lands in a JS string
+ * literal, where an apostrophe breaks out and HTML-escaping does not save you.
+ */
+let verificationQueueCache = [];
+
+async function renderVerificationQueue() {
   const container = document.getElementById('verification-queue');
   if (!container) return;
-  // MOCK_VERIFICATION_QUEUE is static client-side data today, so nothing here
-  // is attacker-controlled yet. It is escaped anyway, and the approve button
-  // carries an index rather than the name: this queue exists to review
-  // self-registered accounts, and the day it is wired to the server that name
-  // becomes attacker-chosen. A name inside onclick="approveAlumni('...')" lands
-  // in a JS string literal, where an apostrophe breaks out and escaping the
-  // HTML does not save you.
-  container.innerHTML = MOCK_VERIFICATION_QUEUE.map((item, i) => `
+
+  // apiRequest() resolves with an { error } envelope instead of throwing, so
+  // this is apiFailed(), not try/catch.
+  const data = await API.getVerificationQueue();
+  if (apiFailed(data)) {
+    container.innerHTML = '<div class="queue-empty">Could not load the verification queue.</div>';
+    return;
+  }
+
+  verificationQueueCache = data.items || [];
+
+  const badge = document.getElementById('verification-queue-count');
+  if (badge) {
+    badge.textContent = data.total;
+    badge.hidden = data.total === 0;
+  }
+
+  // An empty queue is the healthy state, so it should read as "nothing to do"
+  // rather than as a list that failed to load.
+  if (!verificationQueueCache.length) {
+    container.innerHTML = '<div class="queue-empty">No accounts are waiting for review.</div>';
+    return;
+  }
+
+  container.innerHTML = verificationQueueCache.map(item => {
+    // Where the account came from changes how much scrutiny it deserves: a
+    // bulk_import row came from a spreadsheet the college supplied, a signup
+    // row is an unverified claim by a member of the public.
+    const origin = item.source === 'bulk_import' ? 'Bulk import'
+                 : item.source === 'manual' ? 'Added by staff'
+                 : 'Self sign-up';
+    const detail = [item.batch ? 'Batch ' + item.batch : null,
+                    item.department, item.studentId, origin]
+                   .filter(Boolean).join(' · ');
+    return `
     <div class="queue-item">
-      <div class="queue-avatar">${escapeHtml(item.initials)}</div>
+      <div class="queue-avatar">${escapeHtml(item.initials || '?')}</div>
       <div class="queue-info">
-        <div class="queue-name">${escapeHtml(item.name)}</div>
-        <div class="queue-sub">${escapeHtml(item.details)}</div>
+        <div class="queue-name">${escapeHtml(item.name || item.email)}</div>
+        <div class="queue-sub">${escapeHtml(detail)}</div>
       </div>
       <div class="queue-actions">
-        <button class="approve-btn" onclick="approveAlumni(${Number(i)})">✓ Approve</button>
-        <button class="review-btn">Review</button>
+        <button class="approve-btn" onclick="approveAlumni(${Number(item.id)})">✓ Approve</button>
+        <button class="review-btn" onclick="rejectAlumni(${Number(item.id)})">Reject</button>
       </div>
-    </div>
-  `).join('');
+    </div>`;
+  }).join('');
 }
 
-function approveAlumni(index) {
-  const item = MOCK_VERIFICATION_QUEUE[index];
-  if (!item) return;
-  showToast(`✅ ${item.name} approved successfully`);
+async function approveAlumni(userId) {
+  const item = verificationQueueCache.find(i => i.id === userId);
+  const result = await API.approveVerification(userId);
+  showToast(apiFailed(result)
+    ? `⚠ ${result.error || 'Could not verify that account'}`
+    : `✅ ${result.name || (item && item.name) || 'Account'} verified`);
+  renderVerificationQueue();
+}
+
+async function rejectAlumni(userId) {
+  const item = verificationQueueCache.find(i => i.id === userId);
+  // The server requires a reason and stores it, so a rejection is explicable
+  // later. Asking here rather than rejecting silently is the point.
+  const reason = prompt(`Why is ${(item && item.name) || 'this account'} being rejected?\n\nThis is recorded in the audit log.`);
+  if (reason === null) return;
+  const result = await API.rejectVerification(userId, reason);
+  showToast(apiFailed(result)
+    ? `⚠ ${result.error || 'Could not reject that account'}`
+    : '🚫 Account rejected');
+  renderVerificationQueue();
 }
 
 // Directory is served from PostgreSQL. Search, filters, sorting and paging are

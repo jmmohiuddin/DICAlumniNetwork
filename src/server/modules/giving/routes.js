@@ -2,10 +2,30 @@
    DIC ALUMNI PLATFORM — GIVING (CAMPAIGNS & DONATIONS)
 
    Owns: GET/POST/PUT/DELETE /api/campaigns, POST /api/donations,
-   POST /api/donations/:id/confirm, GET /api/donations/mine,
+   POST /api/donations/:id/confirm, POST /api/donations/:id/settle,
+   GET /api/donations/pending, GET /api/donations/mine,
    GET /api/donations/leaderboard.
 
    Campaigns & donations ledger (REQ-05).
+
+   ─── PLEDGE / MANUAL RECONCILIATION ───
+   There is no payment gateway in this application. package.json carries four
+   runtime dependencies — express, pg, cors, body-parser — and none of them
+   talks to bKash, Nagad or a card processor. Nothing in this process can
+   observe that money moved.
+
+   The honest model, and the one implemented here, is therefore a pledge book
+   rather than a payment page. A donor records an INTENT to give (a PENDING
+   ledger row); money arrives out of band — bKash send-money, a bank transfer,
+   cash at the alumni office; a member of staff with finance authority matches
+   the incoming payment to the pledge and settles it, recording the real-world
+   transaction reference they matched against. Only that staff action can
+   produce a SUCCESS row.
+
+   PENDING is deliberately reused as the pledge state instead of adding a
+   PLEDGED value to the status CHECK. PENDING already means exactly this —
+   recorded, not settled — and reusing it keeps the constraint, the indexes and
+   every existing client-side status branch working unchanged.
    ============================================================ */
 
 const db = require('../../db/pool');
@@ -69,9 +89,10 @@ module.exports = function mountGiving(app, { requireAuth, requireRole, ADMIN_ROL
     res.json({ success: true });
   }));
 
-  // Two-phase donation: a PENDING ledger row is written before the gateway is
-  // called, then confirmed. REQ-05 requires the ledger to exist even if the
-  // gateway callback never arrives.
+  // Records a PLEDGE. The row is written PENDING and stays PENDING until a
+  // finance-capable staff member settles it against a real transaction — see
+  // POST /api/donations/:id/settle. REQ-05 requires the ledger row to exist
+  // from the moment of the commitment, which is what this writes.
   app.post('/api/donations', requireAuth, (req, res) => ok(res, async () => {
     const { campaignId, amount, gateway, isAnonymous } = req.body;
     // parseFloat() let '12abc' through as 12 and '1e999' through as Infinity,
@@ -99,39 +120,35 @@ module.exports = function mountGiving(app, { requireAuth, requireRole, ADMIN_ROL
     `, [parseInt(campaignId), req.user.uid, me.rows[0].full_name, value,
         gateway, ref('TXN'), !!isAnonymous]);
 
-    res.json({ donation: row.rows[0], campaign: camp.rows[0].name });
+    await writeAudit('Donation Pledged',
+      `৳${value} to "${camp.rows[0].name}" by user ${req.user.uid} · ${row.rows[0].transaction_reference}`, '🤝');
+
+    // `pledge: true` tells the client this is a commitment, not a completed
+    // payment, so the UI can say so instead of showing a receipt.
+    res.json({ donation: row.rows[0], campaign: camp.rows[0].name, pledge: true });
   }));
 
-  /* ─── THE ONLY SOURCE OF A 'SUCCESS' DONATION ───
+  /* ─── THE DONOR'S HALF: A PLEDGE MAY ONLY BE WITHDRAWN ───
    *
-   * No payment provider is integrated in this codebase, so nothing here can
-   * prove that money moved. Until one is wired in, this returns null and every
-   * donation stays PENDING. That is deliberate: a PENDING ledger row that is
-   * later reconciled is recoverable, a SUCCESS row that no one paid for is not.
+   * This endpoint used to read a `success` boolean out of the request body and
+   * default it to TRUE, so any authenticated user could POST here and mint
+   * themselves a SUCCESS donation of any amount, a receipt code and campaign
+   * credit, with no money changing hands. That was the single worst finding in
+   * the audit.
    *
-   * TODO(payments): wire the real verification here. It must be a
-   * server-to-server call the client cannot influence — bKash
-   * /tokenized/checkout/execute, Nagad's payment-verify, the card PSP's capture
-   * lookup — keyed on the provider's OWN reference, and it must confirm both
-   * that the payment settled AND that the settled amount and currency match
-   * this donation row. Return null on anything else, including a mismatch.
-   * The same function is what a provider webhook handler should call, after
-   * validating the webhook signature.
+   * The trust boundary is the whole issue: the caller is the party who
+   * benefits from the answer, so the caller's answer cannot be the evidence.
+   * A donor may still tell us they are NOT going to pay — nobody profits from
+   * withdrawing their own pledge — and that path is kept, because a pledge
+   * book full of abandoned rows is worse than one that can be tidied.
+   *
+   * `success: true` is ignored. There is no code path from this endpoint to
+   * SUCCESS. Settlement lives in POST /api/donations/:id/settle, behind a role.
    */
-  // eslint-disable-next-line no-unused-vars
-  async function verifyGatewayPayment(donation, providerReference) {
-    return null;
-  }
-
   app.post('/api/donations/:id/confirm', requireAuth, (req, res) => ok(res, async () => {
     const id = parseInt(req.params.id);
     const body = req.body || {};
-    // A client may report a FAILURE — it cannot profit from one — but never a
-    // success. `success` used to be read from the body and defaulted to true,
-    // so any authenticated user could POST here and mint a SUCCESS donation,
-    // a receipt code and campaign credit without paying. `success: true` is
-    // now ignored; only verifyGatewayPayment() can produce a SUCCESS state.
-    const clientReportedFailure = body.success === false || body.failed === true;
+    const withdrawing = body.success === false || body.failed === true;
 
     const client = await db.pool.connect();
     try {
@@ -141,47 +158,139 @@ module.exports = function mountGiving(app, { requireAuth, requireRole, ADMIN_ROL
       if (cur.rows[0].donor_user_id !== req.user.uid && !ADMIN_ROLES.includes(req.user.role)) {
         await client.query('ROLLBACK'); return res.status(403).json({ error: 'Not your transaction' });
       }
-      // Idempotent: a retried gateway callback must not double-count the ledger.
+      // Idempotent: a retried call must not re-run the state transition.
       if (cur.rows[0].status !== 'PENDING') {
         await client.query('ROLLBACK');
         return res.json({ donation: cur.rows[0], alreadySettled: true });
       }
 
-      const verified = clientReportedFailure
-        ? null
-        : await verifyGatewayPayment(cur.rows[0], body.providerReference);
-
-      if (!clientReportedFailure && !verified) {
-        // Nothing server-side attests that this was paid, so the ledger row is
-        // left exactly as it is. The response shape is unchanged; the flag
-        // tells the client the settlement is still outstanding.
+      if (!withdrawing) {
+        // The pledge stands. Nothing server-side attests that money arrived,
+        // so the row is left exactly as it is. The response shape is unchanged
+        // and `pendingVerification` still tells the client settlement is
+        // outstanding; `pledge` names what the row actually is.
         await client.query('ROLLBACK');
-        return res.json({ donation: cur.rows[0], pendingVerification: true });
+        return res.json({ donation: cur.rows[0], pendingVerification: true, pledge: true });
       }
 
-      const success = !!verified;
-      const receipt = success ? ref('DIC-RCPT') : null;
       const upd = await client.query(`
-        UPDATE donations SET status=$2, receipt_code=$3, failure_reason=$4, completed_at=CURRENT_TIMESTAMP
+        UPDATE donations SET status='FAILED', failure_reason=$2, completed_at=CURRENT_TIMESTAMP
         WHERE id=$1 RETURNING *
-      `, [id, success ? 'SUCCESS' : 'FAILED', receipt, success ? null : (body.failureReason || 'Gateway declined')]);
+      `, [id, String(body.failureReason || 'Withdrawn by donor').slice(0, 500)]);
+
+      await client.query('COMMIT');
+      await writeAudit('Pledge Withdrawn',
+        `৳${cur.rows[0].amount} · ${cur.rows[0].transaction_reference} by user ${req.user.uid}`, '↩');
+      res.json({ donation: upd.rows[0] });
+    } catch (e) {
+      await client.query('ROLLBACK'); throw e;
+    } finally { client.release(); }
+  }));
+
+  /* ─── THE ONLY SOURCE OF A 'SUCCESS' DONATION ───
+   *
+   * A human with finance authority states that the money arrived and cites the
+   * real-world transaction it arrived under. That citation is the point: a
+   * SUCCESS row is only worth anything if someone can later hold it against a
+   * bank statement or a bKash export, so settlement_reference is mandatory and
+   * settled_by records who made the claim.
+   *
+   * ROLE: ADMIN_ROLES — super_admin and univ_admin. This platform has no
+   * Finance Officer role (users.role is CHECK-constrained to alumni,
+   * moderator, dept_admin, univ_admin, super_admin), and the two roles below
+   * univ_admin are content moderation roles held by many more people. Crediting
+   * a campaign with money is a financial control, so it takes the narrowest
+   * existing group that can plausibly do the job. If a real finance role is
+   * added later, this is the one line to change.
+   */
+  app.post('/api/donations/:id/settle', requireRole(...ADMIN_ROLES), (req, res) => ok(res, async () => {
+    const id = parseInt(req.params.id);
+    const { reference, method, note, outcome } = req.body || {};
+
+    // 'received' credits the campaign; 'failed' closes an uncollectable pledge.
+    const settleTo = outcome === 'failed' ? 'FAILED' : 'SUCCESS';
+
+    if (settleTo === 'SUCCESS' && (!reference || !String(reference).trim())) {
+      return res.status(400).json({
+        error: 'A real-world transaction reference is required to mark a pledge received (bKash TrxID, bank slip number, receipt book number).'
+      });
+    }
+    const txnRef = String(reference || '').trim().slice(0, 120);
+    if (settleTo === 'SUCCESS' && txnRef.length < 4) {
+      return res.status(400).json({ error: 'The transaction reference is too short to identify a payment' });
+    }
+
+    const client = await db.pool.connect();
+    try {
+      await client.query('BEGIN');
+      // Row-locked, exactly as the old two-phase settlement was: two admins
+      // clicking "received" at once must not credit the campaign twice.
+      const cur = await client.query('SELECT * FROM donations WHERE id=$1 FOR UPDATE', [id]);
+      if (!cur.rows.length) { await client.query('ROLLBACK'); return res.status(404).json({ error: 'Donation not found' }); }
+
+      if (cur.rows[0].status !== 'PENDING') {
+        await client.query('ROLLBACK');
+        return res.json({ donation: cur.rows[0], alreadySettled: true });
+      }
+
+      const donation = cur.rows[0];
+      const success = settleTo === 'SUCCESS';
+      const receipt = success ? ref('DIC-RCPT') : null;
+
+      const upd = await client.query(`
+        UPDATE donations
+           SET status=$2, receipt_code=$3, failure_reason=$4,
+               settled_by=$5, settlement_reference=$6, settlement_method=$7,
+               settlement_note=$8, settled_at=CURRENT_TIMESTAMP,
+               completed_at=CURRENT_TIMESTAMP
+         WHERE id=$1 RETURNING *
+      `, [id, settleTo, receipt,
+          success ? null : String(note || 'Pledge not collected').slice(0, 500),
+          req.user.uid, txnRef || null,
+          String(method || donation.payment_gateway || '').slice(0, 40) || null,
+          note ? String(note).slice(0, 2000) : null]);
 
       if (success) {
         await client.query(`
           UPDATE campaigns SET raised_amount = raised_amount + $2, donors_count = donors_count + 1
           WHERE id = $1
-        `, [cur.rows[0].campaign_id, cur.rows[0].amount]);
+        `, [donation.campaign_id, donation.amount]);
 
-        await client.query(`INSERT INTO notifications (user_id, icon, title, subtitle) VALUES ($1,'💰','Donation Receipt',$2)`,
-          [req.user.uid, `Your ৳${Number(cur.rows[0].amount).toLocaleString()} donation is confirmed. Receipt ${receipt}.`]);
+        if (donation.donor_user_id) {
+          await client.query(`INSERT INTO notifications (user_id, icon, title, subtitle) VALUES ($1,'💰','Donation Receipt',$2)`,
+            [donation.donor_user_id,
+             `Your ৳${Number(donation.amount).toLocaleString()} gift has been received and confirmed. Receipt ${receipt}.`]);
+        }
       }
 
       await client.query('COMMIT');
-      if (success) await writeAudit('Donation Settled', `৳${cur.rows[0].amount} via ${cur.rows[0].payment_gateway} · ${receipt}`, '💰');
+
+      await writeAudit(success ? 'Donation Settled' : 'Pledge Closed Unpaid',
+        `৳${donation.amount} · pledge ${donation.transaction_reference}` +
+        (success ? ` · matched to "${txnRef}" · receipt ${receipt}` : '') +
+        ` · confirmed by user ${req.user.uid}`, success ? '💰' : '🚫');
+
       res.json({ donation: upd.rows[0] });
     } catch (e) {
       await client.query('ROLLBACK'); throw e;
     } finally { client.release(); }
+  }));
+
+  /* The reconciliation queue: outstanding pledges, oldest first, so whoever is
+   * matching the bank statement has a worklist. */
+  app.get('/api/donations/pending', requireRole(...ADMIN_ROLES), (req, res) => ok(res, async () => {
+    const rows = await db.query(`
+      SELECT d.id, d.amount, d.currency, d.payment_gateway, d.transaction_reference,
+             d.is_anonymous, d.created_at,
+             CASE WHEN d.is_anonymous THEN 'Anonymous Donor' ELSE d.donor_name END AS donor_name,
+             d.donor_user_id, c.name AS campaign_name
+      FROM donations d
+      LEFT JOIN campaigns c ON c.id = d.campaign_id
+      WHERE d.status = 'PENDING'
+      ORDER BY d.created_at ASC
+      LIMIT 200
+    `);
+    res.json(rows.rows);
   }));
 
   app.get('/api/donations/mine', requireAuth, (req, res) => ok(res, async () => {
