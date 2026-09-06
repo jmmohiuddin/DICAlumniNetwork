@@ -29,7 +29,7 @@ const { ok } = require('../../shared/http');
 const { auditReady } = require('../../shared/audit');
 const { encryptionReady } = require('../../shared/crypto');
 
-module.exports = function mountAudit(app, { requireAuth, requireRole, ADMIN_ROLES, MODERATOR_ROLES }) {
+module.exports = function mountAudit(app, { requireAuth, requireVerified, requireRole, ADMIN_ROLES, MODERATOR_ROLES }) {
 
   app.get('/api/audit-logs', requireRole(...ADMIN_ROLES), (req, res) => ok(res, async () => {
     const rows = await db.query('SELECT * FROM audit_logs ORDER BY id DESC LIMIT 50');
@@ -43,7 +43,7 @@ module.exports = function mountAudit(app, { requireAuth, requireRole, ADMIN_ROLE
    * collected is the same class of error as the hardcoded totals this replaced.
    * No growth or trend percentage is returned: the schema keeps no historical
    * snapshot, so any such number would be fabricated. */
-  app.get('/api/stats/platform', requireAuth, (req, res) => ok(res, async () => {
+  app.get('/api/stats/platform', requireAuth, requireVerified, (req, res) => ok(res, async () => {
     const [alumni, funds, mentorships, events, jobs, pending, moderation, donationStats, myRequests] = await Promise.all([
       db.query("SELECT COUNT(*)::int AS n FROM users WHERE role = 'alumni' AND is_verified = TRUE"),
       db.query("SELECT COALESCE(SUM(amount), 0)::float AS n FROM donations WHERE status = 'SUCCESS'"),
@@ -145,7 +145,7 @@ module.exports = function mountAudit(app, { requireAuth, requireRole, ADMIN_ROLE
    * `mapped` counts profiles that actually carry a country, not all profiles:
    * the gap between the two is the honest answer to "how good is this map",
    * so it is returned rather than hidden. */
-  app.get('/api/stats/geo', requireAuth, (req, res) => ok(res, async () => {
+  app.get('/api/stats/geo', requireAuth, requireVerified, (req, res) => ok(res, async () => {
     const rows = await db.query(`
       SELECT
         COUNT(*) FILTER (WHERE country IS NOT NULL AND country <> '')::int              AS mapped,

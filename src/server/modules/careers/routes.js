@@ -72,7 +72,7 @@ function parseIsoDate(value) {
 
 const trimOrNull = (v) => (typeof v === 'string' ? (v.trim() || null) : (v == null ? null : String(v).trim() || null));
 
-module.exports = function mountCareers(app, { requireAuth }) {
+module.exports = function mountCareers(app, { requireAuth, requireVerified }) {
 
   /* ─── Read: own timeline ─────────────────────────────────
      Registered before /api/careers/user/:id purely for clarity; the paths do
@@ -96,7 +96,8 @@ module.exports = function mountCareers(app, { requireAuth }) {
      A hidden timeline returns 200 with visible:false and an empty list rather
      than 403, so the client renders "not shared" instead of an error — again
      matching /api/alumni/:id, which nulls hidden fields rather than failing. */
-  app.get('/api/careers/user/:id', requireAuth, (req, res) => ok(res, async () => {
+  // Another person's employment history — same trust boundary as the directory.
+  app.get('/api/careers/user/:id', requireAuth, requireVerified, (req, res) => ok(res, async () => {
     const targetId = parseInt(req.params.id);
     if (!targetId) return res.status(400).json({ error: 'A numeric user id is required' });
 

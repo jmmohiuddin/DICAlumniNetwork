@@ -739,7 +739,29 @@ module.exports = function mountCompliance(app, {
      ════════════════════════════════════════════════════════════ */
 
   const CRON_SECRET = process.env.CRON_SECRET || '';
-  const cronReady = CRON_SECRET.length >= 16;
+
+  /* A length check alone is not a configuration check.
+   *
+   * .env.example shipped CRON_SECRET="replace-with-64-hex-chars" — 25
+   * characters, which cleared the old `length >= 16` test. So the ordinary
+   * `cp .env.example .env` produced a WORKING credential for these endpoints,
+   * and that credential is published in this repository. /api/cron/run-all is
+   * registered for GET as well as POST, so on any deployment that copied the
+   * example, a single URL fetch with a known bearer token would execute every
+   * due account purge — hard deletes across thirteen tables, irreversible.
+   *
+   * The placeholder is now rejected explicitly and the floor raised to 32.
+   * .env.example ships the key empty, so a copied file is inert rather than
+   * armed: an unset secret fails closed with 503, which is the safe state. */
+  const PLACEHOLDER = /^(replace-with|changeme|change-me|your-secret|xxx+|todo)/i;
+  const cronReady = CRON_SECRET.length >= 32 && !PLACEHOLDER.test(CRON_SECRET);
+
+  if (CRON_SECRET && !cronReady) {
+    console.error('✖  CRON_SECRET is set but rejected: it is either shorter than 32 characters ' +
+                  'or still the placeholder from .env.example. The scheduled sweeps are DISABLED. ' +
+                  'If a deployment has been running with the placeholder, treat it as leaked and ' +
+                  'rotate it — the value is in git history and editing the file does not un-leak it.');
+  }
 
   if (!cronReady) {
     console.warn('⚠  CRON_SECRET missing or shorter than 16 characters — the scheduled sweeps at ' +

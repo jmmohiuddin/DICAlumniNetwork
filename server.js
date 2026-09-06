@@ -37,6 +37,7 @@ const {
   signToken,
   attachUser,
   requireAuth,
+  requireVerified,
   requireRole,
 } = require('./src/server/middleware/auth');
 const { publicUser } = require('./src/server/shared/http');
@@ -161,13 +162,31 @@ app.post('/api/auth/login', async (req, res) => {
 
     const row = result.rows[0];
 
+    /* A reviewer's Reject has to close the front door, not just fail to open
+     * a new one. Without this the rejected person keeps their password and
+     * simply signs in again — the decision had no effect at all. Same for an
+     * account whose deletion has been executed: the row survives as a tombstone
+     * so the audit trail still resolves, but it must not authenticate. */
+    if (row.verification_status === 'rejected') {
+      return res.status(403).json({ error: 'This account was not approved. Contact the DIC alumni office.' });
+    }
+    if (row.erased_at) {
+      return res.status(403).json({ error: 'This account has been deleted.' });
+    }
+
     // Transparently upgrade legacy plaintext rows on first successful login.
     if (!row.password_hash.startsWith('scrypt$')) {
       await db.query('UPDATE users SET password_hash = $1 WHERE id = $2', [hashPassword(password), row.id]);
     }
 
     const user = publicUser(row);
-    const token = signToken({ uid: user.id, role: user.role, exp: Date.now() + SESSION_TTL_MS });
+    // `verified` gates every route that returns another person's data. See
+    // requireVerified in src/server/middleware/auth.js for why it is a claim
+    // rather than a per-request lookup.
+    const token = signToken({
+      uid: user.id, role: user.role, verified: row.is_verified === true,
+      exp: Date.now() + SESSION_TTL_MS,
+    });
 
     // Set on accounts that have no password of their own yet (bulk imports);
     // the client prompts for a change when this is set.
@@ -233,7 +252,15 @@ app.post('/api/auth/register', async (req, res) => {
     await writeAuditSafe('Alumni Self-Registered', `${clean} <${email.trim()}> awaiting verification`, '🎓');
 
     const user = publicUser(userRes.rows[0]);
-    const token = signToken({ uid, role: user.role, exp: Date.now() + SESSION_TTL_MS });
+    /* A self-registered account is unverified by definition, so the claim is
+     * false and requireVerified keeps it out of the directory until a reviewer
+     * approves it. The token is still issued: the account exists, it can sign
+     * in, see its own profile and complete it — it just cannot read other
+     * people's records, which is the whole point of the review queue. */
+    const token = signToken({
+      uid, role: user.role, verified: userRes.rows[0].is_verified === true,
+      exp: Date.now() + SESSION_TTL_MS,
+    });
     res.json({ token, user, mustChangePassword: false });
   } catch (err) {
     await client.query('ROLLBACK');
@@ -304,7 +331,7 @@ const ALUMNI_SORTS = {
   // ordering when nothing has been ranked.
 };
 
-app.get('/api/alumni', requireAuth, async (req, res) => {
+app.get('/api/alumni', requireAuth, requireVerified, async (req, res) => {
   const { search, dept, batch, domain, mentor, sort } = req.query;
   const limit = Math.min(parseInt(req.query.limit) || 12, 100);
   const offset = Math.max(parseInt(req.query.offset) || 0, 0);
@@ -406,7 +433,7 @@ app.get('/api/alumni', requireAuth, async (req, res) => {
   }
 });
 
-app.get('/api/alumni/:id', requireAuth, async (req, res) => {
+app.get('/api/alumni/:id', requireAuth, requireVerified, async (req, res) => {
   const { id } = req.params;
   try {
     const result = await db.query(`
@@ -637,7 +664,7 @@ app.post('/api/chapters/:id/join', requireAuth, async (req, res) => {
   }
 });
 
-app.get('/api/chapters/:id/members', requireAuth, async (req, res) => {
+app.get('/api/chapters/:id/members', requireAuth, requireVerified, async (req, res) => {
   const chapterId = parseInt(req.params.id);
   try {
     const result = await db.query(`
@@ -1258,7 +1285,7 @@ app.post('/api/events/ai-estimate', (req, res) => {
    Registered before the SPA catch-all so /api/* resolves first.
    ============================================================ */
 
-const guards = { requireAuth, requireRole, ADMIN_ROLES, MODERATOR_ROLES };
+const guards = { requireAuth, requireVerified, requireRole, ADMIN_ROLES, MODERATOR_ROLES };
 
 // v2: events, ticketing, jobs, campaigns/donations, custom fields,
 // mentorship, connections, polls, broadcasts, audit log.
