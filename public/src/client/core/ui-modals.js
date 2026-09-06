@@ -409,11 +409,16 @@ function showTenantSwitcher() {
       <button class="modal-close" onclick="closeModal()" aria-label="Close dialog"><span aria-hidden="true">✕</span></button>
     </div>
     <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">You have cross-institutional access to the following alumni networks:</p>
-    ${MOCK_TENANTS.map(t => `
-      <div class="tenant-card glass-card" style="cursor:pointer" onclick="switchTenant('${t.name}')">
+    <!-- The index, not the name, crosses into the handler. This is safe today
+         either way — DIC_INSTITUTION is a hardcoded literal in state.js, not a
+         database read — but it is the same shape as the vault Decrypt button
+         that WAS exploitable, and the next person to point this at real data
+         should not have to notice the difference. -->
+    ${MOCK_TENANTS.map((t, i) => `
+      <div class="tenant-card glass-card" style="cursor:pointer" onclick="switchTenant(${Number(i)})">
         <div style="flex:1">
-          <div style="font-size:14px;font-weight:700">${t.name}</div>
-          <div style="font-size:12px;color:var(--text-secondary)">${t.subdomain}</div>
+          <div style="font-size:14px;font-weight:700">${escapeHtml(t.name)}</div>
+          <div style="font-size:12px;color:var(--text-secondary)">${escapeHtml(t.subdomain)}</div>
         </div>
         <span class="tenant-status ${t.status}">${t.status.toUpperCase()}</span>
       </div>
@@ -421,9 +426,13 @@ function showTenantSwitcher() {
   `);
 }
 
-function switchTenant(name) {
-  document.getElementById('active-tenant').textContent = name;
+function switchTenant(index) {
+  const t = MOCK_TENANTS[Number(index)];
+  if (!t) return;
+  const label = document.getElementById('active-tenant');
+  // textContent, not innerHTML — the name is never parsed as markup.
+  if (label) label.textContent = t.name;
   closeModal();
-  showToast(`🏫 Switched to ${name}`);
+  showToast(`🏫 Switched to ${t.name}`);
 }
 

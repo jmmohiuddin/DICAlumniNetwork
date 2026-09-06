@@ -143,6 +143,28 @@ function renderEventROIAnalytics() {
 
 // ─── 3. REQ-14: NID & BRC AES-256 ENCRYPTED VAULT ───────────
 
+/* Vault rows held by id, so the Decrypt button passes a number and nothing else.
+ *
+ * The button used to read:
+ *   onclick="decryptVaultField(${v.id}, '${escapeHtml(v.owner_name).replace(/'/g,'&#39;')}')"
+ *
+ * That escaping cannot work, and this file is the last place the idiom
+ * survived — ui-modals.js carries a comment explaining exactly why it fails.
+ * The HTML parser decodes the attribute value BEFORE the JS parser sees it, so
+ * &#39; becomes a real apostrophe, closes the string literal, and everything
+ * after it is executed as script.
+ *
+ * `owner_name` is users.full_name, and self-registration accepts that name
+ * verbatim from whoever signs up — so this was attacker-controlled, and it
+ * rendered in the compliance vault, a panel only a super admin opens. The
+ * payload would have run in the highest-privileged session on the platform,
+ * with the bearer token sitting in localStorage on the same origin.
+ *
+ * Same fix as alumniRecordIndex and campaignCardIndex elsewhere in this
+ * codebase: the id crosses the boundary, the record is looked up on the other
+ * side. */
+const vaultEntryIndex = new Map();
+
 // ─── IDENTITY VAULT PANEL (REQ-14) ───
 async function renderNIDVaultPanel() {
   const el = document.getElementById('nid-vault-panel');
@@ -157,6 +179,11 @@ async function renderNIDVaultPanel() {
   const banner = data.encryptionEnabled
     ? `<div class="vault-banner ok">🔐 AES-256-GCM encryption active. Values are decryptable only with a logged reason.</div>`
     : `<div class="vault-banner warn">⚠ ENCRYPTION_KEY is not configured — the vault is refusing to store identity data.</div>`;
+
+  // Index the rows before rendering, so the Decrypt button can carry a bare id
+  // and the modal can look the record up on the other side.
+  vaultEntryIndex.clear();
+  data.entries.forEach(v => vaultEntryIndex.set(String(v.id), v));
 
   el.innerHTML = `
     ${banner}
@@ -176,7 +203,7 @@ async function renderNIDVaultPanel() {
                   ${escapeHtml(v.field_type.toUpperCase())} · <span style="font-family:monospace">•••• •••• ${escapeHtml(v.last_four || '••••')}</span>
                 </div>
               </div>
-              <button class="btn btn-sm btn-outline" onclick="decryptVaultField(${v.id}, '${escapeHtml(v.owner_name).replace(/'/g, '&#39;')}')">🔓 Decrypt</button>
+              <button class="btn btn-sm btn-outline" onclick="decryptVaultField(${Number(v.id)})">🔓 Decrypt</button>
             </div>`).join('')}
         </div>`}
   `;

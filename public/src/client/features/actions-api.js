@@ -491,7 +491,15 @@ async function cancelAccountDeletion() {
 }
 
 // Decrypts a real AES-256-GCM field; the reason is mandatory and audited.
-async function decryptVaultField(vaultId, ownerName) {
+async function decryptVaultField(vaultId) {
+  /* ownerName used to arrive as a second argument interpolated into this
+   * function's call site inside an inline onclick — a JS string literal, where
+   * HTML-entity escaping does not defend anything. It is read from the render
+   * index instead; nothing but a number crosses the attribute boundary now. */
+  const entry = (typeof vaultEntryIndex !== 'undefined')
+    ? vaultEntryIndex.get(String(vaultId)) : null;
+  const ownerName = (entry && entry.owner_name) || 'this alumnus';
+
   showModal(`
     <div class="modal-header">
       <div class="modal-title">🔓 Decrypt Identity Field</div>
@@ -505,7 +513,7 @@ async function decryptVaultField(vaultId, ownerName) {
       <label class="input-label">Reason for access (required)</label>
       <input type="text" id="vault-reason" class="form-input" placeholder="e.g. Scholarship eligibility verification" required />
     </div>
-    <button class="btn btn-primary btn-full" onclick="performVaultReveal(${vaultId})">🔓 Decrypt & Log Access</button>
+    <button class="btn btn-primary btn-full" onclick="performVaultReveal(${Number(vaultId)})">🔓 Decrypt &amp; Log Access</button>
     <div id="vault-reveal-result" class="mt-16"></div>
   `);
 }
