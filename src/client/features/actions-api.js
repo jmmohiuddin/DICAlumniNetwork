@@ -662,9 +662,21 @@ async function renderGivingStats() {
   const put = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
 
   put('giving-raised', taka(s.fundsRaised));
-  put('giving-donors', Number(s.totalDonors).toLocaleString());
-  put('giving-average', s.totalDonors ? taka(s.averageGift) : '—');
-  put('giving-pledged', taka(s.pledgedAwaitingConfirmation));
+
+  /* Donor count, average gift and outstanding pledges are staff-only fields —
+   * /api/stats/platform omits them for an ordinary alumnus rather than relying
+   * on the page to hide them. So their absence is the signal to drop the tiles
+   * entirely; rendering "—" three times would just look broken. */
+  const hasFinance = typeof s.totalDonors === 'number';
+  ['giving-donors', 'giving-average', 'giving-pledged'].forEach(id => {
+    const tile = document.getElementById(id)?.closest('.mini-kpi');
+    if (tile) tile.hidden = !hasFinance;
+  });
+  if (hasFinance) {
+    put('giving-donors', Number(s.totalDonors).toLocaleString());
+    put('giving-average', s.totalDonors ? taka(s.averageGift) : '—');
+    put('giving-pledged', taka(s.pledgedAwaitingConfirmation));
+  }
 
   const isStaff = ['super_admin', 'univ_admin'].includes(state.currentUser?.role);
   const card = document.getElementById('pending-pledges-card');
@@ -672,7 +684,7 @@ async function renderGivingStats() {
   if (!isStaff) return;
 
   const count = document.getElementById('pending-pledges-count');
-  if (count) {
+  if (count && typeof s.pledgeCount === 'number') {
     count.textContent = s.pledgeCount === 1 ? '1 pledge' : `${s.pledgeCount} pledges`;
     count.hidden = s.pledgeCount === 0;
   }

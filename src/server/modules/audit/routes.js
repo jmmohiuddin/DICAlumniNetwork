@@ -88,24 +88,49 @@ module.exports = function mountAudit(app, { requireAuth, requireRole, ADMIN_ROLE
     const mod = moderation.rows[0];
     const giving = donationStats.rows[0];
 
-    res.json({
+    /* Field visibility follows the role, not merely authentication.
+     *
+     * The endpoint stays requireAuth because every signed-in user needs part of
+     * it: the sidebar badges read openJobPostings and the caller's own pending
+     * mentorship requests, and the donations page shows a campaign total that
+     * is already visible on the campaign cards themselves.
+     *
+     * What an ordinary alumnus must not receive is the operational picture —
+     * the size of the moderation backlog (how many accounts, stories and
+     * chapters are sitting on staff), and the finance statistics: donor count,
+     * average gift, and the value of pledges not yet collected. The PRD's own
+     * RBAC matrix puts alumni at "None" for the financial ledger, and a queue
+     * depth is staff telemetry. Neither is catastrophic alone; both are things
+     * an alumnus has no reason to hold, and it was shipping to all of them.
+     *
+     * MODERATOR_ROLES rather than ADMIN_ROLES, because moderators and
+     * department admins are the people who work these queues. */
+    const isStaff = MODERATOR_ROLES.includes(req.user.role);
+
+    const payload = {
       verifiedAlumni: alumni.rows[0].n,
       fundsRaised: funds.rows[0].n,
       currency: 'BDT',
       mentorshipConnections: mentorships.rows[0].n,
       upcomingEvents: events.rows[0].n,
       openJobPostings: jobs.rows[0].n,
-      pendingVerifications: pending.rows[0].n,
-      pendingStories: mod.stories,
-      pendingChapters: mod.chapters,
-      totalDonors: giving.donors,
-      averageGift: giving.avg_gift,
-      pledgedAwaitingConfirmation: giving.pledged,
-      pledgeCount: giving.pledge_count,
+      // Scoped to the caller by the query itself, so it is their own data.
       myPendingMentorshipRequests: myRequests.rows[0].n,
       // No "safety index", no "average review time", no employment rate: the
       // schema records nothing that could produce them honestly.
-    });
+    };
+
+    if (isStaff) {
+      payload.pendingVerifications = pending.rows[0].n;
+      payload.pendingStories = mod.stories;
+      payload.pendingChapters = mod.chapters;
+      payload.totalDonors = giving.donors;
+      payload.averageGift = giving.avg_gift;
+      payload.pledgedAwaitingConfirmation = giving.pledged;
+      payload.pledgeCount = giving.pledge_count;
+    }
+
+    res.json(payload);
   }));
 
   /* Geographic distribution for the Alumni Map page.
