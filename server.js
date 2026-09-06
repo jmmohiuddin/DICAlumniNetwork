@@ -45,7 +45,60 @@ const { staticAssets } = require('./src/server/middleware/static-assets');
 const app = express();
 const PORT = process.env.PORT || 8000;
 
-app.use(cors());
+/* ─── SECURITY HEADERS ───
+ *
+ * These lived only in vercel.json, applied at the CDN edge. That left them
+ * inert everywhere else — the local server, and any non-Vercel host — and
+ * vercel.json no longer sets headers at all, because routing every request
+ * through this function (see the routes entry there) is what makes the static
+ * allow-list in staticAssets() authoritative. Vercel's CDN otherwise serves the
+ * repository root itself, before this function is ever invoked, which would put
+ * server.js, db/seed.sql and scripts/set-password.js on the public internet.
+ * Set here, they apply wherever the app runs. */
+app.use((req, res, next) => {
+  // The browser must not second-guess a declared Content-Type. This is what
+  // stops an uploaded resume from being sniffed as HTML and executed.
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  // No part of this app is meant to be framed.
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('Content-Security-Policy', "frame-ancestors 'none'");
+  // Do not leak the path a user came from (which encodes what they were
+  // looking at) to third-party sites.
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  next();
+});
+
+/* ─── CORS ───
+ *
+ * This was a bare `cors()`, i.e. Access-Control-Allow-Origin: * on every route
+ * including /api/*, and vercel.json set the same wildcard at the edge. The app
+ * serves its own frontend from its own origin, so it needs no cross-origin
+ * access at all in normal operation.
+ *
+ * Credentials here are a bearer token in a header rather than a cookie, so a
+ * wildcard did not by itself let another site act as a signed-in user — it
+ * cannot read localStorage across origins to obtain the token. But it did let
+ * any site on the internet read every unauthenticated response, and it is not
+ * a property worth keeping for a benefit nobody is using.
+ *
+ * PUBLIC_ORIGIN is an optional comma-separated allow-list for the case where
+ * the frontend really is served from a different host than the API. With it
+ * unset, only same-origin requests are permitted. */
+const ALLOWED_ORIGINS = (process.env.PUBLIC_ORIGIN || '')
+  .split(',').map(o => o.trim()).filter(Boolean);
+
+app.use(cors({
+  origin(origin, callback) {
+    // No Origin header: same-origin, curl, or a native client. Nothing to gate.
+    if (!origin) return callback(null, true);
+    if (ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    // Refuse by omitting the header rather than erroring, so the request still
+    // completes for non-browser callers and only the browser enforces it.
+    return callback(null, false);
+  },
+  credentials: true,
+}));
+
 app.use(bodyParser.json());
 app.use(staticAssets());
 app.use(attachUser);
