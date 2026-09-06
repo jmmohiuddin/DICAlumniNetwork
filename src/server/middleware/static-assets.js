@@ -24,7 +24,7 @@ const express = require('express');
 const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
-const { PUBLIC_DIR } = require('../config/paths');
+const { PUBLIC_DIR, SW_SOURCE } = require('../config/paths');
 
 // Exact files that make up the web app shell.
 //
@@ -100,7 +100,7 @@ function serviceWorkerBody() {
   if (swCache.key === key && swCache.body) return swCache.body;
 
   const stamp = crypto.createHash('sha256').update(key).digest('hex').slice(0, 12);
-  let source = fs.readFileSync(path.join(PUBLIC_DIR, 'sw.js'), 'utf8');
+  let source = fs.readFileSync(SW_SOURCE, 'utf8');
   // Global replace: the placeholder appears in the prose comment too, and
   // leaving that one stale would make the file lie about its own versioning.
   source = source.split('__SW_BUILD__').join(stamp);

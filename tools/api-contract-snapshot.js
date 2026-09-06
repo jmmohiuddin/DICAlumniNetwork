@@ -94,7 +94,7 @@ function shape(v, depth = 0) {
   // index.html rather than hardcoded, so splitting the client does not
   // invalidate the baseline.
   const { scripts } = require(path.join(ROOT, 'tools', 'client-scripts.js'));
-  const entryScript = scripts(path.join(ROOT, 'index.html'))[0];
+  const entryScript = scripts(path.join(WEB_ROOT, 'index.html'))[0];
 
   for (const [label, url] of [
     ['api-404',      base + '/api/definitely-not-a-route'],

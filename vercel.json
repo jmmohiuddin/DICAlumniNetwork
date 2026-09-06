@@ -1,7 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "routes": [
-    { "src": "/(.*)", "dest": "/api/index" }
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/api/index" },
+    { "source": "/sw.js", "destination": "/api/index" },
+    { "source": "/(.*)", "destination": "/api/index" }
   ],
   "crons": [
     { "path": "/api/cron/run-all", "schedule": "0 3 * * *" }

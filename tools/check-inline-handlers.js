@@ -10,11 +10,14 @@
  */
 const fs = require('fs'), path = require('path');
 const ROOT = process.argv[2] || require('path').join(__dirname, '..');
-const read = f => fs.readFileSync(path.join(ROOT, f), 'utf8');
+// index.html and the client scripts live under the web root, which is public/
+// since the CDN-exposure fix; the <script src> paths are relative to it.
+const WEB_ROOT = path.join(ROOT, 'public');
+const read = f => fs.readFileSync(path.join(WEB_ROOT, f), 'utf8');
 const { scripts } = require('./client-scripts');
 
 const html = read('index.html');
-const clientFiles = scripts(path.join(ROOT, 'index.html'));
+const clientFiles = scripts(path.join(WEB_ROOT, 'index.html'));
 const apiClientFile = clientFiles.find(f => f.endsWith('api-client.js'));
 const appFiles = clientFiles.filter(f => f !== apiClientFile);
 const apijs = apiClientFile ? read(apiClientFile) : '';

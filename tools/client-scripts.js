@@ -10,9 +10,14 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
+/* The web root moved to public/ so that Vercel's CDN stops serving the whole
+ * repository (see src/server/config/paths.js). The <script src> values in
+ * index.html are URLs relative to that web root, not repo-relative paths, so
+ * they resolve under public/ — the tools have to join them there. */
+const WEB_ROOT = path.join(ROOT, 'public');
 
 /** @returns {string[]} repo-relative paths, in the order the browser runs them. */
-function scripts(indexHtml = path.join(ROOT, 'index.html')) {
+function scripts(indexHtml = path.join(WEB_ROOT, 'index.html')) {
   const html = fs.readFileSync(indexHtml, 'utf8');
   const out = [];
   const TAG = /<script\b[^>]*\bsrc\s*=\s*["']([^"']+)["'][^>]*>/gi;
@@ -25,7 +30,7 @@ function scripts(indexHtml = path.join(ROOT, 'index.html')) {
   return out;
 }
 
-module.exports = { scripts, ROOT };
+module.exports = { scripts, ROOT, WEB_ROOT };
 
 if (require.main === module) {
   for (const s of scripts()) console.log(s);

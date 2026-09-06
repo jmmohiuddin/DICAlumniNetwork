@@ -5,8 +5,10 @@
 const fs=require('fs'), vm=require('vm');
 const path=require('path');
 const ROOT=path.join(__dirname,'..');
+// Web root — index.html and the client scripts moved under public/.
+const WEB_ROOT=path.join(ROOT,'public');
 const files=process.argv.slice(2).length ? process.argv.slice(2)
-  : require('./client-scripts').scripts().map(f => path.join(ROOT, f));
+  : require('./client-scripts').scripts().map(f => path.join(WEB_ROOT, f));
 
 const el=()=>new Proxy(function(){},{
   get(t,p){
@@ -64,7 +66,7 @@ for(const f of files){
 //
 // The list is derived from index.html rather than hardcoded, so removing a
 // feature (and its handler) does not leave this failing on a stale name.
-const indexHtml = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+const indexHtml = fs.readFileSync(path.join(WEB_ROOT, 'index.html'), 'utf8');
 const BUILTIN = new Set(['alert','confirm','prompt','event','this','window','document',
   'parseInt','parseFloat','JSON','Object','Array','String','Number','Boolean','Date','Math','console']);
 const need = new Set();
